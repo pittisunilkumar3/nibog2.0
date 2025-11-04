@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOB Flow Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>DOB Data Flow Test</h1>
+    <p>This test verifies that the child's date of birth is correctly preserved through the pending booking system.</p>
+
+    <div class="test-section">
+        <h3>Test Configuration</h3>
+        <label>Test DOB: <input type="date" id="testDob" value="2020-05-15"></label><br>
+        <label>Child Name: <input type="text" id="childName" value="Test Child"></label><br>
+        <label>Parent Name: <input type="text" id="parentName" value="Test Parent"></label><br>
+        <label>Email: <input type="email" id="email" value="test@example.com"></label><br>
+        <button onclick="runDOBTest()">Run DOB Test</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let currentTransactionId = null;
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            currentTransactionId = null;
+        }
+
+        async function runDOBTest() {
+            clearResults();
+            
+            const testDob = document.getElementById('testDob').value;
+            const childName = document.getElementById('childName').value;
+            const parentName = document.getElementById('parentName').value;
+            const email = document.getElementById('email').value;
+
+            if (!testDob) {
+                log('❌ Please select a test DOB', 'error');
+                return;
+            }
+
+            log('🧪 Starting DOB flow test...', 'info');
+            log(`📋 Test DOB: ${testDob}`, 'info');
+
+            // Test data
+            const testBookingData = {
+                userId: 123,
+                parentName: parentName,
+                email: email,
+                phone: '+919876543210',
+                childName: childName,
+                childDob: testDob, // This is the key field we're testing
+                schoolName: 'Test School',
+                gender: 'Male',
+                eventId: 1,
+                gameId: [1],
+                gamePrice: [500],
+                totalAmount: 500,
+                paymentMethod: 'PhonePe',
+                termsAccepted: true,
+                eventTitle: 'Test Event',
+                eventDate: '2024-12-15',
+                eventVenue: 'Test Venue'
+            };
+
+            try {
+                // Step 1: Create pending booking
+                log('📦 Step 1: Creating pending booking...', 'info');
+                
+                const createResponse = await fetch('/api/pending-bookings/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testBookingData),
+                });
+
+                if (!createResponse.ok) {
+                    const errorText = await createResponse.text();
+                    throw new Error(`Failed to create pending booking: ${createResponse.status} - ${errorText}`);
+                }
+
+                const createResult = await createResponse.json();
+                currentTransactionId = createResult.transactionId;
+                
+                log(`✅ Pending booking created successfully`, 'success');
+                log(`📋 Transaction ID: ${currentTransactionId}`, 'info');
+                log(`⏰ Expires at: ${createResult.expiresAt}`, 'info');
+
+                // Step 2: Retrieve pending booking to verify DOB
+                log('🔍 Step 2: Retrieving pending booking to verify DOB...', 'info');
+                
+                const retrieveResponse = await fetch('/api/pending-bookings/get', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        transaction_id: currentTransactionId
+                    }),
+                });
+
+                if (!retrieveResponse.ok) {
+                    const errorText = await retrieveResponse.text();
+                    throw new Error(`Failed to retrieve pending booking: ${retrieveResponse.status} - ${errorText}`);
+                }
+
+                const retrieveResult = await retrieveResponse.json();
+                log(`✅ Retrieved pending booking data`, 'success');
+
+                // Step 3: Verify DOB integrity
+                log('🔍 Step 3: Verifying DOB integrity...', 'info');
+                
+                const retrievedDob = retrieveResult.bookingData?.childDob;
+                
+                if (retrievedDob === testDob) {
+                    log(`✅ DOB verification PASSED: Retrieved DOB matches original`, 'success');
+                    log(`   Original: ${testDob}`, 'success');
+                    log(`   Retrieved: ${retrievedDob}`, 'success');
+                } else {
+                    log(`❌ DOB verification FAILED: Retrieved DOB does not match original`, 'error');
+                    log(`   Original: ${testDob}`, 'error');
+                    log(`   Retrieved: ${retrievedDob}`, 'error');
+                }
+
+                // Step 4: Display complete retrieved data
+                log('📋 Complete retrieved booking data:', 'info');
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(retrieveResult.bookingData, null, 2);
+                document.getElementById('results').appendChild(pre);
+
+                // Step 5: Test payment callback simulation
+                log('💳 Step 4: Payment callback would now use this data...', 'info');
+                log('📋 The payment callback should retrieve this pending booking', 'info');
+                log('📋 And create the final booking with the correct DOB', 'info');
+
+                log('🎉 DOB flow test completed successfully!', 'success');
+
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        // Auto-cleanup on page unload
+        window.addEventListener('beforeunload', async () => {
+            if (currentTransactionId) {
+                try {
+                    await fetch('/api/pending-bookings/delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            transaction_id: currentTransactionId
+                        }),
+                    });
+                } catch (e) {
+                    console.log('Cleanup failed:', e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

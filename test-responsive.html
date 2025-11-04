@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIBOG Responsive Testing Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            color: #2563eb;
+            margin-top: 0;
+        }
+        .viewport-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .viewport-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .viewport-btn:hover {
+            background: #f0f0f0;
+        }
+        .viewport-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        .iframe-container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            display: block;
+        }
+        .checklist {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .checklist h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .checklist label {
+            display: block;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .checklist input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .page-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .page-link {
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #1976d2;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .page-link:hover {
+            background: #bbdefb;
+            transform: translateY(-2px);
+        }
+        .current-viewport {
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 NIBOG Responsive Testing Tool</h1>
+        
+        <div class="page-links">
+            <a href="#" class="page-link" onclick="loadPage('http://localhost:3111/')">
+                🏠 Homepage
+            </a>
+            <a href="#" class="page-link" onclick="loadPage('http://localhost:3111/events')">
+                📅 Events Page
+            </a>
+            <a href="#" class="page-link" onclick="loadPage('http://localhost:3111/baby-olympics')">
+                🏆 Baby Olympics
+            </a>
+            <a href="#" class="page-link" onclick="loadPage('http://localhost:3111/contact')">
+                📞 Contact Page
+            </a>
+        </div>
+
+        <div class="test-section">
+            <h2>Viewport Testing</h2>
+            <div class="current-viewport" id="currentViewport">Current: Desktop (1200px)</div>
+            
+            <div class="viewport-buttons">
+                <button class="viewport-btn" onclick="setViewport(320, 568, 'Mobile (iPhone SE)')">📱 Mobile (320px)</button>
+                <button class="viewport-btn" onclick="setViewport(375, 667, 'Mobile (iPhone)')">📱 iPhone (375px)</button>
+                <button class="viewport-btn" onclick="setViewport(390, 844, 'Mobile (iPhone 12)')">📱 iPhone 12 (390px)</button>
+                <button class="viewport-btn" onclick="setViewport(768, 1024, 'Tablet (iPad)')">📱 Tablet (768px)</button>
+                <button class="viewport-btn" onclick="setViewport(1024, 768, 'Desktop Small')">💻 Desktop (1024px)</button>
+                <button class="viewport-btn active" onclick="setViewport(1200, 800, 'Desktop')">💻 Desktop (1200px)</button>
+            </div>
+
+            <div class="iframe-container" id="iframeContainer">
+                <iframe id="testFrame" src="http://localhost:3111/"></iframe>
+            </div>
+
+            <div class="checklist">
+                <h3>✅ Mobile Testing Checklist (320px - 767px)</h3>
+                <label><input type="checkbox"> All buttons are easily tappable (44px minimum)</label>
+                <label><input type="checkbox"> Text is readable without zooming</label>
+                <label><input type="checkbox"> No horizontal scrolling occurs</label>
+                <label><input type="checkbox"> Hero section buttons stack vertically</label>
+                <label><input type="checkbox"> Events page tabs are full width</label>
+                <label><input type="checkbox"> Contact form is easy to use</label>
+                <label><input type="checkbox"> All content fits within viewport</label>
+            </div>
+
+            <div class="checklist">
+                <h3>✅ Tablet Testing Checklist (768px - 1023px)</h3>
+                <label><input type="checkbox"> Layout transitions smoothly from mobile</label>
+                <label><input type="checkbox"> Touch targets remain appropriate</label>
+                <label><input type="checkbox"> Content is well-spaced and readable</label>
+                <label><input type="checkbox"> Buttons show proper hover states</label>
+                <label><input type="checkbox"> Grid layouts work properly</label>
+            </div>
+
+            <div class="checklist">
+                <h3>✅ Desktop Testing Checklist (1024px+)</h3>
+                <label><input type="checkbox"> Full desktop experience is maintained</label>
+                <label><input type="checkbox"> Hover effects work properly</label>
+                <label><input type="checkbox"> Layout utilizes available space effectively</label>
+                <label><input type="checkbox"> All animations work smoothly</label>
+                <label><input type="checkbox"> Multi-column layouts display correctly</label>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 Testing Instructions</h2>
+            <ol>
+                <li><strong>Start the Development Server:</strong> Make sure your Next.js app is running on <code>http://localhost:3111</code></li>
+                <li><strong>Select a Page:</strong> Click on one of the page links above to load it in the iframe</li>
+                <li><strong>Test Different Viewports:</strong> Use the viewport buttons to simulate different screen sizes</li>
+                <li><strong>Check Responsiveness:</strong> Use the checklists to verify all responsive features work correctly</li>
+                <li><strong>Test Interactions:</strong> Click buttons, fill forms, and test all interactive elements</li>
+                <li><strong>Check Performance:</strong> Ensure smooth scrolling and animations on all viewport sizes</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function setViewport(width, height, name) {
+            const container = document.getElementById('iframeContainer');
+            const frame = document.getElementById('testFrame');
+            const currentViewport = document.getElementById('currentViewport');
+            
+            // Update iframe size
+            container.style.width = width + 'px';
+            container.style.margin = '0 auto';
+            frame.style.height = height + 'px';
+            
+            // Update current viewport display
+            currentViewport.textContent = `Current: ${name} (${width}px)`;
+            
+            // Update active button
+            document.querySelectorAll('.viewport-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function loadPage(url) {
+            document.getElementById('testFrame').src = url;
+        }
+
+        // Auto-check completed items
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    this.parentElement.style.opacity = '0.7';
+                    this.parentElement.style.textDecoration = 'line-through';
+                } else {
+                    this.parentElement.style.opacity = '1';
+                    this.parentElement.style.textDecoration = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

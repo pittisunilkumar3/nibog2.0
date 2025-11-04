@@ -1,0 +1,58 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6E6FA"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FF7F7F"/>
+    </linearGradient>
+    <linearGradient id="text" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2F2F2F"/>
+      <stop offset="50%" stop-color="#4A4A4A"/>
+      <stop offset="100%" stop-color="#2F2F2F"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg)" opacity="0.9"/>
+  
+  <!-- Decorative elements -->
+  <circle cx="60" cy="60" r="22" fill="#E6E6FA" opacity="0.7"/>
+  <circle cx="340" cy="70" r="17" fill="#FFD700" opacity="0.7"/>
+  <circle cx="70" cy="240" r="28" fill="#FF7F7F" opacity="0.7"/>
+  <circle cx="330" cy="230" r="20" fill="#98FB98" opacity="0.7"/>
+  
+  <!-- Hurdles -->
+  <g transform="translate(100, 160)">
+    <rect x="0" y="0" width="4" height="20" fill="#8B4513"/>
+    <rect x="0" y="15" width="25" height="3" fill="#8B4513"/>
+    <rect x="60" y="0" width="4" height="20" fill="#8B4513"/>
+    <rect x="60" y="15" width="25" height="3" fill="#8B4513"/>
+    <rect x="120" y="0" width="4" height="20" fill="#8B4513"/>
+    <rect x="120" y="15" width="25" height="3" fill="#8B4513"/>
+  </g>
+  
+  <!-- Child jumping over hurdle -->
+  <g transform="translate(140, 100)">
+    <!-- Child head -->
+    <circle cx="40" cy="20" r="12" fill="#FFE0B2"/>
+    <!-- Child body -->
+    <ellipse cx="40" cy="35" rx="8" ry="12" fill="#4A90E2"/>
+    <!-- Jumping legs -->
+    <ellipse cx="35" cy="50" rx="4" ry="10" fill="#FFE0B2" transform="rotate(-45 35 50)"/>
+    <ellipse cx="45" cy="50" rx="4" ry="10" fill="#FFE0B2" transform="rotate(20 45 50)"/>
+    <!-- Arms -->
+    <ellipse cx="30" cy="30" rx="3" ry="8" fill="#FFE0B2" transform="rotate(-20 30 30)"/>
+    <ellipse cx="50" cy="30" rx="3" ry="8" fill="#FFE0B2" transform="rotate(30 50 30)"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="200" y="210" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="24" font-weight="bold">
+    Hurdle Toddle
+  </text>
+  <text x="200" y="240" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="16">
+    🏃‍♀️ NIBOG Games 🏃‍♀️
+  </text>
+  <text x="200" y="265" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="14">
+    13-84 months
+  </text>
+</svg>

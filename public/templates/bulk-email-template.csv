@@ -1,0 +1,4 @@
+name,email,company,phone,custom_field1,custom_field2
+John Doe,john.doe@example.com,Acme Corp,+1-555-0123,VIP Customer,Gold Member
+Jane Smith,jane.smith@example.com,Tech Solutions,+1-555-0124,Regular Customer,Silver Member
+Mike Johnson,mike.johnson@example.com,Digital Agency,+1-555-0125,New Customer,Bronze Member

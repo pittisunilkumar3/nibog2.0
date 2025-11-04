@@ -1,0 +1,62 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#87CEEB"/>
+      <stop offset="50%" stop-color="#98FB98"/>
+      <stop offset="100%" stop-color="#FFD700"/>
+    </linearGradient>
+    <linearGradient id="text" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2F2F2F"/>
+      <stop offset="50%" stop-color="#4A4A4A"/>
+      <stop offset="100%" stop-color="#2F2F2F"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg)" opacity="0.9"/>
+  
+  <!-- Decorative elements -->
+  <circle cx="60" cy="60" r="22" fill="#87CEEB" opacity="0.7"/>
+  <circle cx="340" cy="70" r="17" fill="#98FB98" opacity="0.7"/>
+  <circle cx="70" cy="240" r="28" fill="#FFD700" opacity="0.7"/>
+  <circle cx="330" cy="230" r="20" fill="#FF7F7F" opacity="0.7"/>
+  
+  <!-- Bicycle illustration -->
+  <g transform="translate(120, 100)">
+    <!-- Bicycle wheels -->
+    <circle cx="30" cy="60" r="20" fill="none" stroke="#333" stroke-width="3"/>
+    <circle cx="130" cy="60" r="20" fill="none" stroke="#333" stroke-width="3"/>
+    <!-- Bicycle frame -->
+    <path d="M30 60 L80 40 L130 60 L80 60 L30 60" fill="none" stroke="#4A90E2" stroke-width="3"/>
+    <path d="M80 40 L80 60" stroke="#4A90E2" stroke-width="3"/>
+    <!-- Handlebars -->
+    <path d="M75 40 L85 40" stroke="#333" stroke-width="2"/>
+    <!-- Seat -->
+    <ellipse cx="105" cy="45" rx="8" ry="3" fill="#8B4513"/>
+    
+    <!-- Child on bicycle -->
+    <circle cx="80" cy="25" r="12" fill="#FFE0B2"/>
+    <ellipse cx="80" cy="40" rx="8" ry="10" fill="#4A90E2"/>
+    <!-- Arms on handlebars -->
+    <ellipse cx="70" cy="35" rx="3" ry="8" fill="#FFE0B2" transform="rotate(-20 70 35)"/>
+    <ellipse cx="90" cy="35" rx="3" ry="8" fill="#FFE0B2" transform="rotate(20 90 35)"/>
+    <!-- Legs on pedals -->
+    <ellipse cx="75" cy="55" rx="3" ry="10" fill="#FFE0B2"/>
+    <ellipse cx="85" cy="55" rx="3" ry="10" fill="#FFE0B2"/>
+  </g>
+  
+  <!-- Motion lines -->
+  <path d="M90 160 L110 160" stroke="#FFD700" stroke-width="2" opacity="0.7"/>
+  <path d="M85 170 L105 170" stroke="#FFD700" stroke-width="2" opacity="0.5"/>
+  
+  <!-- Text -->
+  <text x="200" y="210" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="24" font-weight="bold">
+    Cycle Race
+  </text>
+  <text x="200" y="240" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="16">
+    🚴‍♀️ NIBOG Games 🚴‍♀️
+  </text>
+  <text x="200" y="265" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="14">
+    24-84 months
+  </text>
+</svg>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favicon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .preview {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        .preview-item {
+            text-align: center;
+        }
+        .preview-item canvas {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+        .preview-item p {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 NIBOG Favicon Generator</h1>
+        <p>This tool will generate favicon files from the noboggamelogo.svg file.</p>
+        
+        <div class="preview" id="preview"></div>
+        
+        <div>
+            <button onclick="generateAll()">Generate All Favicons</button>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li>Click "Generate All Favicons" button above</li>
+                <li>Download each generated image by clicking on it</li>
+                <li>Save the files to the <code>public/</code> directory:
+                    <ul>
+                        <li>favicon.ico (32x32)</li>
+                        <li>logo192.png (192x192)</li>
+                        <li>logo512.png (512x512)</li>
+                    </ul>
+                </li>
+                <li>Refresh your browser to see the new favicon</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const sizes = [
+            { size: 16, name: 'favicon-16.png' },
+            { size: 32, name: 'favicon-32.png' },
+            { size: 64, name: 'favicon-64.png' },
+            { size: 192, name: 'logo192.png' },
+            { size: 512, name: 'logo512.png' }
+        ];
+
+        async function loadSVG() {
+            try {
+                const response = await fetch('../public/noboggamelogo.svg');
+                const svgText = await response.text();
+                return svgText;
+            } catch (error) {
+                console.error('Error loading SVG:', error);
+                alert('Error loading SVG file. Make sure noboggamelogo.svg exists in the public folder.');
+                return null;
+            }
+        }
+
+        function svgToCanvas(svgText, size) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                
+                // Fill with white background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
+                
+                const img = new Image();
+                const svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+                
+                img.onload = function() {
+                    // Calculate scaling to fit the logo
+                    const scale = Math.min(size / img.width, size / img.height);
+                    const scaledWidth = img.width * scale;
+                    const scaledHeight = img.height * scale;
+                    
+                    // Center the logo
+                    const x = (size - scaledWidth) / 2;
+                    const y = (size - scaledHeight) / 2;
+                    
+                    ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+                    URL.revokeObjectURL(url);
+                    resolve(canvas);
+                };
+                
+                img.onerror = function() {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Failed to load SVG image'));
+                };
+                
+                img.src = url;
+            });
+        }
+
+        async function generateAll() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '<p>Generating favicons...</p>';
+            
+            const svgText = await loadSVG();
+            if (!svgText) return;
+            
+            preview.innerHTML = '';
+            
+            for (const { size, name } of sizes) {
+                try {
+                    const canvas = await svgToCanvas(svgText, size);
+                    
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    
+                    const displayCanvas = document.createElement('canvas');
+                    displayCanvas.width = Math.min(size, 128);
+                    displayCanvas.height = Math.min(size, 128);
+                    const displayCtx = displayCanvas.getContext('2d');
+                    displayCtx.drawImage(canvas, 0, 0, displayCanvas.width, displayCanvas.height);
+                    
+                    const label = document.createElement('p');
+                    label.textContent = `${name} (${size}x${size})`;
+                    
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = 'Download';
+                    downloadBtn.onclick = () => {
+                        canvas.toBlob(blob => {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = name;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        });
+                    };
+                    
+                    previewItem.appendChild(displayCanvas);
+                    previewItem.appendChild(label);
+                    previewItem.appendChild(downloadBtn);
+                    preview.appendChild(previewItem);
+                    
+                } catch (error) {
+                    console.error(`Error generating ${name}:`, error);
+                }
+            }
+            
+            alert('✅ All favicons generated! Click "Download" on each image to save them.');
+        }
+    </script>
+</body>
+</html>
+

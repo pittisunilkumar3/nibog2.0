@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Add Page - Admin Panel</title>
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta name="theme-color" content="#424242" />
+    
+    <!-- CSS Dependencies -->
+    <style>
+        /* Bootstrap CSS - Core styles */
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/3.4.1/css/bootstrap.min.css');
+        
+        /* Font Awesome Icons */
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
+        
+        /* AdminLTE Theme */
+        @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic');
+        
+        /* Custom AdminLTE and theme styles */
+        html, body {
+            min-height: 100%;
+            font-family: 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-weight: 400;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .wrapper {
+            min-height: 100%;
+            position: static;
+            overflow: hidden;
+        }
+        
+        .content-wrapper {
+            min-height: 100%;
+            background-color: #ecf0f5;
+            z-index: 800;
+            padding: 15px;
+        }
+        
+        .box {
+            position: relative;
+            border-radius: 3px;
+            background: #ffffff;
+            border-top: 3px solid #d2d6de;
+            margin-bottom: 20px;
+            width: 100%;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        }
+        
+        .box.box-primary {
+            border-top-color: #3c8dbc;
+        }
+        
+        .box-header {
+            color: #444;
+            display: block;
+            padding: 10px;
+            position: relative;
+        }
+        
+        .box-header.with-border {
+            border-bottom: 1px solid #f4f4f4;
+        }
+        
+        .box-title {
+            font-size: 18px;
+            margin: 0;
+            line-height: 1.1;
+        }
+        
+        .box-body {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 3px;
+            border-bottom-left-radius: 3px;
+            padding: 10px;
+        }
+        
+        .box-tools {
+            position: absolute;
+            right: 10px;
+            top: 5px;
+        }
+        
+        .btn-box-tool {
+            padding: 5px;
+            font-size: 12px;
+            background: transparent;
+            color: #97a0b3;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-control {
+            display: block;
+            width: 100%;
+            height: 34px;
+            padding: 6px 12px;
+            font-size: 14px;
+            line-height: 1.42857143;
+            color: #555;
+            background-color: #fff;
+            background-image: none;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+            transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+        }
+        
+        .form-control:focus {
+            border-color: #66afe9;
+            outline: 0;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102,175,233,.6);
+        }
+        
+        textarea.form-control {
+            height: auto;
+        }
+        
+        .req {
+            color: #dd4b39;
+        }
+        
+        .text-danger {
+            color: #dd4b39;
+        }
+        
+        .radio-inline {
+            position: relative;
+            display: inline-block;
+            padding-left: 20px;
+            margin-bottom: 0;
+            font-weight: normal;
+            vertical-align: middle;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .radio-inline input[type="radio"] {
+            position: absolute;
+            margin-top: 4px;
+            margin-left: -20px;
+        }
+        
+        .dividerhr {
+            border-top: 1px solid #f4f4f4;
+            margin: 15px 0;
+        }
+        
+        .formgroup10 {
+            margin-bottom: 10px;
+        }
+        
+        .mb10 {
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 6px 12px;
+            margin-bottom: 0;
+            font-size: 14px;
+            font-weight: normal;
+            line-height: 1.42857143;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            cursor: pointer;
+            background-image: none;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            color: #fff;
+            background-color: #337ab7;
+            border-color: #2e6da4;
+        }
+        
+        .btn-primary:hover {
+            color: #fff;
+            background-color: #286090;
+            border-color: #204d74;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            border-radius: 3px;
+        }
+        
+        .pull-right {
+            float: right !important;
+        }
+        
+        .collapsed-box .box-body {
+            display: none;
+        }
+        
+        .panel {
+            margin-bottom: 20px;
+            background-color: #fff;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            box-shadow: 0 1px 1px rgba(0,0,0,.05);
+        }
+        
+        .boxplus {
+            background: transparent;
+            border: none;
+            color: #444;
+            font-size: 16px;
+            padding: 0;
+        }
+        
+        .uploadbarfixes {
+            position: relative;
+        }
+        
+        .material-switch {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .material-switch input[type="checkbox"] {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .material-switch .label-success {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            background-color: #ccc;
+            border-radius: 34px;
+            transition: .4s;
+        }
+        
+        .material-switch .label-success:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        .material-switch input:checked + .label-success {
+            background-color: #2196F3;
+        }
+        
+        .material-switch input:checked + .label-success:before {
+            transform: translateX(26px);
+        }
+        
+        .input-group {
+            position: relative;
+            display: table;
+            border-collapse: separate;
+        }
+        
+        .input-group .form-control {
+            position: relative;
+            z-index: 2;
+            float: left;
+            width: 100%;
+            margin-bottom: 0;
+        }
+        
+        .input-group-btn {
+            position: relative;
+            font-size: 0;
+            white-space: nowrap;
+            width: 1%;
+            vertical-align: middle;
+            display: table-cell;
+        }
+        
+        .input-group-btn .btn {
+            position: relative;
+            border-radius: 0;
+        }
+        
+        .input-group-btn:last-child .btn {
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .cfees {
+            background-color: #3c8dbc;
+            border-color: #367fa9;
+            color: #fff;
+        }
+        
+        .removegraybtn {
+            background-color: #dd4b39;
+            border-color: #d73925;
+            color: #fff;
+        }
+        
+        .thumbnail {
+            display: block;
+            padding: 4px;
+            margin-bottom: 20px;
+            line-height: 1.42857143;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: border .2s ease-in-out;
+        }
+        
+        .img-responsive {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1050;
+            display: none;
+            overflow: hidden;
+            outline: 0;
+        }
+        
+        .modal.fade .modal-dialog {
+            transition: transform .3s ease-out;
+            transform: translate(0,-25%);
+        }
+        
+        .modal.in .modal-dialog {
+            transform: translate(0,0);
+        }
+        
+        .modal-dialog {
+            position: relative;
+            width: auto;
+            margin: 10px;
+        }
+        
+        .pup100 .modal-dialog {
+            width: 90%;
+            max-width: 1200px;
+        }
+        
+        .modal-content {
+            position: relative;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #999;
+            border: 1px solid rgba(0,0,0,.2);
+            border-radius: 6px;
+            outline: 0;
+            box-shadow: 0 3px 9px rgba(0,0,0,.5);
+        }
+        
+        .modal-header {
+            padding: 15px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        
+        .modal-title {
+            margin: 0;
+            line-height: 1.42857143;
+        }
+        
+        .modal-body {
+            position: relative;
+            padding: 15px;
+        }
+        
+        .modal-footer {
+            padding: 15px;
+            text-align: right;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .close {
+            float: right;
+            font-size: 21px;
+            font-weight: bold;
+            line-height: 1;
+            color: #000;
+            text-shadow: 0 1px 0 #fff;
+            filter: alpha(opacity=20);
+            opacity: .2;
+        }
+        
+        .close:hover {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+            filter: alpha(opacity=50);
+            opacity: .5;
+        }
+        
+        /* CKEditor container styles */
+        .cke {
+            border: 1px solid #ccc !important;
+        }
+
+        .cke_top {
+            border-bottom: 1px solid #ccc !important;
+            background: #f5f5f5 !important;
+        }
+
+        .cke_bottom {
+            border-top: 1px solid #ccc !important;
+            background: #f5f5f5 !important;
+        }
+
+        /* Additional styles for better appearance */
+        .pr20 {
+            padding-right: 20px;
+        }
+
+        .mb0 {
+            margin-bottom: 0 !important;
+        }
+
+        .pupscroll {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .fadeoverlay.active {
+            border: 2px solid #3c8dbc !important;
+        }
+
+        .img_div_modal:hover {
+            opacity: 0.8;
+        }
+
+        .modal_loading {
+            opacity: 0.6;
+        }
+
+        .modal_loading:before {
+            content: "Loading...";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 4px;
+        }
+
+        /* Tooltip styles */
+        .tooltip {
+            position: absolute;
+            z-index: 1070;
+            display: block;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            font-weight: normal;
+            line-height: 1.4;
+            opacity: 0;
+            filter: alpha(opacity=0);
+        }
+
+        .tooltip.in {
+            opacity: 0.9;
+            filter: alpha(opacity=90);
+        }
+
+        .tooltip.top {
+            padding: 5px 0;
+            margin-top: -3px;
+        }
+
+        .tooltip-inner {
+            max-width: 200px;
+            padding: 3px 8px;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            background-color: #000;
+            border-radius: 4px;
+        }
+
+        .tooltip-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-color: transparent;
+            border-style: solid;
+        }
+
+        .tooltip.top .tooltip-arrow {
+            bottom: 0;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px 5px 0;
+            border-top-color: #000;
+        }
+
+        /* Form validation styles */
+        .has-error .form-control {
+            border-color: #dd4b39;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+        }
+
+        .has-error .form-control:focus {
+            border-color: #843534;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 6px #ce8483;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .col-md-9, .col-md-3 {
+                width: 100%;
+                float: none;
+            }
+
+            .pup100 .modal-dialog {
+                width: 95%;
+                margin: 5px auto;
+            }
+        }
+    </style>
+</head>
+<body class="hold-transition skin-blue sidebar-mini">
+    <div class="wrapper">
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            <!-- Main content -->
+            <section class="content">
+                <div class="row">
+                    <form id="form1" action="#" enctype="multipart/form-data" method="post" accept-charset="utf-8">
+                        <div class="col-md-9">
+                            <!-- Horizontal Form -->
+                            <div class="box box-primary">
+                                <div class="box-header with-border">
+                                    <h3 class="box-title">Add Page</h3>
+                                </div><!-- /.box-header -->
+                                <!-- form start -->
+                                <div class="box-body">
+                                    <div class="form-group">
+                                        <label for="title">Title</label><small class="req"> *</small>
+                                        <input id="title" name="title" placeholder="" type="text" class="form-control" value="" />
+                                        <span class="text-danger"></span>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="pr20">Page Type</label>
+                                        <label class="radio-inline">
+                                            <input type="radio" value="standard" name="content_category" checked> Standard
+                                        </label>
+                                        <label class="radio-inline">
+                                            <input type="radio" value="custom" name="content_category"> Custom
+                                        </label>
+                                        <label class="radio-inline">
+                                            <input type="radio" value="gallery" name="content_category"> Gallery
+                                        </label>
+                                        <label class="radio-inline">
+                                            <input type="radio" value="news" name="content_category"> News
+                                        </label>
+                                        <span class="text-danger"></span>
+                                    </div>
+                                    
+                                    <div class="dividerhr"></div>
+                                    
+                                    <div class="formgroup10 mb10">
+                                        <label for="description">Description</label><small class="req"> *</small>
+                                        <button type="button" class="btn btn-primary btn-sm pull-right" id="media_images" data-toggle="modal" data-target="#mediaModal">
+                                            <i class="fa fa-plus"></i> Add Media
+                                        </button>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <textarea id="editor1" name="description" placeholder="" type="text" class="form-control ss"></textarea>
+                                        <span class="text-danger"></span>
+                                    </div>
+                                </div><!-- /.box-body -->
+                            </div>
+
+                            <!-- SEO Details Panel -->
+                            <div class="panel box box-primary collapsed-box">
+                                <div class="box-header with-border">
+                                    <a class="btn boxplus" data-widget="collapse" data-original-title="Collapse">SEO Detail<i class="fa fa-plus"></i></a>
+                                </div>
+                                <div class="box-body" style="display: none;">
+                                    <div class="form-group">
+                                        <label for="meta_title">Meta Title</label>
+                                        <input id="meta_title" name="meta_title" placeholder="" type="text" class="form-control" value="" />
+                                        <span class="text-danger"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="meta_keywords">Meta Keyword</label>
+                                        <input id="meta_keywords" name="meta_keywords" placeholder="" type="text" class="form-control" value="" />
+                                        <span class="text-danger"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="meta_description">Meta Description</label>
+                                        <textarea id="meta_description" name="meta_description" placeholder="" type="text" class="form-control"></textarea>
+                                        <span class="text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!--/.col (right) -->
+
+                        <!-- left column -->
+                        <div class="col-md-3 col-sm-12">
+                            <div class="uploadbarfixes">
+                                <!-- page settings -->
+                                <div class="box box-primary">
+                                    <div class="box-header with-border">
+                                        <h3 class="box-title">Sidebar Setting</h3>
+                                        <div class="box-tools pull-right">
+                                            <button class="btn btn-box-tool" data-placement="bottom" data-widget="collapse" data-toggle="tooltip" title="Collapse"><i class="fa fa-minus"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="box-body">
+                                        <div class="">
+                                            <label for="sidebar">Sidebar</label>
+                                            <div class="material-switch pull-right">
+                                                <input id="sidebar" name="sidebar" type="checkbox" class="chk" value="1" />
+                                                <label for="sidebar" class="label-success"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- page image -->
+                                <div class="box box-primary">
+                                    <div class="box-header with-border">
+                                        <h3 class="box-title">Featured Image</h3>
+                                        <div class="box-tools pull-right">
+                                            <button class="btn btn-box-tool" data-widget="collapse" data-toggle="tooltip" title="Collapse"><i class="fa fa-minus"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="box-body">
+                                        <div class="form-group mb0">
+                                            <div class="input-group input-group-sm">
+                                                <input class="form-control iframe-btn" placeholder="Select Image" type="text" name="image" id="image">
+                                                <span class="input-group-btn">
+                                                    <a href="#" class="btn cfees feture_image_btn" id="feture_image" data-toggle="tooltip" data-title="Select Image" type="button"><i class="fa fa-folder-open"></i></a>
+                                                    <a href="#" class="btn removegraybtn delete_media" id="image" data-toggle="tooltip" data-title="Delete" type="button"><i class="fa fa-trash"></i></a>
+                                                </span>
+                                            </div>
+                                            <div id="image_preview" class="thumbnail mb0" style="margin-top: 10px; display: none">
+                                                <img src="" class="img-responsive feature_image_url">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Save button -->
+                                <div class="box box-primary">
+                                    <div class="box-body">
+                                        <button type="submit" class="btn cfees btn-block"><i class="fa fa-save"></i> Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- /.col-md-4 -->
+                    </form>
+                </div>
+            </section><!-- /.content -->
+        </div><!-- /.content-wrapper -->
+    </div>
+
+    <!-- Media Modal -->
+    <div class="modal fade" id="mediaModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog pup100" role="document">
+            <div class="modal-content modal-media-content">
+                <div class="modal-header modal-media-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title modal-media-title" id="myModalLabel">Media Manager</h4>
+                </div>
+                <div class="modal-body modal-media-body pupscroll">
+                    <div id="media_div">
+                        <p>Media manager functionality would be loaded here. This is a placeholder for the media selection interface.</p>
+                        <div class="img_div_modal" style="display: inline-block; margin: 10px; cursor: pointer; border: 2px solid transparent;">
+                            <div class="fadeoverlay" style="position: relative;">
+                                <img src="https://via.placeholder.com/150x100?text=Sample+Image"
+                                     data-img="https://via.placeholder.com/150x100?text=Sample+Image"
+                                     data-is_image="1"
+                                     data-content_name="sample.jpg"
+                                     data-content_type="image"
+                                     style="width: 150px; height: 100px; object-fit: cover;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary add_media">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ckeditor/4.22.1/ckeditor.js"></script>
+    
+    <script>
+        // Base URL for the application
+        var baseurl = 'http://localhost/amt/';
+
+        $(document).ready(function () {
+            var popup_target = 'media_images';
+
+            // Initialize CKEditor
+            CKEDITOR.env.isCompatible = true;
+
+            CKEDITOR.replace('editor1', {
+                toolbar: "FrontCMS",
+                extraPlugins: '',
+                entities: false,
+                allowedContent: true,
+                extraAllowedContent: 'p(*)[*]{*};div(*)[*]{*};li(*)[*]{*};ul(*)[*]{*}',
+                enterMode: CKEDITOR.ENTER_BR,
+                shiftEnterMode: CKEDITOR.ENTER_P,
+                autoParagraph: false,
+                toolbar_FrontCMS: [
+                    { name: 'document', items: ['Source', 'Preview', 'Print'] },
+                    { name: 'clipboard', items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo'] },
+                    { name: 'editing', items: ['Find', 'Replace', '-', 'SelectAll', '-', 'SpellChecker', 'Scayt'] },
+                    { name: 'forms', items: ['Form', 'Checkbox', 'Radio', 'TextField', 'Textarea', 'Select', 'Button', 'ImageButton', 'HiddenField'] },
+                    { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'RemoveFormat'] },
+                    { name: 'links', items: ['Link', 'Unlink', 'Anchor'] },
+                    { name: 'colors', items: ['TextColor', 'BGColor'] },
+                    '/',
+                    { name: 'insert', items: ['Image', 'Flash', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar', 'PageBreak', 'Iframe'] },
+                    { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl'] },
+                    { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] }
+                ]
+            });
+
+            // Modal functionality
+            $('#mediaModal').modal({
+                backdrop: 'static',
+                keyboard: false,
+                show: false
+            });
+
+            // Feature image button click
+            $(document).on('click', '.feture_image_btn', function (event) {
+                $("#mediaModal").modal('toggle', $(this));
+            });
+
+            // Media modal show event
+            $('#mediaModal').on('show.bs.modal', function (event) {
+                var a = $(event.relatedTarget);
+                popup_target = a[0].id;
+                var button = $(event.relatedTarget);
+                console.log(button);
+                var $modalDiv = $(event.delegateTarget);
+                $('.modal-media-body').html("");
+
+                // Simulate loading media content
+                setTimeout(function() {
+                    $('.modal-media-body').html(`
+                        <div id="media_div">
+                            <p>Select an image from the media library:</p>
+                            <div class="img_div_modal" style="display: inline-block; margin: 10px; cursor: pointer; border: 2px solid transparent;">
+                                <div class="fadeoverlay" style="position: relative;">
+                                    <img src="https://via.placeholder.com/150x100?text=Sample+Image+1"
+                                         data-img="https://via.placeholder.com/150x100?text=Sample+Image+1"
+                                         data-is_image="1"
+                                         data-content_name="sample1.jpg"
+                                         data-content_type="image"
+                                         style="width: 150px; height: 100px; object-fit: cover;">
+                                </div>
+                            </div>
+                            <div class="img_div_modal" style="display: inline-block; margin: 10px; cursor: pointer; border: 2px solid transparent;">
+                                <div class="fadeoverlay" style="position: relative;">
+                                    <img src="https://via.placeholder.com/150x100?text=Sample+Image+2"
+                                         data-img="https://via.placeholder.com/150x100?text=Sample+Image+2"
+                                         data-is_image="1"
+                                         data-content_name="sample2.jpg"
+                                         data-content_type="image"
+                                         style="width: 150px; height: 100px; object-fit: cover;">
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }, 500);
+            });
+
+            // Image selection in modal
+            $(document).on('click', '.img_div_modal', function (event) {
+                $('.img_div_modal div.fadeoverlay').removeClass('active');
+                $(this).closest('.img_div_modal').find('.fadeoverlay').addClass('active');
+                $(this).css('border', '2px solid #3c8dbc');
+                $('.img_div_modal').not(this).css('border', '2px solid transparent');
+            });
+
+            // Add media button click
+            $(document).on('click', '.add_media', function (event) {
+                var content_html = $('div#media_div').find('.fadeoverlay.active').find('img').data('img');
+                var is_image = $('div#media_div').find('.fadeoverlay.active').find('img').data('is_image');
+                var content_name = $('div#media_div').find('.fadeoverlay.active').find('img').data('content_name');
+                var content_type = $('div#media_div').find('.fadeoverlay.active').find('img').data('content_type');
+                var content = "";
+
+                if (popup_target === "media_images") {
+                    if (typeof content_html !== "undefined") {
+                        if (is_image === 1) {
+                            content = '<img src="' + content_html + '">';
+                        } else {
+                            content = '<a href="' + content_html + '">' + content_name + '</a>';
+                        }
+                        InsertHTML(content);
+                        $('#mediaModal').modal('hide');
+                    } else {
+                        alert('Please select a media file');
+                    }
+                } else {
+                    if (is_image === 1) {
+                        addImage(content_html);
+                    }
+                    $('#mediaModal').modal('hide');
+                }
+            });
+
+            // Delete media button
+            $(document).on('click', '.delete_media', function () {
+                $('.feature_image_url').attr('src', '');
+                $('#image').val('');
+                $('#image_preview').css("display", "none");
+            });
+
+            // Collapse/expand functionality
+            $(document).on('click', '[data-widget="collapse"]', function() {
+                var box = $(this).closest('.box');
+                var boxBody = box.find('.box-body');
+                var icon = $(this).find('i');
+
+                if (boxBody.is(':visible')) {
+                    boxBody.slideUp();
+                    box.addClass('collapsed-box');
+                    icon.removeClass('fa-minus').addClass('fa-plus');
+                } else {
+                    boxBody.slideDown();
+                    box.removeClass('collapsed-box');
+                    icon.removeClass('fa-plus').addClass('fa-minus');
+                }
+            });
+
+            // Form submission handler
+            $('#form1').on('submit', function(e) {
+                e.preventDefault();
+
+                var title = $('#title').val().trim();
+                var description = CKEDITOR.instances.editor1.getData().trim();
+                var hasErrors = false;
+
+                // Clear previous errors
+                $('.text-danger').text('');
+                $('.form-group').removeClass('has-error');
+
+                // Validate title
+                if (title === '') {
+                    $('#title').closest('.form-group').addClass('has-error');
+                    $('#title').next('.text-danger').text('Title is required');
+                    hasErrors = true;
+                }
+
+                // Validate description
+                if (description === '') {
+                    $('textarea[name="description"]').closest('.form-group').addClass('has-error');
+                    $('textarea[name="description"]').next('.text-danger').text('Description is required');
+                    hasErrors = true;
+                }
+
+                if (!hasErrors) {
+                    alert('Form would be submitted with:\nTitle: ' + title + '\nDescription: ' + description.substring(0, 100) + '...');
+                }
+            });
+
+            // Initialize tooltips (simple implementation)
+            $('[data-toggle="tooltip"]').hover(
+                function() {
+                    var title = $(this).attr('data-title') || $(this).attr('title');
+                    if (title) {
+                        var tooltip = $('<div class="tooltip fade top in"><div class="tooltip-arrow"></div><div class="tooltip-inner">' + title + '</div></div>');
+                        $('body').append(tooltip);
+                        var pos = $(this).offset();
+                        tooltip.css({
+                            top: pos.top - tooltip.outerHeight() - 10,
+                            left: pos.left + ($(this).outerWidth() / 2) - (tooltip.outerWidth() / 2)
+                        });
+                    }
+                },
+                function() {
+                    $('.tooltip').remove();
+                }
+            );
+        });
+
+        // Function to add image to featured image section
+        function addImage(content_html) {
+            $('.feature_image_url').attr('src', content_html);
+            $('#image').val(content_html);
+            $('#image_preview').css("display", "block");
+        }
+
+        // Function to insert HTML into CKEditor
+        function InsertHTML(content_html) {
+            console.log(content_html);
+            var editor = CKEDITOR.instances.editor1;
+
+            if (editor.mode == 'wysiwyg') {
+                editor.insertHtml(content_html);
+            } else {
+                alert('You must be in WYSIWYG mode');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#98FB98"/>
+      <stop offset="50%" stop-color="#87CEEB"/>
+      <stop offset="100%" stop-color="#E6E6FA"/>
+    </linearGradient>
+    <linearGradient id="text" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2F2F2F"/>
+      <stop offset="50%" stop-color="#4A4A4A"/>
+      <stop offset="100%" stop-color="#2F2F2F"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg)" opacity="0.9"/>
+  
+  <!-- Decorative elements -->
+  <circle cx="50" cy="50" r="20" fill="#98FB98" opacity="0.7"/>
+  <circle cx="350" cy="80" r="15" fill="#87CEEB" opacity="0.7"/>
+  <circle cx="80" cy="250" r="25" fill="#E6E6FA" opacity="0.7"/>
+  <circle cx="320" cy="220" r="18" fill="#FFD700" opacity="0.7"/>
+  
+  <!-- Running child illustration -->
+  <g transform="translate(160, 110)">
+    <!-- Child head -->
+    <circle cx="40" cy="20" r="12" fill="#FFE0B2"/>
+    <!-- Child body -->
+    <ellipse cx="40" cy="40" rx="8" ry="15" fill="#4A90E2"/>
+    <!-- Running legs -->
+    <ellipse cx="35" cy="60" rx="4" ry="12" fill="#FFE0B2" transform="rotate(-20 35 60)"/>
+    <ellipse cx="45" cy="60" rx="4" ry="12" fill="#FFE0B2" transform="rotate(30 45 60)"/>
+    <!-- Running arms -->
+    <ellipse cx="30" cy="35" rx="3" ry="10" fill="#FFE0B2" transform="rotate(-30 30 35)"/>
+    <ellipse cx="50" cy="35" rx="3" ry="10" fill="#FFE0B2" transform="rotate(45 50 35)"/>
+  </g>
+  
+  <!-- Motion lines -->
+  <path d="M120 140 L140 140" stroke="#FFD700" stroke-width="2" opacity="0.7"/>
+  <path d="M115 150 L135 150" stroke="#FFD700" stroke-width="2" opacity="0.5"/>
+  <path d="M110 160 L130 160" stroke="#FFD700" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Text -->
+  <text x="200" y="200" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="24" font-weight="bold">
+    Running Race
+  </text>
+  <text x="200" y="230" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="16">
+    🏃‍♂️ NIBOG Games 🏃‍♂️
+  </text>
+  <text x="200" y="255" text-anchor="middle" fill="url(#text)" font-family="Arial, sans-serif" font-size="14">
+    13-84 months
+  </text>
+</svg>
