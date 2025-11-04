@@ -96,7 +96,7 @@ export function PartnersSection() {
                                 src={partner.image_url}
                                 alt={`${partner.partner_name} Logo`}
                                 fill
-                                className="object-contain p-1 filter grayscale hover:grayscale-0 group-hover:grayscale-0 transition-all duration-500 ease-in-out"
+                                className="object-contain p-1 transition-all duration-500 ease-in-out group-hover:scale-110"
                                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 180px"
                                 priority={partner.display_priority <= 6}
                                 onError={(e) => {
