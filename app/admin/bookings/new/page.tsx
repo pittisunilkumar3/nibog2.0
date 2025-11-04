@@ -239,10 +239,10 @@ export default function NewBookingPage() {
   const [promoCodeInput, setPromoCodeInput] = useState("")
   const [isValidatingPromoCode, setIsValidatingPromoCode] = useState(false)
 
-  // Calculate child's age based on current date (matching user panel logic)
-  const calculateAge = (birthDate: Date) => {
-    const currentDate = new Date()
-    const ageInMonths = differenceInMonths(currentDate, birthDate)
+  // Calculate child's age based on event date (if available) or current date
+  const calculateAge = (birthDate: Date, eventDate?: Date) => {
+    const referenceDate = eventDate || new Date()
+    const ageInMonths = differenceInMonths(referenceDate, birthDate)
     return ageInMonths
   }
 
@@ -252,17 +252,22 @@ export default function NewBookingPage() {
 
     if (dateString) {
       const date = new Date(dateString)
-      // Calculate child's age in months based on the current date
-      const ageInMonths = calculateAge(date)
+      
+      // Find the selected event to get the event date
+      const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
+      const eventDate = selectedApiEvent?.event_date ? new Date(selectedApiEvent.event_date) : undefined;
+      
+      // Calculate child's age in months based on the event date (if available) or current date
+      const ageInMonths = calculateAge(date, eventDate)
       setChildAgeMonths(ageInMonths)
 
       console.log(`👶 Child's date of birth: ${date.toDateString()}`);
-      console.log(`📅 Child's age: ${ageInMonths} months`);
+      console.log(`📅 Event date: ${eventDate ? eventDate.toDateString() : 'Not selected yet (using current date)'}`);
+      console.log(`📅 Child's age on ${eventDate ? 'event date' : 'current date'}: ${ageInMonths} months`);
       console.log(`🎯 Selected event type: ${selectedEventType}`);
 
       // If an event is already selected, fetch games for this age
       if (selectedEventType) {
-        const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
         if (selectedApiEvent) {
           console.log(`🎮 Fetching games for selected event:`, selectedApiEvent);
           fetchGamesByEventAndAge(selectedApiEvent.event_id, ageInMonths);
@@ -515,13 +520,23 @@ export default function NewBookingPage() {
 
     if (selectedApiEvent) {
       console.log("✅ Selected event found:", selectedApiEvent);
-      console.log(`📅 Child DOB: ${childDateOfBirth}, Age: ${childAgeMonths} months`);
+      console.log(`📅 Event date: ${selectedApiEvent.event_date}`);
+      console.log(`📅 Child DOB: ${childDateOfBirth}`);
 
-      // If DOB is set, use the already calculated age (based on current date)
-      if (childDateOfBirth && childAgeMonths !== null) {
-        console.log(`🎮 Fetching games for event ID ${selectedApiEvent.event_id} and age ${childAgeMonths} months`);
+      // If DOB is set, recalculate age based on event date
+      if (childDateOfBirth) {
+        const birthDate = new Date(childDateOfBirth);
+        const eventDate = selectedApiEvent.event_date ? new Date(selectedApiEvent.event_date) : undefined;
+        
+        // Recalculate age based on event date
+        const ageInMonths = calculateAge(birthDate, eventDate);
+        setChildAgeMonths(ageInMonths);
+        
+        console.log(`📅 Recalculated child's age on ${eventDate ? 'event date' : 'current date'}: ${ageInMonths} months`);
+        console.log(`🎮 Fetching games for event ID ${selectedApiEvent.event_id} and age ${ageInMonths} months`);
+        
         // Fetch games for this event and child age
-        fetchGamesByEventAndAge(selectedApiEvent.event_id, childAgeMonths);
+        fetchGamesByEventAndAge(selectedApiEvent.event_id, ageInMonths);
       } else {
         console.log(`⚠️ Child date of birth not set, cannot fetch games yet`);
       }
@@ -1806,6 +1821,16 @@ export default function NewBookingPage() {
                   {childAgeMonths !== null && (
                     <p className="text-sm text-muted-foreground">
                       Child's age: {childAgeMonths} months
+                      {selectedEventType && apiEvents.find(event => event.event_title === selectedEventType)?.event_date && (
+                        <span className="text-xs block mt-1">
+                          (calculated on event date: {new Date(apiEvents.find(event => event.event_title === selectedEventType)!.event_date).toLocaleDateString()})
+                        </span>
+                      )}
+                      {!selectedEventType && (
+                        <span className="text-xs block mt-1 text-orange-600">
+                          (Select an event to calculate age on event date)
+                        </span>
+                      )}
                     </p>
                   )}
                 </div>
