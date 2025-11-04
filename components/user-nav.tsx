@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Calendar, Baby, Settings, CreditCard, Heart } from "lucide-react"
+import { LogOut, User, Calendar, Baby, Settings, CreditCard } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
@@ -83,12 +83,6 @@ export function UserNav() {
             <Link href="/dashboard/children" className="cursor-pointer">
               <Baby className="mr-2 h-4 w-4" />
               <span>My Children</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/favorites" className="cursor-pointer">
-              <Heart className="mr-2 h-4 w-4" />
-              <span>Saved Events</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
