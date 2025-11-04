@@ -86,10 +86,10 @@ export function PartnersSection() {
                   partners.map((partner) => (
                     <Card
                       key={partner.id}
-                      className="group w-[180px] bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:scale-110 flex-shrink-0"
+                      className="group w-[180px] bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:scale-105 flex-shrink-0"
                     >
-                      <CardContent className="flex items-center justify-center p-8 aspect-square">
-                        <div className="relative w-full h-full flex items-center justify-center">
+                      <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
+                        <div className="relative w-full aspect-square flex items-center justify-center">
                           {partner.image_url ? (
                             <div className="relative w-full h-full">
                               <Image
@@ -112,9 +112,6 @@ export function PartnersSection() {
                                             ${partner.partner_name.charAt(0).toUpperCase()}
                                           </span>
                                         </div>
-                                        <span class="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
-                                          ${partner.partner_name}
-                                        </span>
                                       </div>
                                     `
                                   }
@@ -129,12 +126,12 @@ export function PartnersSection() {
                                   {partner.partner_name.charAt(0).toUpperCase()}
                                 </span>
                               </div>
-                              <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 group-hover:text-primary transition-colors">
-                                {partner.partner_name}
-                              </span>
                             </div>
                           )}
                         </div>
+                        <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 text-center group-hover:text-primary transition-colors line-clamp-2">
+                          {partner.partner_name}
+                        </h3>
                       </CardContent>
                     </Card>
                   ))
