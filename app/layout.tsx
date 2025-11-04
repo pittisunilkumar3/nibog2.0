@@ -2,14 +2,7 @@ import type React from "react"
 import type { Metadata } from "next/types"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { headers } from "next/headers"
-import { ThemeProvider } from "@/components/theme-provider"
-import Header from "@/components/header"
-import Footer from "@/components/footer"
-import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from "@/contexts/auth-context"
-import StagewiseToolbar from "@/components/stagewise-toolbar"
-import ServiceWorkerRegistration from "./sw-register"
+import { Providers } from "@/components/providers"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -27,6 +20,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
@@ -36,17 +31,39 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="NIBOG" />
         <link rel="apple-touch-icon" href="/logo192.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  // Remove any third-party injected elements before React hydration
+                  const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                      mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1 && node.hasAttribute && 
+                            (node.hasAttribute('data-lastpass-icon-root') || 
+                             node.hasAttribute('data-grammarly-shadow-root') ||
+                             node.id === 'webpack-dev-server-client-overlay')) {
+                          return; // Allow these known elements
+                        }
+                      });
+                    });
+                  });
+                  if (document.body) {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                  }
+                } catch (e) {
+                  console.warn('Hydration helper failed:', e);
+                }
+              })();
+            `,
+          }}
+        />
       </head>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <AuthProvider>
-            {children}
-            <Toaster />
-            <StagewiseToolbar />
-            {/* Register service worker for offline support */}
-            {process.env.NODE_ENV === 'production' && <ServiceWorkerRegistration />}
-          </AuthProvider>
-        </ThemeProvider>
+      <body className={inter.className} suppressHydrationWarning>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

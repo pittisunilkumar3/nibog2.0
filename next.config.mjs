@@ -14,6 +14,11 @@ const nextConfig = {
       },
     ],
   },
+  // Suppress hydration warnings in development
+  reactStrictMode: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
 };
 
 export default nextConfig;
