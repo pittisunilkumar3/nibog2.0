@@ -67,6 +67,7 @@ export default function DashboardPage() {
         const isNotCancelled = booking.status?.toLowerCase() !== "cancelled"
         return isFuture && isNotCancelled
       })
+      .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()) // Sort by date ascending (nearest first)
       .slice(0, 5) // Show only first 5
   }, [customerProfile])
 
@@ -90,6 +91,11 @@ export default function DashboardPage() {
       .slice(0, 5) // Show only first 5
   }, [customerProfile])
 
+  // Get all bookings count for display
+  const totalBookingsCount = useMemo(() => {
+    return customerProfile?.bookings?.length || 0
+  }, [customerProfile])
+
   // Get recent payments from bookings
   const recentPayments = useMemo(() => {
     if (!customerProfile?.bookings) {
@@ -111,6 +117,15 @@ export default function DashboardPage() {
       .slice(0, 5) // Show only 5 most recent payments
 
     return allPayments
+  }, [customerProfile])
+
+  // Get total payments count
+  const totalPaymentsCount = useMemo(() => {
+    if (!customerProfile?.bookings) return 0
+    
+    return customerProfile.bookings
+      .filter(booking => booking.payments && booking.payments.length > 0)
+      .reduce((count, booking) => count + booking.payments.length, 0)
   }, [customerProfile])
 
   // Get user initials for avatar
@@ -372,7 +387,12 @@ export default function DashboardPage() {
         <div className="md:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>My Bookings</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>My Bookings</CardTitle>
+                {totalBookingsCount > 0 && (
+                  <Badge variant="secondary">{totalBookingsCount} Total</Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="upcoming" className="w-full">
@@ -444,6 +464,13 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       ))}
+                      {totalBookingsCount > 5 && (
+                        <div className="text-center py-2">
+                          <p className="text-sm text-muted-foreground">
+                            Showing {upcomingBookings.length} of {totalBookingsCount} total bookings
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </TabsContent>
@@ -526,8 +553,15 @@ export default function DashboardPage() {
 
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Recent Payments</CardTitle>
-              <CardDescription>Your recent payment transactions</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Recent Payments</CardTitle>
+                  <CardDescription>Your recent payment transactions</CardDescription>
+                </div>
+                {totalPaymentsCount > 0 && (
+                  <Badge variant="secondary">{totalPaymentsCount} Total</Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {recentPayments.length === 0 ? (
@@ -543,7 +577,11 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {recentPayments.map((payment) => (
+                  {recentPayments.map((payment) => {
+                    const paymentStatus = payment.payment_status?.toLowerCase() || ''
+                    const isPaid = paymentStatus === 'paid' || paymentStatus === 'successful'
+                    
+                    return (
                     <div key={payment.payment_id} className="rounded-lg border p-4">
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start justify-between">
@@ -554,10 +592,10 @@ export default function DashboardPage() {
                             </p>
                           </div>
                           <Badge
-                            variant={payment.payment_status === "successful" ? "default" : "secondary"}
-                            className={payment.payment_status === "successful" ? "bg-green-500 hover:bg-green-600" : ""}
+                            variant={isPaid ? "default" : "secondary"}
+                            className={isPaid ? "bg-green-500 hover:bg-green-600" : ""}
                           >
-                            {payment.payment_status === "successful" ? "Paid" : payment.payment_status}
+                            {isPaid ? "Paid" : payment.payment_status}
                           </Badge>
                         </div>
 
@@ -587,7 +625,14 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
+                  {totalPaymentsCount > 5 && (
+                    <div className="text-center py-2">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {recentPayments.length} of {totalPaymentsCount} total payments
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

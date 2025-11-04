@@ -54,9 +54,10 @@ export default function PaymentsPage() {
   // Filter payments based on status and search query
   const filteredPayments = allPayments.filter((payment) => {
     // Filter by tab
-    if (activeTab === "paid" && payment.payment_status !== "Paid") return false
-    if (activeTab === "pending" && payment.payment_status !== "Pending") return false
-    if (activeTab === "refunded" && payment.payment_status !== "Refunded") return false
+    const status = payment.payment_status?.toLowerCase() || ''
+    if (activeTab === "paid" && status !== "paid" && status !== "successful") return false
+    if (activeTab === "pending" && status !== "pending") return false
+    if (activeTab === "refunded" && status !== "refunded") return false
 
     // Filter by search query
     if (!searchQuery) return true
@@ -71,13 +72,16 @@ export default function PaymentsPage() {
 
   // Calculate totals
   const totalPaid = allPayments
-    .filter((p) => p.payment_status === "Paid")
+    .filter((p) => {
+      const status = p.payment_status?.toLowerCase() || ''
+      return status === "paid" || status === "successful"
+    })
     .reduce((sum, p) => sum + p.amount, 0)
   const totalPending = allPayments
-    .filter((p) => p.payment_status === "Pending")
+    .filter((p) => p.payment_status?.toLowerCase() === "pending")
     .reduce((sum, p) => sum + p.amount, 0)
   const totalRefunded = allPayments
-    .filter((p) => p.payment_status === "Refunded")
+    .filter((p) => p.payment_status?.toLowerCase() === "refunded")
     .reduce((sum, p) => sum + p.amount, 0)
 
   // Handle download receipt
@@ -88,38 +92,45 @@ export default function PaymentsPage() {
 
   // Get status badge
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return (
-          <Badge className="bg-green-500 hover:bg-green-600">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Paid
-          </Badge>
-        )
-      case "Pending":
-        return (
-          <Badge variant="outline" className="text-amber-600 border-amber-600">
-            <Clock className="mr-1 h-3 w-3" />
-            Pending
-          </Badge>
-        )
-      case "Refunded":
-        return (
-          <Badge variant="outline" className="text-blue-600 border-blue-600">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Refunded
-          </Badge>
-        )
-      case "Failed":
-        return (
-          <Badge className="bg-red-500 hover:bg-red-600">
-            <XCircle className="mr-1 h-3 w-3" />
-            Failed
-          </Badge>
-        )
-      default:
-        return <Badge variant="outline">{status}</Badge>
+    const lowerStatus = status?.toLowerCase() || ''
+    
+    if (lowerStatus === "paid" || lowerStatus === "successful") {
+      return (
+        <Badge className="bg-green-500 hover:bg-green-600">
+          <CheckCircle className="mr-1 h-3 w-3" />
+          Paid
+        </Badge>
+      )
     }
+    
+    if (lowerStatus === "pending") {
+      return (
+        <Badge variant="outline" className="text-amber-600 border-amber-600">
+          <Clock className="mr-1 h-3 w-3" />
+          Pending
+        </Badge>
+      )
+    }
+    
+    if (lowerStatus === "refunded") {
+      return (
+        <Badge variant="outline" className="text-blue-600 border-blue-600">
+          <CheckCircle className="mr-1 h-3 w-3" />
+          Refunded
+        </Badge>
+      )
+    }
+    
+    if (lowerStatus === "failed") {
+      return (
+        <Badge className="bg-red-500 hover:bg-red-600">
+          <XCircle className="mr-1 h-3 w-3" />
+          Failed
+        </Badge>
+      )
+    }
+    
+    return <Badge variant="outline">{status}</Badge>
   }
 
   // Show loading state while checking authentication or loading profile
@@ -271,7 +282,7 @@ export default function PaymentsPage() {
                           <div className="text-lg font-semibold">₹{payment.amount}</div>
                         </div>
                         <div className="flex flex-row gap-2 sm:flex-col">
-                          {payment.payment_status === "Paid" && (
+                          {(payment.payment_status?.toLowerCase() === "paid" || payment.payment_status?.toLowerCase() === "successful") && (
                             <Button
                               variant="outline"
                               size="sm"

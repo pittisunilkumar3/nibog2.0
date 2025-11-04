@@ -513,9 +513,50 @@ export function useCustomerProfile(userId: number | null) {
 
       const result = await response.json();
 
-      // The API returns an array with one object containing user data
+      // The API returns an array with potentially duplicate records (same user_id, different parent_id)
+      // We need to merge all bookings and children into a single profile
       if (Array.isArray(result) && result.length > 0) {
-        return result[0];
+        // If only one record, return it as is
+        if (result.length === 1) {
+          return result[0];
+        }
+
+        // Merge multiple records - consolidate all unique bookings and children
+        const mergedProfile: CustomerProfile = {
+          ...result[0], // Use first record as base
+          children: [],
+          bookings: [],
+        };
+
+        // Collect all unique children (deduplicate by child_id)
+        const childrenMap = new Map<number, CustomerProfileChild>();
+        result.forEach((record: CustomerProfile) => {
+          if (record.children && Array.isArray(record.children)) {
+            record.children.forEach(child => {
+              if (!childrenMap.has(child.child_id)) {
+                childrenMap.set(child.child_id, child);
+              }
+            });
+          }
+        });
+        mergedProfile.children = Array.from(childrenMap.values());
+
+        // Collect all unique bookings (deduplicate by booking_id)
+        const bookingsMap = new Map<number, CustomerProfileBooking>();
+        result.forEach((record: CustomerProfile) => {
+          if (record.bookings && Array.isArray(record.bookings)) {
+            record.bookings.forEach(booking => {
+              if (!bookingsMap.has(booking.booking_id)) {
+                bookingsMap.set(booking.booking_id, booking);
+              }
+            });
+          }
+        });
+        mergedProfile.bookings = Array.from(bookingsMap.values());
+
+        console.log(`Merged ${result.length} records into profile with ${mergedProfile.children.length} children and ${mergedProfile.bookings.length} bookings`);
+        
+        return mergedProfile;
       }
 
       return result;
