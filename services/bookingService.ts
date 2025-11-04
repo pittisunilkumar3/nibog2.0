@@ -1055,4 +1055,52 @@ export async function createBooking(bookingData: {
   }
 }
 
+/**
+ * Delete a booking
+ * @param bookingId The booking ID to delete
+ * @returns Promise with success response
+ */
+export async function deleteBooking(bookingId: number): Promise<{ success: boolean }> {
+  try {
+    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/bookings/delete', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        booking_id: bookingId
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `Failed to delete booking: ${response.status}`;
+      
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch (e) {
+        // If we can't parse the error as JSON, use the status code
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    
+    // The API returns [{ "success": true }]
+    if (Array.isArray(data) && data.length > 0) {
+      return data[0];
+    } else if (!Array.isArray(data) && data.success !== undefined) {
+      return data;
+    }
+
+    throw new Error("Invalid response format from delete booking API");
+  } catch (error: any) {
+    throw error;
+  }
+}
+
 

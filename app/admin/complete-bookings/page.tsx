@@ -5,9 +5,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Eye, Edit, Check, X, AlertTriangle, Loader2, RefreshCw, CheckCircle, Mail, Phone, Filter, XCircle, Calendar, CalendarDays } from "lucide-react"
+import { Eye, Edit, Check, X, AlertTriangle, Loader2, RefreshCw, CheckCircle, Mail, Phone, Filter, XCircle, Calendar, CalendarDays, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { getAllBookings, getPaginatedBookings, updateBookingStatus, Booking, PaginatedBookingsResponse } from "@/services/bookingService"
+import { getAllBookings, getPaginatedBookings, updateBookingStatus, deleteBooking, Booking, PaginatedBookingsResponse } from "@/services/bookingService"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -352,6 +352,30 @@ export default function CompleteBookingsPage() {
     }
   }
 
+  // Handle delete booking
+  const handleDeleteBooking = async (booking: Booking) => {
+    try {
+      setIsProcessing(booking.booking_id)
+      await deleteBooking(booking.booking_id)
+
+      // Remove the booking from the list
+      setBookings(bookings.filter(b => b.booking_id !== booking.booking_id))
+
+      toast({
+        title: "Success",
+        description: `Booking #${booking.booking_id} has been deleted.`,
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete booking.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(null)
+    }
+  }
+
   // Define table actions
   const actions: TableAction<Booking>[] = [
     {
@@ -371,11 +395,10 @@ export default function CompleteBookingsPage() {
       disabled: (booking) => booking.booking_status?.toLowerCase() !== 'pending',
     },
     {
-      label: "Cancel",
-      icon: <X className="h-4 w-4 mr-2" />,
-      onClick: handleCancelBooking,
+      label: "Delete",
+      icon: <Trash2 className="h-4 w-4 mr-2" />,
+      onClick: handleDeleteBooking,
       variant: "destructive",
-      disabled: (booking) => !['pending', 'confirmed'].includes(booking.booking_status?.toLowerCase() || ''),
     },
   ]
 
