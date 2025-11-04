@@ -25,6 +25,7 @@ import { sendTicketEmail, TicketEmailData } from "@/services/ticketEmailService"
 // Promo code functionality simplified for admin panel
 import { getEventsByCityId, getGamesByAgeAndEvent } from "@/services/eventService"
 import { differenceInMonths } from "date-fns"
+import { formatDateShort } from "@/lib/utils"
 import { initiatePhonePePayment, createManualPayment, ManualPaymentData } from "@/services/paymentService"
 import { sendPaymentLinkEmail, generateWhatsAppMessage, PaymentLinkEmailData } from "@/services/paymentLinkEmailService"
 
@@ -1829,6 +1830,11 @@ export default function NewBookingPage() {
                       {!selectedEventType && (
                         <span className="text-xs block mt-1 text-orange-600">
                           (Select an event to calculate age on event date)
+                        </span>
+                      )}
+                      {selectedEventType && apiEvents.find(event => event.event_title === selectedEventType)?.event_date && (
+                        <span className="text-xs block mt-1">
+                          Event Date: {formatDateShort(apiEvents.find(event => event.event_title === selectedEventType)!.event_date)}
                         </span>
                       )}
                     </p>

@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 import Link from "next/link"
-import { getAllBookings, BookingWithDetails } from "@/services/bookingService"
+import { formatDateShort } from "@/lib/utils"
+import { getAllBookings, Booking } from "@/services/bookingService"
 import { SkeletonTable } from "@/components/ui/skeleton-loader"
 
 // Mock data - in a real app, this would come from an API
@@ -83,7 +84,7 @@ const getStatusBadge = (status: string) => {
 }
 
 export default function AdminRecentBookings() {
-  const [bookings, setBookings] = useState<BookingWithDetails[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -144,7 +145,7 @@ export default function AdminRecentBookings() {
                 <TableCell>{booking.parent_name}</TableCell>
                 <TableCell>{booking.event_title}</TableCell>
                 <TableCell>
-                  {new Date(booking.booking_created_at).toLocaleDateString()} at{' '}
+                  {formatDateShort(booking.booking_created_at)} at{' '}
                   {new Date(booking.booking_created_at).toLocaleTimeString()}
                 </TableCell>
                 <TableCell>{booking.child_full_name}</TableCell>

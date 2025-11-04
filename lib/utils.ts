@@ -98,7 +98,7 @@ export function formatPrice(price: number | string | undefined): string {
   }).format(roundedPrice);
 }
 
-// Format date to Indian format
+// Format date to Indian format (long format: "14 March 2024")
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date
   return d.toLocaleDateString("en-IN", {
@@ -106,6 +106,15 @@ export function formatDate(date: Date | string): string {
     month: "long",
     year: "numeric",
   })
+}
+
+// Format date to dd/mm/yy format (short format: "14/03/24")
+export function formatDateShort(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = String(d.getFullYear()).slice(-2)
+  return `${day}/${month}/${year}`
 }
 
 // Format time

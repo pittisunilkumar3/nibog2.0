@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Check, Loader2, AlertTriangle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { formatDateShort } from "@/lib/utils"
 import { getBookingById, updateBookingStatus, type Booking } from "@/services/bookingService"
 
 // Booking statuses that can be updated
@@ -170,12 +171,12 @@ export default function EditBookingPage({ params }: Props) {
             <div className="space-y-1">
               <Label className="text-sm font-medium text-muted-foreground">Child</Label>
               <p className="text-sm font-medium break-words">{booking.child_full_name}</p>
-              <p className="text-xs text-muted-foreground">{booking.child_gender}, Born: {new Date(booking.child_date_of_birth).toLocaleDateString()}</p>
+              <p className="text-xs text-muted-foreground">{booking.child_gender}, Born: {formatDateShort(booking.child_date_of_birth)}</p>
             </div>
             <div className="space-y-1">
               <Label className="text-sm font-medium text-muted-foreground">Event</Label>
               <p className="text-sm font-medium break-words">{booking.event_title}</p>
-              <p className="text-xs text-muted-foreground">{new Date(booking.event_event_date).toLocaleDateString()}</p>
+              <p className="text-xs text-muted-foreground">{formatDateShort(booking.event_event_date)}</p>
             </div>
             <div className="space-y-1">
               <Label className="text-sm font-medium text-muted-foreground">Venue</Label>

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { formatDateShort } from "@/lib/utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -184,7 +185,7 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
                   <div className="text-xs text-muted-foreground">{entry.phone}</div>
                 </TableCell>
                 <TableCell>
-                  {new Date(entry.requestDate).toLocaleDateString()}
+                  {formatDateShort(entry.requestDate)}
                 </TableCell>
                 <TableCell>
                   {getStatusBadge(entry.status)}

@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Calendar, Clock, MapPin, User, Baby, CreditCard, Loader2, AlertTriangle, RefreshCw, Mail, Phone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
+import { formatDateShort } from "@/lib/utils"
 
 // Interface for booking details
 interface BookingDetails {
@@ -191,11 +192,7 @@ export default function BookingDetailPage({ params }: Props) {
                       <div>
                         <p className="font-medium">{booking.event_title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(booking.event_date).toLocaleDateString('en-IN', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
+                          {formatDateShort(booking.event_date)}
                         </p>
                       </div>
                     </div>
@@ -228,11 +225,7 @@ export default function BookingDetailPage({ params }: Props) {
                       <div>
                         <p className="font-medium">{booking.child_name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(booking.date_of_birth).toLocaleDateString('en-IN', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
+                          DOB: {formatDateShort(booking.date_of_birth)}
                         </p>
                         <p className="text-xs text-muted-foreground capitalize">{booking.gender}</p>
                       </div>
@@ -283,11 +276,7 @@ export default function BookingDetailPage({ params }: Props) {
                 <div>
                   <p className="text-sm font-medium">Booking Date</p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(booking.booking_created_at).toLocaleDateString('en-IN', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
+                    {formatDateShort(booking.booking_created_at)}
                   </p>
                 </div>
               </div>

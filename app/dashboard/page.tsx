@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { formatAge } from "@/lib/age-calculation"
+import { formatDateShort } from "@/lib/utils"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { useCustomerProfile } from "@/lib/swr-hooks"
@@ -430,7 +431,7 @@ export default function DashboardPage() {
                                 Booking Ref: {booking.booking_ref}
                               </p>
                               <div className="mt-1 flex items-center gap-2">
-                                <Badge variant="outline">{format(new Date(booking.event_date), "PPP")}</Badge>
+                                <Badge variant="outline">{formatDateShort(booking.event_date)}</Badge>
                               </div>
                               {booking.games && booking.games.length > 0 && (
                                 <p className="mt-2 text-sm">
@@ -497,7 +498,7 @@ export default function DashboardPage() {
                                 Booking Ref: {booking.booking_ref}
                               </p>
                               <div className="mt-1 flex items-center gap-2">
-                                <Badge variant="outline">{format(new Date(booking.event_date), "PPP")}</Badge>
+                                <Badge variant="outline">{formatDateShort(booking.event_date)}</Badge>
                               </div>
                               {booking.games && booking.games.length > 0 && (
                                 <p className="mt-2 text-sm">
@@ -619,7 +620,7 @@ export default function DashboardPage() {
                           <div>
                             <p className="text-xs text-muted-foreground">Payment Date</p>
                             <p className="text-xs">
-                              {format(new Date(payment.payment_date), "PPp")}
+                              {formatDateShort(payment.payment_date)}
                             </p>
                           </div>
                         </div>

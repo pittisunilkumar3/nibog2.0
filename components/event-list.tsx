@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar, Clock, MapPin, Heart } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useEvents } from "@/lib/swr-hooks"
+import { formatDateShort } from "@/lib/utils"
 
 // Import EventListItem type for proper typing
 import { EventListItem } from "@/types"
@@ -136,18 +137,7 @@ const EventCard = memo(({ event }: { event: EventListItem }) => {
                 <div className="min-w-0 flex-1">
                   <span className="font-medium text-neutral-charcoal">Date:</span>
                   <span className="ml-1 truncate">
-                    {(() => {
-                      try {
-                        return new Date(event.date).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        });
-                      } catch (error) {
-                        return event.date; // Fallback to original date string
-                      }
-                    })()}
+                    {formatDateShort(event.date)}
                   </span>
                 </div>
               </div>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Separator } from "@/components/ui/separator"
 import { Calendar, Clock, MapPin, Baby, Download, ArrowLeft } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
+import { formatDateShort } from "@/lib/utils"
 
 type TicketClientProps = {
   bookingData: any // Real booking data from API
@@ -50,11 +51,7 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
   const formatDate = (dateString: string) => {
     if (!dateString) return 'TBD'
     try {
-      return new Date(dateString).toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
+      return formatDateShort(dateString)
     } catch {
       return dateString
     }
