@@ -70,7 +70,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b-4 border-sunshine-300/50 dark:border-sunshine-600/50 bg-gradient-to-r from-sunshine-100/95 via-coral-100/95 to-mint-100/95 dark:from-sunshine-900/95 dark:via-coral-900/95 dark:to-mint-900/95 backdrop-blur-lg supports-[backdrop-filter]:bg-transparent shadow-2xl transition-all duration-300 hover:shadow-3xl">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_50%,rgba(255,215,0,0.3),transparent_70%),radial-gradient(circle_at_85%_30%,rgba(255,127,127,0.3),transparent_70%),radial-gradient(circle_at_50%_80%,rgba(152,251,152,0.2),transparent_70%)] animate-rainbow-shift" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_50%,rgba(255,215,0,0.3),transparent_70%),radial-gradient(circle_at_85%_30%,rgba(255,127,127,0.3),transparent_70%),radial-gradient(circle_at_50%_80%,rgba(152,251,152,0.2),transparent_70%)] animate-rainbow-shift pointer-events-none" />
       <div className="container flex h-20 md:h-24 items-center justify-between relative z-10">
         <div className="flex items-center gap-6 md:gap-10">
           <Link href="/" className="flex items-center h-full py-2">
@@ -123,7 +123,7 @@ export default function Header() {
             )}
           </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 relative z-20">
           <div className="hidden md:flex md:items-center md:gap-3">
             <ModeToggle />
             {isAuthenticated ? (
@@ -132,13 +132,13 @@ export default function Header() {
               <>
                 <Button 
                   variant="ghost" 
-                  className="rounded-full px-4 font-medium text-blue-600 dark:text-blue-300 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-200 transition-all duration-300 hover:scale-105"
+                  className="rounded-full px-4 font-medium text-blue-600 dark:text-blue-300 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-200 transition-all duration-300 hover:scale-105 relative z-10"
                   asChild
                 >
                   <Link href="/login">Login</Link>
                 </Button>
                 <Button 
-                  className="rounded-full px-5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 border-0 font-medium shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  className="rounded-full px-5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 border-0 font-medium shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 relative z-10"
                   asChild
                 >
                   <Link href="/register">Sign up</Link>

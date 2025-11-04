@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(token)
     // Store user data in localStorage for persistence
     if (typeof window !== 'undefined') {
-      localStorage.setItem('user', JSON.stringify(userData))
+      localStorage.setItem('nibog-user', JSON.stringify(userData))
     }
   }, [])
 
@@ -65,7 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     clearSession()
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('user')
+      localStorage.removeItem('nibog-user')
+      localStorage.removeItem('user') // Remove old key as well
       router.push('/login')
     }
   }, [router])
@@ -76,9 +77,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const isAuthenticated = await isClientAuthenticated()
         if (isAuthenticated && typeof window !== 'undefined') {
-          const storedUser = localStorage.getItem('user')
+          const storedUser = localStorage.getItem('nibog-user') || localStorage.getItem('user')
           if (storedUser) {
             setUser(JSON.parse(storedUser))
+            // Migrate old key to new key
+            if (localStorage.getItem('user')) {
+              localStorage.setItem('nibog-user', storedUser)
+              localStorage.removeItem('user')
+            }
+          } else {
+            // Session exists but no user data, clear session
+            clearSession()
+            setUser(null)
           }
         } else {
           setUser(null)
