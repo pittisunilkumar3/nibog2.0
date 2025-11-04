@@ -1293,26 +1293,6 @@ export default function EditEventPage({ params }: Props) {
                               if (inputValue === '' || /^\d+$/.test(inputValue)) {
                                 const price = inputValue === '' ? 0 : parseInt(inputValue) || 0
                                 updateGame(activeGameIndex, "customPrice", price)
-
-                                // Update all slot prices if they match the previous custom price
-                                const prevPrice = game.customPrice ?? template.suggestedPrice ?? 0
-                                const slotsToUpdate = game.slots.filter(slot => slot.price === prevPrice)
-
-                                if (slotsToUpdate.length > 0) {
-                                  const updatedSlots = game.slots.map(slot => {
-                                    if (slot.price === prevPrice) {
-                                      return { ...slot, price }
-                                    }
-                                    return slot
-                                  })
-
-                                  setSelectedGames(selectedGames.map((g, i) => {
-                                    if (i === activeGameIndex) {
-                                      return { ...g, slots: updatedSlots }
-                                    }
-                                    return g
-                                  }))
-                                }
                               }
                             }}
                           />
