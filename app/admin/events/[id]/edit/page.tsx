@@ -1283,31 +1283,36 @@ export default function EditEventPage({ params }: Props) {
                           <Label htmlFor="customPrice">Custom Price (₹)</Label>
                           <Input
                             id="customPrice"
-                            type="number"
-                            min="0"
-                            value={game.customPrice || template.suggestedPrice}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={game.customPrice ?? template.suggestedPrice ?? 0}
                             onChange={(e) => {
-                              const price = parseInt(e.target.value)
-                              updateGame(activeGameIndex, "customPrice", price)
+                              const inputValue = e.target.value
+                              // Only allow numbers
+                              if (inputValue === '' || /^\d+$/.test(inputValue)) {
+                                const price = inputValue === '' ? 0 : parseInt(inputValue) || 0
+                                updateGame(activeGameIndex, "customPrice", price)
 
-                              // Update all slot prices if they match the previous custom price
-                              const prevPrice = game.customPrice || template.suggestedPrice
-                              const slotsToUpdate = game.slots.filter(slot => slot.price === prevPrice)
+                                // Update all slot prices if they match the previous custom price
+                                const prevPrice = game.customPrice ?? template.suggestedPrice ?? 0
+                                const slotsToUpdate = game.slots.filter(slot => slot.price === prevPrice)
 
-                              if (slotsToUpdate.length > 0) {
-                                const updatedSlots = game.slots.map(slot => {
-                                  if (slot.price === prevPrice) {
-                                    return { ...slot, price }
-                                  }
-                                  return slot
-                                })
+                                if (slotsToUpdate.length > 0) {
+                                  const updatedSlots = game.slots.map(slot => {
+                                    if (slot.price === prevPrice) {
+                                      return { ...slot, price }
+                                    }
+                                    return slot
+                                  })
 
-                                setSelectedGames(selectedGames.map((g, i) => {
-                                  if (i === activeGameIndex) {
-                                    return { ...g, slots: updatedSlots }
-                                  }
-                                  return g
-                                }))
+                                  setSelectedGames(selectedGames.map((g, i) => {
+                                    if (i === activeGameIndex) {
+                                      return { ...g, slots: updatedSlots }
+                                    }
+                                    return g
+                                  }))
+                                }
                               }
                             }}
                           />
@@ -1407,10 +1412,18 @@ export default function EditEventPage({ params }: Props) {
                                 <Label htmlFor={`price-${slot.id}`}>Price (₹)</Label>
                                 <Input
                                   id={`price-${slot.id}`}
-                                  type="number"
-                                  min="0"
-                                  value={slot.price}
-                                  onChange={(e) => updateSlot(activeGameIndex, slot.id, "price", parseInt(e.target.value))}
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={slot.price ?? 0}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value
+                                    // Only allow numbers
+                                    if (inputValue === '' || /^\d+$/.test(inputValue)) {
+                                      const price = inputValue === '' ? 0 : parseInt(inputValue) || 0
+                                      updateSlot(activeGameIndex, slot.id, "price", price)
+                                    }
+                                  }}
                                 />
                               </div>
                               <div className="space-y-2">
