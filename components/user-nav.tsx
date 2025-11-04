@@ -33,12 +33,16 @@ export function UserNav() {
     : 'U'
 
   const handleLogout = () => {
-    logout()
+    // Show toast first
     toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
+      title: "Logging out...",
+      description: "Please wait while we log you out.",
     })
-    router.push('/')
+    
+    // Small delay to ensure toast is visible
+    setTimeout(() => {
+      logout()
+    }, 300)
   }
 
   return (

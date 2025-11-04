@@ -93,15 +93,35 @@ export async function middleware(request: NextRequest) {
   const superadminToken = request.cookies.get('superadmin-token')?.value;
   const userSession = request.cookies.get('nibog-session')?.value;
 
+  // Debug logging for protected paths
+  if (pathname.startsWith('/register-event') || pathname.startsWith('/dashboard') || pathname.startsWith('/checkout')) {
+    console.log(`\n[Middleware Debug] ==================`);
+    console.log(`[Middleware] Pathname: ${pathname}`);
+    console.log(`[Middleware] All cookies:`, request.cookies.getAll().map(c => `${c.name}=${c.value.substring(0, 20)}...`));
+    console.log(`[Middleware] nibog-session exists:`, !!userSession);
+    console.log(`[Middleware] superadmin-token exists:`, !!superadminToken);
+    console.log(`[Middleware Debug] ==================\n`);
+  }
+
+  // Create response with no-cache headers by default
+  const response = NextResponse.next();
+  
+  // Add no-cache headers to all responses to prevent local caching
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+
   // Define public paths that don't require authentication
   const publicPaths = [
     '/',
     '/login',
+    '/logout',
     '/register',
     '/forgot-password',
     '/reset-password',
     '/superadmin/login',
     '/api/auth/login',
+    '/api/auth/logout',
     '/api/auth/register',
     '/api/auth/forgot-password',
     '/api/auth/reset-password',
@@ -172,9 +192,13 @@ export async function middleware(request: NextRequest) {
       // If already logged in, redirect to admin or the specified redirect URL
       if (superadminToken) {
         const redirectPath = searchParams.get('redirect') || '/admin';
-        return NextResponse.redirect(new URL(redirectPath, request.url));
+        const redirect = NextResponse.redirect(new URL(redirectPath, request.url));
+        redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+        redirect.headers.set('Pragma', 'no-cache');
+        redirect.headers.set('Expires', '0');
+        return redirect;
       }
-      return NextResponse.next();
+      return response;
     }
 
     // For all other admin routes, verify superadmin
@@ -184,7 +208,11 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL('/superadmin/login', request.url);
       // Preserve the original intended URL for redirect after login
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      const redirect = NextResponse.redirect(loginUrl);
+      redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      redirect.headers.set('Pragma', 'no-cache');
+      redirect.headers.set('Expires', '0');
+      return redirect;
     }
 
     // Add user info to request headers for API routes
@@ -193,27 +221,41 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set('x-user-email', user.email);
       requestHeaders.set('x-user-role', 'superadmin');
 
-      return NextResponse.next({
+      const apiResponse = NextResponse.next({
         request: {
           headers: requestHeaders,
         },
       });
+      apiResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      apiResponse.headers.set('Pragma', 'no-cache');
+      apiResponse.headers.set('Expires', '0');
+      return apiResponse;
     }
 
-    return NextResponse.next();
+    return response;
   }
 
   // Handle user protected routes (dashboard, checkout, register-event, etc.)
   if (isUserProtectedPath) {
+    console.log(`[Middleware] Protected path accessed: ${pathname}`);
+    console.log(`[Middleware] userSession exists:`, !!userSession);
+    console.log(`[Middleware] userSession value (first 20 chars):`, userSession?.substring(0, 20));
+    
     // If user is not authenticated, redirect to login
     if (!userSession) {
+      console.log(`[Middleware] No user session found, redirecting to login`);
       const loginUrl = new URL('/login', request.url);
       // Preserve the original intended URL for redirect after login
       loginUrl.searchParams.set('callbackUrl', pathname);
-      return NextResponse.redirect(loginUrl);
+      const redirect = NextResponse.redirect(loginUrl);
+      redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      redirect.headers.set('Pragma', 'no-cache');
+      redirect.headers.set('Expires', '0');
+      return redirect;
     }
+    console.log(`[Middleware] User authenticated, allowing access to ${pathname}`);
     // User is authenticated, allow access
-    return NextResponse.next();
+    return response;
   }
 
   // Handle login page - redirect if already authenticated
@@ -221,32 +263,44 @@ export async function middleware(request: NextRequest) {
     if (userSession) {
       // Regular user is logged in, redirect to home or callback URL
       const callbackUrl = searchParams.get('callbackUrl') || '/';
-      return NextResponse.redirect(new URL(callbackUrl, request.url));
+      const redirect = NextResponse.redirect(new URL(callbackUrl, request.url));
+      redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      redirect.headers.set('Pragma', 'no-cache');
+      redirect.headers.set('Expires', '0');
+      return redirect;
     }
     if (superadminToken) {
       // Superadmin is logged in, redirect to admin
       const redirectPath = searchParams.get('redirect') || '/admin';
-      return NextResponse.redirect(new URL(redirectPath, request.url));
+      const redirect = NextResponse.redirect(new URL(redirectPath, request.url));
+      redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      redirect.headers.set('Pragma', 'no-cache');
+      redirect.headers.set('Expires', '0');
+      return redirect;
     }
     // Not logged in, allow access to login page
-    return NextResponse.next();
+    return response;
   }
 
   // Handle public paths
   if (isPublicPath) {
-    return NextResponse.next();
+    return response;
   }
 
   // If it's a protected API route and no session, return 401
   if (isProtectedApiRoute && !userSession && !superadminToken) {
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { message: 'Unauthorized' },
       { status: 401 }
     );
+    errorResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    errorResponse.headers.set('Pragma', 'no-cache');
+    errorResponse.headers.set('Expires', '0');
+    return errorResponse;
   }
 
   // Default: allow access
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

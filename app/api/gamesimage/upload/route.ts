@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { revalidatePath } from 'next/cache';
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,12 +58,26 @@ export async function POST(request: NextRequest) {
     
     console.log(`Game image uploaded successfully: ${relativePath}`);
 
+    // Revalidate all game-related pages to show the new image
+    try {
+      revalidatePath('/admin/events', 'layout');
+      revalidatePath('/events', 'layout');
+      revalidatePath('/baby-olympics', 'layout');
+    } catch (revalidateError) {
+      console.warn('Cache revalidation warning:', revalidateError);
+    }
+
     return NextResponse.json({
       success: true,
       path: relativePath,
       filename: filename,
       originalName: file.name,
-      size: file.size
+      size: file.size,
+      timestamp: timestamp // Include timestamp for cache busting
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      }
     });
 
   } catch (error) {

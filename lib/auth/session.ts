@@ -92,9 +92,32 @@ export function clearSession() {
     return;
   }
   try {
+    // Remove from localStorage
     localStorage.removeItem(SESSION_COOKIE_NAME);
-    // Clear the cookie
-    document.cookie = `${SESSION_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    
+    // Get all cookies
+    const allCookies = document.cookie.split(';');
+    
+    // Clear the session cookie with all possible domain/path combinations
+    const domains = ['', `.${window.location.hostname}`, window.location.hostname];
+    const paths = ['/', ''];
+    
+    domains.forEach(domain => {
+      paths.forEach(path => {
+        // Clear with different combinations
+        document.cookie = `${SESSION_COOKIE_NAME}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT${domain ? `; domain=${domain}` : ''}`;
+        document.cookie = `${SESSION_COOKIE_NAME}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${domain ? `; domain=${domain}` : ''}`;
+        document.cookie = `${SESSION_COOKIE_NAME}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Lax${domain ? `; domain=${domain}` : ''}`;
+      });
+    });
+    
+    // Verify cookie was cleared
+    const stillExists = document.cookie.split(';').some(c => c.trim().startsWith(`${SESSION_COOKIE_NAME}=`));
+    if (stillExists) {
+      console.warn('Warning: Cookie may not have been fully cleared');
+    } else {
+      console.log('Session cleared successfully');
+    }
   } catch (error) {
     console.error('Error clearing session:', error);
   }

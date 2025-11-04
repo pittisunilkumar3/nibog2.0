@@ -61,15 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Logout function
-  const logout = useCallback(() => {
-    setUser(null)
-    clearSession()
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('nibog-user')
-      localStorage.removeItem('user') // Remove old key as well
-      router.push('/login')
-    }
-  }, [router])
+  const logout = () => {
+    console.log('Logout initiated - redirecting to logout page');
+    // Redirect to logout page which will handle all cleanup
+    window.location.href = '/logout';
+  };
 
   // Check if user is logged in on initial load
   useEffect(() => {

@@ -140,8 +140,10 @@ export async function POST(request: Request) {
     res.headers.set('authorization', `Bearer ${token}`);
 
     // Set the session cookie with the correct name that middleware expects
+    // Using httpOnly: false to allow client-side JavaScript to access it
+    // This is needed for the auth context to work properly
     res.cookies.set('nibog-session', token, {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
@@ -157,7 +159,7 @@ export async function POST(request: Request) {
       is_active: userData.is_active,
       is_superadmin: false
     }), {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',

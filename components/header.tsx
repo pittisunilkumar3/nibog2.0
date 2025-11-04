@@ -26,13 +26,16 @@ export default function Header() {
   const isAdmin = false
 
   const handleLogout = () => {
-    logout()
     setIsOpen(false)
     toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
+      title: "Logging out...",
+      description: "Please wait while we log you out.",
     })
-    router.push('/')
+    
+    // Small delay to ensure toast is visible and menu closes
+    setTimeout(() => {
+      logout()
+    }, 300)
   }
 
   const routes = [
