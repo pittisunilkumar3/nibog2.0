@@ -1,4 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+const fs = require('fs');
+const path = require('path');
+
+const filePath = path.join(__dirname, 'app', 'api', 'serve-image', '[...path]', 'route.ts');
+const content = `import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join, normalize, sep } from 'path';
 import { existsSync } from 'fs';
@@ -42,10 +46,7 @@ export async function GET(
 
     console.log('Serving image:', fullPath, 'Size:', fileBuffer.length);
 
-    // Convert Buffer to Uint8Array for Response compatibility
-    const uint8Array = new Uint8Array(fileBuffer);
-
-    return new Response(uint8Array, {
+    return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
         'Content-Type': contentType,
@@ -58,3 +59,7 @@ export async function GET(
     return new NextResponse('Error serving image', { status: 500 });
   }
 }
+`;
+
+fs.writeFileSync(filePath, content, 'utf8');
+console.log('✅ File written successfully to:', filePath);
