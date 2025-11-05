@@ -42,8 +42,8 @@ export async function saveFooterSetting(footerData: FooterSettingPayload): Promi
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    // Use the external API directly
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/footer_setting/post', {
+    // Use Next.js API route to avoid CORS issues
+    const response = await fetch('/api/footer-settings/create', {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -87,8 +87,8 @@ export async function getFooterSetting(): Promise<FooterSetting | null> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    // Use the external API directly
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/footer_setting/get', {
+    // Use Next.js API route to avoid CORS issues
+    const response = await fetch('/api/footer-settings/get', {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

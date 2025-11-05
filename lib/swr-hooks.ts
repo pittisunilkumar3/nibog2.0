@@ -390,7 +390,7 @@ export function useApi<T>(url: string | null, options = {}) {
  * Fetch testimonials from the API
  */
 async function fetchTestimonials(): Promise<TestimonialListItem[]> {
-  const response = await fetch('https://ai.nibog.in/webhook/nibog/testmonialimages/get', {
+  const response = await fetch('/api/testimonials/get-all-with-images', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

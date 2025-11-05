@@ -20,7 +20,7 @@ export function PartnersSection() {
   useEffect(() => {
     const fetchPartners = async () => {
       try {
-        const response = await fetch('https://ai.nibog.in/webhook/partners')
+        const response = await fetch('/api/partners/get-all')
         if (response.ok) {
           const data = await response.json()
           // Filter only active partners and sort by display_priority
