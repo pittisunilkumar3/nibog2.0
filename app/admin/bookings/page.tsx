@@ -267,6 +267,17 @@ export default function BookingsPage() {
       )
     },
     {
+      key: 'child_school_name',
+      label: 'School Name',
+      sortable: true,
+      hideOnMobile: true, // Hide on mobile to save space
+      render: (value) => (
+        <div className="min-w-0">
+          <div className="font-medium truncate">{value || 'Not Specified'}</div>
+        </div>
+      )
+    },
+    {
       key: 'game_name',
       label: 'Game',
       sortable: true,

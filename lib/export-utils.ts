@@ -394,6 +394,7 @@ export const createBookingExportColumns = () => [
     format: (value: any) => value || 'N/A'
   },
   { key: 'child_gender' as const, label: 'Child Gender', width: 100 },
+  { key: 'child_school_name' as const, label: 'School Name', width: 150, format: (value: any) => value || 'Not Specified' },
   { key: 'child_date_of_birth' as const, label: 'Child DOB', width: 120, format: (value: any) => value ? new Date(value).toLocaleDateString() : 'N/A' },
   { key: 'event_title' as const, label: 'Event', width: 150 },
   { key: 'city_name' as const, label: 'City', width: 100 },
