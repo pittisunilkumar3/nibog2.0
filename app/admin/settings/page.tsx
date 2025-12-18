@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { saveSocialMedia, getSocialMedia } from "@/services/socialMediaService"
 import { saveEmailSetting, getEmailSetting } from "@/services/emailSettingService"
-import { saveGeneralSetting, getGeneralSetting, fileToBase64 } from "@/services/generalSettingService"
+import { updateGeneralSetting, getGeneralSetting, fileToBase64 } from "@/services/generalSettingService"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -94,17 +94,19 @@ export default function SettingsPage() {
           setContactEmail(data.contact_email)
           setContactPhone(data.contact_phone)
           setAddress(data.address)
-          setLogo(data.logo || null)
-          setFavicon(data.favicon || null)
+          setLogo(data.logo_path || data.logo || null)
+          setFavicon(data.favicon_path || data.favicon || null)
           setGeneralSettingId(data.id)
           setGeneralSettingsExist(true)
           setIsEditingGeneral(false)
+          console.log('✅ General settings loaded successfully:', data)
         } else {
           setGeneralSettingsExist(false)
           setIsEditingGeneral(true)
+          console.log('⚠️ No general settings found, enabling edit mode')
         }
       } catch (error: any) {
-        console.error("Failed to fetch general settings:", error)
+        console.error("❌ Failed to fetch general settings:", error)
         toast({
           title: "Error",
           description: "Failed to load general settings",
@@ -137,8 +139,8 @@ export default function SettingsPage() {
           setContactEmail(data.contact_email)
           setContactPhone(data.contact_phone)
           setAddress(data.address)
-          setLogo(data.logo || null)
-          setFavicon(data.favicon || null)
+          setLogo(data.logo_path || data.logo || null)
+          setFavicon(data.favicon_path || data.favicon || null)
         }
       } catch (error) {
         console.error("Failed to reset general settings:", error)
@@ -575,29 +577,40 @@ export default function SettingsPage() {
                     setIsSavingGeneralSetting(true)
 
                     const generalSettingData = {
-                      id: generalSettingId,
                       site_name: siteName,
                       site_tagline: siteTagline,
                       contact_email: contactEmail,
                       contact_phone: contactPhone,
                       address: address,
-                      logo: logo || undefined,
-                      favicon: favicon || undefined
+                      logo_path: logo || undefined,
+                      favicon_path: favicon || undefined
                     }
 
-                    const result = await saveGeneralSetting(generalSettingData)
+                    console.log('📤 Sending general settings update:', generalSettingData)
+                    const result = await updateGeneralSetting(generalSettingData)
+                    console.log('✅ General settings update result:', result)
 
-                    if (result && result.id) {
-                      setGeneralSettingId(result.id)
-                      setGeneralSettingsExist(true)
-                      setIsEditingGeneral(false)
-                      toast({
-                        title: "Success",
-                        description: "General settings saved successfully",
-                      })
+                    setGeneralSettingsExist(true)
+                    setIsEditingGeneral(false)
+                    toast({
+                      title: "Success",
+                      description: "General settings saved successfully",
+                    })
+                    
+                    // Reload the data to ensure we have the latest from the server
+                    const updatedData = await getGeneralSetting()
+                    if (updatedData) {
+                      setSiteName(updatedData.site_name)
+                      setSiteTagline(updatedData.site_tagline)
+                      setContactEmail(updatedData.contact_email)
+                      setContactPhone(updatedData.contact_phone)
+                      setAddress(updatedData.address)
+                      setLogo(updatedData.logo_path || updatedData.logo || null)
+                      setFavicon(updatedData.favicon_path || updatedData.favicon || null)
+                      setGeneralSettingId(updatedData.id)
                     }
                   } catch (error: any) {
-                    console.error("Failed to save general settings:", error)
+                    console.error("❌ Failed to save general settings:", error)
                     toast({
                       title: "Error",
                       description: error.message || "Failed to save general settings",
