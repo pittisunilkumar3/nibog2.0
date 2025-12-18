@@ -11,19 +11,20 @@ import { Label } from "@/components/ui/label"
 import { Trash } from "lucide-react"
 import { MobileTestHelper } from "@/components/admin/mobile-test-helper"
 
+import { getAllHomepageSections, deleteHomepageSection, createHomepageSection, updateHomepageSection, HomepageSection } from "@/services/homepageSectionService"
+
 export default function HomeSection() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [imageUrls, setImageUrls] = useState<string[]>([])
-  const [imageMeta, setImageMeta] = useState<any[]>([])
-  
-  
+  const [imageMeta, setImageMeta] = useState<HomepageSection[]>([])
+
+
   // Function to refresh image data from server
   const refreshImages = async () => {
     try {
-      const res = await fetch("https://ai.nibog.in/webhook/v1/nibog/homesection/get")
-      const data = await res.json()
+      const data = await getAllHomepageSections()
       const safeData = Array.isArray(data) ? data.slice(0, 50) : []
 
       // Filter out items with invalid image_path and keep arrays synchronized
@@ -32,7 +33,7 @@ export default function HomeSection() {
       setImageMeta(validItems)
       setImageUrls(
         validItems.map((img: any) => {
-          // Convert "public/images/blog/home/filename" to "/images/blog/home/filename"
+          // The new API should return correct paths, but we'll keep the sanitization just in case
           const rel = img.image_path.replace(/^public/, "")
           return rel.startsWith("/") ? rel : "/" + rel
         })
@@ -43,16 +44,21 @@ export default function HomeSection() {
       console.error("Failed to fetch images:", error)
       setImageMeta([])
       setImageUrls([])
+      toast({
+        title: "Error",
+        description: "Failed to fetch images from the new API.",
+        variant: "destructive",
+      })
     }
   }
 
   // Comprehensive cache cleanup and frontend notification function
-  const performCacheCleanupAndNotification = async (deleteResult: any) => {
+  const performCacheCleanupAndNotification = async () => {
     console.log("Starting comprehensive cache cleanup...")
-    
+
     // 1. Refresh data from server to ensure arrays stay synchronized
     await refreshImages()
-    
+
     // 2. Clear any cached image data from localStorage
     try {
       const keysToRemove = []
@@ -69,141 +75,89 @@ export default function HomeSection() {
     } catch (error) {
       console.warn("Could not clear localStorage cache:", error)
     }
-    
+
     // 3. Send multiple notification signals to frontend
     const timestamp = Date.now()
     localStorage.setItem('homeSliderUpdate', timestamp.toString())
     localStorage.setItem('homeSliderClearCache', timestamp.toString())
-    localStorage.setItem('homeSliderDeleteComplete', JSON.stringify({
-      timestamp,
-      deletedPath: deleteResult?.deletedImagePath,
-      force: true
-    }))
-    
+
     // 4. Trigger browser cache invalidation by setting cache-busting flags
     localStorage.setItem('homeSlideCacheBust', timestamp.toString())
-    
+
     console.log("Cache cleanup and notification complete")
   }
 
   useEffect(() => {
     refreshImages()
   }, [])
-  
-    // Handle file input change
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files
-      if (!files) return
-      const fileArr = Array.from(files)
-      setSelectedFiles((prev) => [...prev, ...fileArr])
+
+  // Handle file input change
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+    const fileArr = Array.from(files)
+    setSelectedFiles((prev) => [...prev, ...fileArr])
+  }
+
+  // Remove image by index (removes from preview list and server)
+  const handleDelete = async (idx: number) => {
+    // Validate index bounds
+    if (idx < 0 || idx >= imageMeta.length) {
+      console.error("Invalid index:", idx, "Array length:", imageMeta.length)
+      toast({
+        title: "Error",
+        description: "Invalid image index.",
+        variant: "destructive",
+      })
+      return
     }
-  
-    // Remove image by index (removes from preview list and server)
-    const handleDelete = async (idx: number) => {
-      // Validate index bounds
-      if (idx < 0 || idx >= imageMeta.length) {
-        console.error("Invalid index:", idx, "Array length:", imageMeta.length)
-        toast({
-          title: "Error",
-          description: "Invalid image index.",
-          variant: "destructive",
-        })
-        return
-      }
 
-      const meta = imageMeta[idx]
-      if (!meta?.id) {
-        console.error("No image metadata or ID found for index:", idx, "Meta:", meta)
-        console.error("ImageMeta array:", imageMeta)
-        console.error("ImageUrls array:", imageUrls)
-        toast({
-          title: "Error",
-          description: "Cannot delete image: missing ID.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!window.confirm("Delete this image from the slider?")) return
-
-      try {
-        console.log("Deleting image with ID:", meta.id)
-        const resp = await fetch("/api/home-hero/delete-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: meta.id })
-        })
-
-        console.log("Delete response status:", resp.status)
-
-        if (!resp.ok) {
-          throw new Error(`HTTP error! status: ${resp.status}`)
-        }
-
-        const result = await resp.json()
-        console.log("Delete response data:", result)
-
-        // Check for success in the response - handle various formats
-        let isSuccess = false;
-        let successResult = result;
-        
-        if (Array.isArray(result) && result.length > 0 && result[0]?.success) {
-          isSuccess = true;
-          successResult = result[0];
-        } else if (result?.success === true) {
-          isSuccess = true;
-          successResult = result;
-        } else if (Object.keys(result).length === 0) {
-          // Empty object {} - treat as success
-          console.log("Received empty object from API, treating as successful deletion");
-          isSuccess = true;
-          successResult = { success: true };
-        } else if (result?.timestamp || result?.deletedImagePath) {
-          // Has our custom success indicators
-          isSuccess = true;
-          successResult = result;
-        } else if (result?.["0"]?.success) {
-          // Handle format like {"0":{"success":true},...}
-          console.log("Received success in nested format");
-          isSuccess = true;
-          successResult = result;
-        }
-        
-        if (isSuccess) {
-          // Comprehensive cache cleanup and frontend notification
-          await performCacheCleanupAndNotification(successResult)
-
-          const warning = successResult?.warning;
-          const description = warning ?
-            `Image deleted successfully. ${warning}` :
-            "Image deleted successfully (including local file).";
-
-          toast({
-            title: "Deleted",
-            description: description,
-          })
-        } else {
-          console.error("Delete failed - unexpected response format:", result)
-          throw new Error(`Delete failed - unexpected response format: ${JSON.stringify(result)}`)
-        }
-      } catch (err) {
-        console.error("Delete error:", err)
-        toast({
-          title: "Error",
-          description: `Failed to delete image: ${err instanceof Error ? err.message : 'Unknown error'}`,
-          variant: "destructive",
-        })
-      }
+    const meta = imageMeta[idx]
+    if (!meta?.id) {
+      console.error("No image metadata or ID found for index:", idx, "Meta:", meta)
+      toast({
+        title: "Error",
+        description: "Cannot delete image: missing ID.",
+        variant: "destructive",
+      })
+      return
     }
+
+    if (!window.confirm("Delete this image from the slider?")) return
+
+    try {
+      console.log("Deleting image with ID:", meta.id)
+      const success = await deleteHomepageSection(meta.id)
+
+      if (success) {
+        // Comprehensive cache cleanup and frontend notification
+        await performCacheCleanupAndNotification()
+
+        toast({
+          title: "Deleted",
+          description: "Image deleted successfully.",
+        })
+      } else {
+        throw new Error("Delete failed - API returned unsuccessful status")
+      }
+    } catch (err) {
+      console.error("Delete error:", err)
+      toast({
+        title: "Error",
+        description: `Failed to delete image: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        variant: "destructive",
+      })
+    }
+  }
 
   // Drag and drop reordering - keep both arrays synchronized
   const handleDragStart = (idx: number) => {
     setDraggingIdx(idx)
   }
-  const handleDragOver = (idx: number) => {
+  const handleDragOver = async (idx: number) => {
     if (draggingIdx === null || draggingIdx === idx) return
 
-    // Update both arrays to keep them synchronized
+    // Update both arrays for immediate visual feedback
     const newUrls = [...imageUrls]
     const newMeta = [...imageMeta]
 
@@ -218,7 +172,11 @@ export default function HomeSection() {
     setDraggingIdx(idx)
   }
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
-  const handleDragEnd = () => setDraggingIdx(null)
+  const handleDragEnd = async () => {
+    setDraggingIdx(null)
+    // Here we could persist the new order to the backend using the priority field for each item
+    // For now, we'll just keep it in memory as the original code did
+  }
 
   // Upload images to server and update preview list
   const handleSave = async () => {
@@ -227,35 +185,32 @@ export default function HomeSection() {
     try {
       const formData = new FormData()
       selectedFiles.forEach((file) => formData.append("files", file))
+
+      // Still using existing local upload route to save files to public/images/blog/home
       const res = await fetch("/api/home-hero/upload-images", {
         method: "POST",
         body: formData,
       })
       const data = await res.json()
+
       if (data.success && data.files) {
         setSelectedFiles([])
 
-        // Send each uploaded image to external API
+        // Register each uploaded image with the NEW homepage section API
         await Promise.all(
           data.files.map(async (f: any) => {
-            // Extract filename and build correct API path
-            // Use absolute image URL for payload
-            const filename = f.url.split("/").pop();
-            const rel_path = `public/images/blog/home/${filename}`;
+            // f.url is like "/images/blog/home/filename"
             try {
-              const resp = await fetch("https://ai.nibog.in/webhook/v1/nibog/homesection/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  image_path: rel_path,
-                  status: "active"
-                })
+              await createHomepageSection({
+                image_path: f.url,
+                status: "active",
+                priority: imageMeta.length + 1
               });
-              if (!resp.ok) throw new Error("Webhook API error");
             } catch (err) {
+              console.error(`Failed to register image with backend: ${f.url}`, err);
               toast({
                 title: "Warning",
-                description: `Failed to notify external API for ${rel_path}`,
+                description: `Failed to register image with backend API for ${f.filename}`,
                 variant: "destructive",
               });
             }
@@ -270,7 +225,7 @@ export default function HomeSection() {
 
         toast({
           title: "Success!",
-          description: "Images uploaded and synced successfully.",
+          description: "Images uploaded and synced with the new API successfully.",
         })
       } else {
         throw new Error(data.error || "Upload failed")
