@@ -28,7 +28,7 @@ export default function SuperAdminLoginPage() {
     localStorage.removeItem('superadmin')
     sessionStorage.removeItem('superadmin')
     document.cookie = 'superadmin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;'
-    
+
     const params = new URLSearchParams(window.location.search)
     const redirect = params.get('redirect')
     if (redirect) {
@@ -44,7 +44,7 @@ export default function SuperAdminLoginPage() {
 
     try {
       console.log('Attempting login with:', { email })
-      
+
       // Regular API-based authentication flow
       const response = await fetch('/api/auth/proxy/login', {
         method: 'POST',
@@ -58,36 +58,43 @@ export default function SuperAdminLoginPage() {
       console.log('Login response status:', response.status)
       const data = await response.json()
       console.log('Login response data:', data)
-      
+
       // Check if login was successful
-      if (!data[0]?.success) {
-        throw new Error('Login failed: Invalid email or password. Please check your credentials and try again.')
+      if (!data.success) {
+        throw new Error(data.message || 'Login failed: Invalid email or password.')
       }
-      
-      // Double check that we have valid user data with is_superadmin flag
-      if (!data[0]?.object?.is_superadmin) {
+
+      // Double check that we have valid employee data
+      if (!data.employee) {
+        throw new Error('Access denied: Invalid response data.')
+      }
+
+      // Check superadmin privileges (redundant if API checks, but good for safety)
+      if (data.employee.is_superadmin !== 1) {
         throw new Error('Access denied: This account does not have superadmin privileges.')
       }
 
       // Store user data in localStorage, sessionStorage and cookies
-      if (data[0]?.object) {
-        const userData = data[0].object
-        console.log('Storing user data')
-        localStorage.setItem('superadmin', JSON.stringify(userData))
-        sessionStorage.setItem('superadmin', JSON.stringify(userData))
-        document.cookie = `superadmin-token=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60*60*24*7}`
-      }
+      const userData = data.employee
+      console.log('Storing user data')
+      localStorage.setItem('superadmin', JSON.stringify(userData))
+      sessionStorage.setItem('superadmin', JSON.stringify(userData))
+      // Cookie is already set by the API route (HttpOnly or not), but we can set a client-side readable one if needed
+      // The API route sets 'superadmin-token'.
+      // We'll set a simple flag or the data as well for client-side logic consistency if implied by previous code.
+      document.cookie = `superadmin-token=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60 * 60 * 24 * 7}`
+
 
       console.log('Login successful, redirecting to', redirectTo)
       // Force a full page reload to ensure cookies are properly set
       window.location.href = redirectTo
     } catch (error) {
       console.error('Login error:', error)
-      
+
       // Determine the appropriate error message
       let errorTitle = "Login Failed"
       let errorMessage = 'An error occurred during login. Please try again.'
-      
+
       if (error instanceof Error) {
         if (error.message.includes('Invalid email or password')) {
           errorTitle = "Invalid Credentials"
@@ -102,7 +109,7 @@ export default function SuperAdminLoginPage() {
           errorMessage = error.message
         }
       }
-      
+
       // Set the error message to display on the card
       setErrorMessage(`${errorTitle}: ${errorMessage}`)
     } finally {
