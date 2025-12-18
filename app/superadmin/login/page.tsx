@@ -74,11 +74,17 @@ export default function SuperAdminLoginPage() {
         throw new Error('Access denied: This account does not have superadmin privileges.')
       }
 
-      // Store user data in localStorage, sessionStorage and cookies
+      // Store user data and token in localStorage, sessionStorage and cookies
       const userData = data.employee
-      console.log('Storing user data')
+      const authToken = data.token
+      console.log('Storing user data and token')
       localStorage.setItem('superadmin', JSON.stringify(userData))
       sessionStorage.setItem('superadmin', JSON.stringify(userData))
+      // Store the authentication token for API calls
+      if (authToken) {
+        localStorage.setItem('adminToken', authToken)
+        sessionStorage.setItem('adminToken', authToken)
+      }
       // Cookie is already set by the API route (HttpOnly or not), but we can set a client-side readable one if needed
       // The API route sets 'superadmin-token'.
       // We'll set a simple flag or the data as well for client-side logic consistency if implied by previous code.

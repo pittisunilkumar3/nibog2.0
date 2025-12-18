@@ -66,25 +66,28 @@ export async function POST(request: Request) {
       // Store minimal session data in the cookie
       const sessionData = {
         id: employee.id,
-        email: employee.employee_email || employee.email, // backend sends 'email' in example, checking both just in case
+        email: employee.employee_email || employee.email,
         name: employee.name,
         is_superadmin: employee.is_superadmin,
+        token: token, // Include the token in the cookie for client-side access
       };
 
       res.cookies.set('superadmin-token', JSON.stringify(sessionData), {
-        httpOnly: false, // Allow client access for simple checks if needed, or keep true for security. Plan said cookie logic maintained.
+        httpOnly: false, // Allow client access for authentication
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days
       });
 
-      // Also setting the token itself might be useful if the frontend uses it for API calls
-      // But the previous implementation stored the whole object in 'superadmin-token'.
-      // We will stick to that pattern for compatibility, but strictly it should be just the token.
-      // However, the previous code on line 38 of route.ts was:
-      // res.cookies.set('superadmin-token', JSON.stringify(sessionData)...
-      // So we are consistent.
+      // Also set the auth token separately for API calls
+      res.cookies.set('auth-token', token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
     }
 
     return res;

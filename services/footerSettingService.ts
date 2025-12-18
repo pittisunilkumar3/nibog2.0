@@ -139,6 +139,153 @@ export async function getFooterSetting(): Promise<FooterSetting | null> {
 }
 
 /**
+ * Get footer settings with social links from external API
+ * @returns Promise with footer settings data including social links
+ */
+export async function getFooterSettingWithSocial(): Promise<FooterSetting | null> {
+  if (process.env.NODE_ENV === 'development') {
+    console.log("Fetching footer settings with social links...");
+  }
+
+  try {
+    // Create an AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    // Use Next.js API route to avoid CORS issues
+    const response = await fetch('/api/footer-settings/with-social', {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Get footer settings with social response status: ${response.status}`);
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error response: ${errorText}`);
+      
+      // If 404, return null instead of throwing an error
+      if (response.status === 404) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log("No footer settings found (404)");
+        }
+        return null;
+      }
+      
+      throw new Error(`API returned error status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Footer settings with social fetched successfully:", data);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Failed to fetch footer settings with social:", error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout - please try again');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Update footer settings via external API
+ * @param footerData - Footer settings data to update
+ * @returns Promise with the updated footer settings
+ */
+export async function updateFooterSetting(footerData: FooterSettingPayload): Promise<any> {
+  console.log("Updating footer settings:", footerData);
+
+  try {
+    // Create an AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    // Get auth token from localStorage or sessionStorage
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      
+      // If not in storage, try to get from auth-token cookie first
+      if (!token) {
+        const cookies = document.cookie.split(';');
+        const authTokenCookie = cookies.find(c => c.trim().startsWith('auth-token='));
+        if (authTokenCookie) {
+          token = authTokenCookie.split('=')[1];
+        }
+      }
+      
+      // If still no token, try to get from superadmin-token cookie
+      if (!token) {
+        const cookies = document.cookie.split(';');
+        const superadminCookie = cookies.find(c => c.trim().startsWith('superadmin-token='));
+        if (superadminCookie) {
+          try {
+            const cookieValue = decodeURIComponent(superadminCookie.split('=')[1]);
+            const userData = JSON.parse(cookieValue);
+            // Check if the cookie contains the token field
+            if (userData && userData.token) {
+              token = userData.token;
+            }
+          } catch (e) {
+            console.warn('Failed to parse superadmin-token cookie:', e);
+          }
+        }
+      }
+    }
+    
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log('✅ Using authentication token for footer update');
+    } else {
+      console.warn('⚠️ No authentication token found for footer update');
+    }
+
+    // Use Next.js API route to avoid CORS issues
+    const response = await fetch('/api/footer-settings/update', {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(footerData),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    console.log(`Update footer settings response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error response: ${errorText}`);
+      throw new Error(`API returned error status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Footer settings updated successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("Failed to update footer settings:", error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout - please try again');
+    }
+    throw error;
+  }
+}
+
+/**
  * Get footer settings with fallback values
  * @returns Promise with footer settings data with fallback values
  */

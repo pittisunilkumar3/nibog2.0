@@ -25,7 +25,7 @@ import {
   FileText
 } from "lucide-react"
 import { PageTransition, FadeIn } from "@/components/ui/animated-components"
-import { getFooterSetting, saveFooterSetting, type FooterSetting, type FooterSettingPayload } from "@/services/footerSettingService"
+import { getFooterSettingWithSocial, updateFooterSetting, type FooterSetting, type FooterSettingPayload } from "@/services/footerSettingService"
 import { cn } from "@/lib/utils"
 import { MobileTestHelper } from "@/components/admin/mobile-test-helper"
 
@@ -116,7 +116,8 @@ export default function FooterManagement() {
   const loadFooterContent = async () => {
     setIsLoading(true)
     try {
-      const footerSettings = await getFooterSetting()
+      // Fetch footer settings with social links from the new API
+      const footerSettings = await getFooterSettingWithSocial()
 
       if (footerSettings) {
         // Convert API data to FooterContent format
@@ -136,17 +137,19 @@ export default function FooterManagement() {
             phone: footerSettings.phone,
             email: footerSettings.email
           },
-          newsletterEnabled: footerSettings.newsletter_enabled,
+          newsletterEnabled: footerSettings.newsletter_enabled === 1 || footerSettings.newsletter_enabled === true,
           copyrightText: footerSettings.copyright_text
         }
         setFooterContent(convertedContent)
+        console.log('✅ Footer settings loaded successfully:', footerSettings)
       } else {
         // Use default content if no settings found
         setFooterContent(defaultFooterContent)
+        console.log('⚠️ No footer settings found, using defaults')
       }
       setHasChanges(false)
     } catch (error) {
-      console.error("Failed to load footer content:", error)
+      console.error("❌ Failed to load footer content:", error)
       toast({
         title: "Error",
         description: "Failed to load footer content. Using default values.",
@@ -258,6 +261,8 @@ export default function FooterManagement() {
     setIsSaving(true)
     try {
       // Convert FooterContent to FooterSettingPayload format
+      // NOTE: Social media URLs are read-only from the backend (stored in separate table)
+      // Only update basic footer settings fields
       const payload: FooterSettingPayload = {
         company_name: footerContent.companyName,
         company_description: footerContent.companyDescription,
@@ -265,14 +270,12 @@ export default function FooterManagement() {
         phone: footerContent.contactInfo.phone,
         email: footerContent.contactInfo.email,
         newsletter_enabled: footerContent.newsletterEnabled,
-        copyright_text: footerContent.copyrightText,
-        facebook_url: footerContent.socialMediaLinks.find(link => link.platform === 'Facebook')?.url || "",
-        instagram_url: footerContent.socialMediaLinks.find(link => link.platform === 'Instagram')?.url || "",
-        linkedin_url: footerContent.socialMediaLinks.find(link => link.platform === 'LinkedIn')?.url || "",
-        youtube_url: footerContent.socialMediaLinks.find(link => link.platform === 'YouTube')?.url || ""
+        copyright_text: footerContent.copyrightText
       }
 
-      await saveFooterSetting(payload)
+      console.log('📤 Sending footer update:', payload)
+      const result = await updateFooterSetting(payload)
+      console.log('✅ Footer update result:', result)
 
       toast({
         title: "Success",
@@ -280,11 +283,14 @@ export default function FooterManagement() {
       })
       setHasChanges(false)
       setValidationErrors({})
+      
+      // Reload the data to ensure we have the latest from the server
+      await loadFooterContent()
     } catch (error) {
-      console.error("Failed to save footer content:", error)
+      console.error("❌ Failed to save footer content:", error)
       toast({
         title: "Error",
-        description: "Failed to save footer content. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save footer content. Please try again.",
         variant: "destructive",
       })
     } finally {

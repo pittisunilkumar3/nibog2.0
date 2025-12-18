@@ -5,41 +5,57 @@ import { useState, useEffect } from "react"
 import { MapPin } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
-import { getFooterSettingWithFallback, type FooterSetting } from "@/services/footerSettingService"
 
 export default function Footer() {
-  const [footerData, setFooterData] = useState<FooterSetting | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [footerData, setFooterData] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchFooterData = async () => {
       try {
-        setIsLoading(true)
-        const data = await getFooterSettingWithFallback()
-        setFooterData(data)
+        setIsLoading(true);
+        // Use Next.js API route to fetch footer settings
+        const response = await fetch('/api/footer-settings/with-social', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
+        });
+        
+        if (!response.ok) {
+          console.warn('Failed to fetch footer settings, using fallback');
+          setFooterData(null);
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('✅ Footer settings loaded:', data);
+        setFooterData(data);
       } catch (error) {
-        console.error('❌ Failed to fetch footer data:', error)
+        console.error('❌ Failed to fetch footer data:', error);
+        setFooterData(null);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
-
-    fetchFooterData()
-  }, [])
+    };
+    fetchFooterData();
+  }, []);
 
   // Use footer data or fallback values
-  const companyName = footerData?.company_name || "NIBOG"
-  const companyDescription = footerData?.company_description || "India's biggest baby Olympic games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months."
-    const address = footerData?.address || "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony,\nR.K Puram, Hyderabad - 500056."
-  const phone = footerData?.phone || "+91-8977939614/15"
-  const email = footerData?.email || "newindiababyolympics@gmail.com"
-  const newsletterEnabled = footerData?.newsletter_enabled ?? true
-  const copyrightText = footerData?.copyright_text || "© {year} NIBOG. All rights reserved. India's Biggest Baby Olympic Games Platform."
-  const facebookUrl = footerData?.facebook_url || "https://www.facebook.com/share/1K8H6SPtR5/"
-  const instagramUrl = footerData?.instagram_url || "https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr"
-  const linkedinUrl = footerData?.linkedin_url || "https://www.linkedin.com/in/new-india-baby-olympicgames?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app"
-  const youtubeUrl = footerData?.youtube_url || "https://youtube.com/@newindiababyolympics?si=gdXw5mGsXA93brxB"
-  const decathlonUrl = "https://www.decathlon.in"
+
+  const companyName = footerData?.company_name || "NIBOG";
+  const companyDescription = footerData?.company_description || "India's biggest baby Olympic games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.";
+  const address = footerData?.address || "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony,\nR.K Puram, Hyderabad - 500056.";
+  const phone = footerData?.phone || "+91-8977939614/15";
+  const email = footerData?.email || "newindiababyolympics@gmail.com";
+  const newsletterEnabled = footerData?.newsletter_enabled ?? true;
+  const copyrightText = footerData?.copyright_text || "© {year} NIBOG. All rights reserved. India's Biggest Baby Olympic Games Platform.";
+  const facebookUrl = footerData?.facebook_url;
+  const instagramUrl = footerData?.instagram_url;
+  const linkedinUrl = footerData?.linkedin_url;
+  const youtubeUrl = footerData?.youtube_url;
+  const decathlonUrl = "https://www.decathlon.in";
 
   // Debug logging (only in development)
   if (process.env.NODE_ENV === 'development') {
