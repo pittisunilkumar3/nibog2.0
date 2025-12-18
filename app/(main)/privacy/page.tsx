@@ -1,12 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-
-interface PrivacyPolicyData {
-  id: number
-  html_content: string
-  created_at: string
-}
+import { getPrivacyPolicy } from "@/services/privacyPolicyService"
 
 export default function PrivacyPolicyPage() {
   const [privacyContent, setPrivacyContent] = useState<string>("")
@@ -20,23 +15,13 @@ export default function PrivacyPolicyPage() {
       setError(null)
 
       try {
-        const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/privacyandpolicyget', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error(`API returned error status: ${response.status}`)
-        }
-
-        const data: PrivacyPolicyData[] = await response.json()
+        const data = await getPrivacyPolicy()
         console.log('Fetched privacy policy data:', data)
 
-        if (data && Array.isArray(data) && data.length > 0 && data[0].html_content) {
-          setPrivacyContent(data[0].html_content)
-          setLastUpdated(data[0].created_at)
+        if (data && data.success && data.policy) {
+          // API returns html_content, not policy_text
+          setPrivacyContent(data.policy.html_content || data.policy.policy_text)
+          setLastUpdated(data.policy.updated_at || data.policy.created_at)
         } else {
           throw new Error('No privacy policy content found')
         }

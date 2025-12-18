@@ -19,6 +19,7 @@ import {
 import { PageTransition, FadeIn } from "@/components/ui/animated-components"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { MobileTestHelper } from "@/components/admin/mobile-test-helper"
+import { getPrivacyPolicy, updatePrivacyPolicy } from "@/services/privacyPolicyService"
 
 // Types for privacy policy content
 interface PrivacyPolicyContent {
@@ -70,7 +71,7 @@ export default function PrivacyPolicyPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
-  
+
   const [privacyContent, setPrivacyContent] = useState<PrivacyPolicyContent>(mockPrivacyPolicyContent)
 
   useEffect(() => {
@@ -78,28 +79,18 @@ export default function PrivacyPolicyPage() {
     const loadPrivacyContent = async () => {
       setIsLoading(true)
       try {
-        // Fetch existing privacy policy content from API
-        const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/privacyandpolicyget', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error(`API returned error status: ${response.status}`)
-        }
-
-        const data = await response.json()
+        // Use the privacy policy service
+        const data = await getPrivacyPolicy()
         console.log('Fetched privacy policy data:', data)
 
         // Check if data exists and has content
-        if (data && Array.isArray(data) && data.length > 0 && data[0].html_content) {
-          const fetchedContent = data[0].html_content
+        if (data && data.success && data.policy) {
+          // API returns html_content, not policy_text
+          const fetchedContent = data.policy.html_content || data.policy.policy_text || ""
           setPrivacyContent({
             websiteContent: fetchedContent,
             mobileAppContent: fetchedContent, // Use same content for both tabs initially
-            lastUpdated: data[0].created_at || new Date().toISOString(),
+            lastUpdated: data.policy.updated_at || data.policy.created_at || new Date().toISOString(),
             version: "1.0"
           })
         } else {
@@ -131,22 +122,8 @@ export default function PrivacyPolicyPage() {
       // Get the content to save
       const contentToSave = privacyContent.websiteContent
 
-      // Call the external API
-      const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/privacyandpolicy', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: contentToSave
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error(`API returned error status: ${response.status}`)
-      }
-
-      const result = await response.json()
+      // Use the privacy policy service which handles authentication
+      const result = await updatePrivacyPolicy(contentToSave)
       console.log('Privacy policy saved successfully:', result)
 
       // Update last updated timestamp
@@ -164,7 +141,7 @@ export default function PrivacyPolicyPage() {
       console.error("Failed to save privacy policy content:", error)
       toast({
         title: "Error",
-        description: "Failed to save privacy policy content. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save privacy policy content. Please try again.",
         variant: "destructive",
       })
     } finally {
