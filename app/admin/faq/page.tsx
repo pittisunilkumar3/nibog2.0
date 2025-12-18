@@ -18,7 +18,7 @@ import {
   HelpCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { getAllFAQs, deleteFAQ, type FAQ } from "@/services/faqService"
+import { getAllFAQs, deleteFAQ, updateFAQ, type FAQ } from "@/services/faqService"
 
 // Update interface to match API response
 interface FAQItem {
@@ -94,16 +94,25 @@ export default function FAQListPage() {
 
       const newStatus = faq.status === 'Active' ? 'Inactive' : 'Active'
       
-      // TODO: Implement actual API call for status update
-      // For now, just update local state
-      setFaqs(prev => prev.map(f => 
-        f.id === id ? { ...f, status: newStatus, updated_at: new Date().toISOString() } : f
-      ))
+      // Persist status update via API
+      try {
+        await updateFAQ({ id, status: newStatus } as any)
+        setFaqs(prev => prev.map(f => 
+          f.id === id ? { ...f, status: newStatus, updated_at: new Date().toISOString() } : f
+        ))
 
-      toast({
-        title: "Status Updated",
-        description: `FAQ ${newStatus === 'Active' ? 'activated' : 'deactivated'} successfully.`,
-      })
+        toast({
+          title: "Status Updated",
+          description: `FAQ ${newStatus === 'Active' ? 'activated' : 'deactivated'} successfully.`,
+        })
+      } catch (err) {
+        console.error('Failed to update status:', err)
+        toast({
+          title: "Error",
+          description: "Failed to update FAQ status.",
+          variant: "destructive",
+        })
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -157,22 +166,38 @@ export default function FAQListPage() {
         const targetFaq = sortedFaqs[currentIndex - 1]
         const tempPriority = currentFaq.display_priority
         
-        // TODO: Implement actual API call for priority update
-        setFaqs(prev => prev.map(f => {
-          if (f.id === currentFaq.id) return { ...f, display_priority: targetFaq.display_priority }
-          if (f.id === targetFaq.id) return { ...f, display_priority: tempPriority }
-          return f
-        }))
+        // Persist priority swap via API
+        try {
+          await updateFAQ({ id: currentFaq.id, display_priority: targetFaq.display_priority } as any)
+          await updateFAQ({ id: targetFaq.id, display_priority: tempPriority } as any)
+
+          setFaqs(prev => prev.map(f => {
+            if (f.id === currentFaq.id) return { ...f, display_priority: targetFaq.display_priority }
+            if (f.id === targetFaq.id) return { ...f, display_priority: tempPriority }
+            return f
+          }))
+        } catch (err) {
+          console.error('Failed to update priority:', err)
+          toast({ title: "Error", description: "Failed to update FAQ priority.", variant: "destructive" })
+        }
       } else if (direction === 'down' && currentIndex < sortedFaqs.length - 1) {
         const targetFaq = sortedFaqs[currentIndex + 1]
         const tempPriority = currentFaq.display_priority
         
-        // TODO: Implement actual API call for priority update
-        setFaqs(prev => prev.map(f => {
-          if (f.id === currentFaq.id) return { ...f, display_priority: targetFaq.display_priority }
-          if (f.id === targetFaq.id) return { ...f, display_priority: tempPriority }
-          return f
-        }))
+        // Persist priority swap via API
+        try {
+          await updateFAQ({ id: currentFaq.id, display_priority: targetFaq.display_priority } as any)
+          await updateFAQ({ id: targetFaq.id, display_priority: tempPriority } as any)
+
+          setFaqs(prev => prev.map(f => {
+            if (f.id === currentFaq.id) return { ...f, display_priority: targetFaq.display_priority }
+            if (f.id === targetFaq.id) return { ...f, display_priority: tempPriority }
+            return f
+          }))
+        } catch (err) {
+          console.error('Failed to update priority:', err)
+          toast({ title: "Error", description: "Failed to update FAQ priority.", variant: "destructive" })
+        }
       }
 
       toast({

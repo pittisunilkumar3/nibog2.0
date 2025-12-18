@@ -79,42 +79,28 @@ export async function getAllActiveFAQs(): Promise<FAQ[]> {
  */
 export async function getAllFAQs(): Promise<FAQ[]> {
   try {
-    console.log('📋 Fetching all FAQs from API (admin)...');
-    
-    const response = await fetch(FAQ_API.GET_ALL, {
+    console.log('📋 Fetching all FAQs from internal API route...');
+    const response = await fetch('/api/faq/faqs', {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store'
     });
 
-    console.log('📋 FAQ GET_ALL API response status:', response.status);
+    console.log('📋 Internal FAQ GET response status:', response.status);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch FAQs: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('📋 FAQ GET_ALL API response:', data);
+    console.log('📋 Internal FAQ GET response:', data);
 
-    // API returns array directly
-    if (Array.isArray(data)) {
-      const sortedFaqs = data.sort((a: FAQ, b: FAQ) => (a.display_priority || a.display_order || 0) - (b.display_priority || b.display_order || 0));
-      console.log(`✅ Fetched ${sortedFaqs.length} FAQs (admin)`);
-      return sortedFaqs;
-    } else if (data.data && Array.isArray(data.data)) {
-      const sortedFaqs = data.data.sort((a: FAQ, b: FAQ) => (a.display_priority || a.display_order || 0) - (b.display_priority || b.display_order || 0));
-      console.log(`✅ Fetched ${sortedFaqs.length} FAQs (admin)`);
-      return sortedFaqs;
-    } else if (data.faqs && Array.isArray(data.faqs)) {
-      const sortedFaqs = data.faqs.sort((a: FAQ, b: FAQ) => (a.display_priority || a.display_order || 0) - (b.display_priority || b.display_order || 0));
-      console.log(`✅ Fetched ${sortedFaqs.length} FAQs (admin)`);
-      return sortedFaqs;
-    }
+    // Normalize array response
+    const faqsArray: FAQ[] = Array.isArray(data) ? data : (data.data && Array.isArray(data.data) ? data.data : (data.faqs && Array.isArray(data.faqs) ? data.faqs : []));
 
-    console.warn('⚠️ Unexpected API response format:', data);
-    return [];
+    const sortedFaqs = faqsArray.sort((a: FAQ, b: FAQ) => (a.display_priority || a.display_order || 0) - (b.display_priority || b.display_order || 0));
+    console.log(`✅ Fetched ${sortedFaqs.length} FAQs (admin)`);
+    return sortedFaqs;
   } catch (error) {
     console.error('❌ Error fetching FAQs:', error);
     throw error;
@@ -169,34 +155,40 @@ export async function createFAQ(faqData: {
   status: string;
 }): Promise<FAQ> {
   try {
-    console.log('📝 Creating FAQ with data:', faqData);
-    
-    const response = await fetch(FAQ_API.CREATE, {
+    console.log('📝 Creating FAQ via internal API with data:', faqData);
+
+    // Get auth token
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      if (!token) {
+        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('auth-token='));
+        if (cookie) token = cookie.split('=')[1];
+      }
+    }
+
+    const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch('/api/faq/faqs', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(faqData),
+      headers,
+      body: JSON.stringify(faqData)
     });
 
-    console.log('📝 FAQ Create API response status:', response.status);
+    console.log('📝 Internal FAQ Create response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ FAQ Create API error:', errorText);
+      console.error('❌ Internal FAQ Create error:', errorText);
       throw new Error(`Failed to create FAQ: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('📝 FAQ Create API response:', data);
+    console.log('📝 Internal FAQ Create response:', data);
 
-    // API returns array with the created FAQ as first element
-    if (Array.isArray(data) && data.length > 0) {
-      return data[0];
-    }
-
-    // Fallback to other response formats
-    return data.data || data.faq || data;
+    // Expect the backend to return created FAQ object
+    return data.faq || data.data || data;
   } catch (error) {
     console.error('❌ Error creating FAQ:', error);
     throw error;
@@ -208,33 +200,26 @@ export async function createFAQ(faqData: {
  */
 export async function getSingleFAQ(id: number): Promise<FAQ> {
   try {
-    console.log(`📖 Fetching FAQ with ID: ${id}`);
-    
-    const response = await fetch(FAQ_API.GET_SINGLE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id }),
+    console.log(`📖 Fetching FAQ with ID: ${id} via internal API`);
+    const response = await fetch(`/api/faq/faqs/${id}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store'
     });
 
-    console.log('📖 FAQ Get Single API response status:', response.status);
+    console.log('📖 Internal FAQ GET response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ FAQ Get Single API error:', errorText);
+      console.error('❌ Internal FAQ GET error:', errorText);
       throw new Error(`Failed to fetch FAQ: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('📖 FAQ Get Single API response:', data);
+    console.log('📖 Internal FAQ GET response:', data);
 
-    // API returns array: [{ id, question, answer, ... }]
-    const faq = Array.isArray(data) ? data[0] : data;
-    
-    if (!faq) {
-      throw new Error('FAQ not found');
-    }
+    const faq = data.faq || data.data || data;
+    if (!faq) throw new Error('FAQ not found');
 
     console.log(`✅ FAQ ${id} fetched successfully`);
     return faq;
@@ -249,36 +234,40 @@ export async function getSingleFAQ(id: number): Promise<FAQ> {
  */
 export async function updateFAQ(faqData: FAQ): Promise<FAQ> {
   try {
-    console.log('📝 Updating FAQ:', faqData);
-    
-    const response = await fetch(FAQ_API.UPDATE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(faqData),
+    if (!faqData.id) throw new Error('FAQ id is required for update');
+    console.log('📝 Updating FAQ via internal API:', faqData);
+
+    // Get auth token
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      if (!token) {
+        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('auth-token='));
+        if (cookie) token = cookie.split('=')[1];
+      }
+    }
+
+    const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`/api/faq/faqs/${faqData.id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(faqData)
     });
 
-    console.log('📝 FAQ Update API response status:', response.status);
+    console.log('📝 Internal FAQ Update response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ FAQ Update API error:', errorText);
+      console.error('❌ Internal FAQ Update error:', errorText);
       throw new Error(`Failed to update FAQ: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('📝 FAQ Update API response:', data);
+    console.log('📝 Internal FAQ Update response:', data);
 
-    // API returns array: [{ id, question, answer, ... }]
-    const updatedFaq = Array.isArray(data) ? data[0] : data;
-    
-    if (!updatedFaq) {
-      throw new Error('Update operation failed');
-    }
-
-    console.log(`✅ FAQ ${faqData.id} updated successfully`);
-    return updatedFaq;
+    return data.faq || data.data || data;
   } catch (error) {
     console.error('❌ Error updating FAQ:', error);
     throw error;
@@ -290,36 +279,43 @@ export async function updateFAQ(faqData: FAQ): Promise<FAQ> {
  */
 export async function deleteFAQ(id: number): Promise<{ success: boolean }> {
   try {
-    console.log(`🗑️ Deleting FAQ with ID: ${id}`);
-    
-    const response = await fetch(FAQ_API.DELETE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id }),
+    console.log(`🗑️ Deleting FAQ with ID: ${id} via internal API`);
+
+    // Get auth token
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      if (!token) {
+        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('auth-token='));
+        if (cookie) token = cookie.split('=')[1];
+      }
+    }
+
+    const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`/api/faq/faqs/${id}`, {
+      method: 'DELETE',
+      headers
     });
 
-    console.log('🗑️ FAQ Delete API response status:', response.status);
+    console.log('🗑️ Internal FAQ Delete response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ FAQ Delete API error:', errorText);
+      console.error('❌ Internal FAQ Delete error:', errorText);
       throw new Error(`Failed to delete FAQ: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('🗑️ FAQ Delete API response:', data);
+    console.log('🗑️ Internal FAQ Delete response:', data);
 
-    // API returns array: [{ success: true }]
-    const result = Array.isArray(data) ? data[0] : data;
-    
-    if (result && result.success === true) {
-      console.log(`✅ FAQ ${id} deleted successfully`);
+    // Expect { message: 'FAQ deleted successfully' } or similar
+    if (data && (data.success === true || data.message?.toLowerCase().includes('deleted'))) {
       return { success: true };
     }
 
-    throw new Error('Delete operation failed');
+    return { success: false };
   } catch (error) {
     console.error('❌ Error deleting FAQ:', error);
     throw error;
