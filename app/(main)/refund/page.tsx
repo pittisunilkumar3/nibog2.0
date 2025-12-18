@@ -1,13 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Metadata } from "next"
-
-interface RefundPolicyData {
-  id: number
-  html_content: string
-  created_at: string
-}
+import { getRefundPolicy } from "@/services/refundPolicyService"
 
 export default function RefundPolicyPage() {
   const [refundContent, setRefundContent] = useState<string>("")
@@ -21,23 +15,13 @@ export default function RefundPolicyPage() {
       setError(null)
 
       try {
-        const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/refundpolicyget', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error(`API returned error status: ${response.status}`)
-        }
-
-        const data: RefundPolicyData[] = await response.json()
+        const data = await getRefundPolicy()
         console.log('Fetched refund policy data:', data)
 
-        if (data && Array.isArray(data) && data.length > 0 && data[0].html_content) {
-          setRefundContent(data[0].html_content)
-          setLastUpdated(data[0].created_at)
+        if (data && data.success && data.policy) {
+          // API returns html_content, not policy_text
+          setRefundContent(data.policy.html_content || data.policy.policy_text)
+          setLastUpdated(data.policy.updated_at || data.policy.created_at)
         } else {
           throw new Error('No refund policy content found')
         }
