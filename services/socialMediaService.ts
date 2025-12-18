@@ -14,20 +14,52 @@ export interface SocialMedia {
  * @param socialMediaData The social media data to save
  * @returns The saved social media data
  */
-export async function saveSocialMedia(socialMediaData: SocialMedia): Promise<SocialMedia> {
-  console.log("Saving social media:", socialMediaData);
+export async function updateSocialMedia(socialMediaData: Partial<SocialMedia>): Promise<any> {
+  console.log("📤 Updating social media settings:", socialMediaData);
 
   try {
-    // Use the external API directly
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/socialmedia/create', {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    // Get auth token from storage/cookies
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+
+      if (!token) {
+        const cookies = document.cookie.split(';');
+        const authTokenCookie = cookies.find(c => c.trim().startsWith('auth-token='));
+        if (authTokenCookie) token = authTokenCookie.split('=')[1];
+      }
+
+      if (!token) {
+        const cookies = document.cookie.split(';');
+        const superadminCookie = cookies.find(c => c.trim().startsWith('superadmin-token='));
+        if (superadminCookie) {
+          try {
+            const cookieValue = decodeURIComponent(superadminCookie.split('=')[1]);
+            const userData = JSON.parse(cookieValue);
+            if (userData && userData.token) token = userData.token;
+          } catch (e) {
+            console.warn('Failed to parse superadmin-token cookie:', e);
+          }
+        }
+      }
+    }
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch('/api/social-media-settings', {
+      method: 'PUT',
+      headers,
       body: JSON.stringify(socialMediaData),
+      signal: controller.signal
     });
 
-    console.log(`Save social media response status: ${response.status}`);
+    clearTimeout(timeoutId);
+    console.log(`Update social media response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -36,12 +68,11 @@ export async function saveSocialMedia(socialMediaData: SocialMedia): Promise<Soc
     }
 
     const data = await response.json();
-    console.log("Saved social media:", data);
-
-    // Return the first item if it's an array, otherwise return the data
-    return Array.isArray(data) ? data[0] : data;
+    console.log('✅ Social media updated:', data);
+    return data;
   } catch (error) {
-    console.error("Error saving social media:", error);
+    console.error('❌ Failed to update social media:', error);
+    if (error instanceof Error && error.name === 'AbortError') throw new Error('Request timeout - please try again');
     throw error;
   }
 }
@@ -51,38 +82,36 @@ export async function saveSocialMedia(socialMediaData: SocialMedia): Promise<Soc
  * @returns The social media data
  */
 export async function getSocialMedia(): Promise<SocialMedia | null> {
-  console.log("Fetching social media");
+  console.log("📥 Fetching social media from backend...");
 
   try {
-    // Use the external API directly
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/socialmedia/get', {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const response = await fetch('/api/social-media-settings', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     console.log(`Get social media response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
-      
-      // If 404, return null instead of throwing an error
-      if (response.status === 404) {
-        return null;
-      }
-      
+      if (response.status === 404) return null;
       throw new Error(`API returned error status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("Retrieved social media:", data);
-
-    // Return the first item if it's an array, otherwise return the data
-    return Array.isArray(data) ? data[0] : data;
+    console.log('✅ Retrieved social media:', data);
+    return data;
   } catch (error) {
-    console.error("Error fetching social media:", error);
+    console.error('❌ Error fetching social media:', error);
+    if (error instanceof Error && error.name === 'AbortError') throw new Error('Request timeout - please try again');
     throw error;
   }
 }

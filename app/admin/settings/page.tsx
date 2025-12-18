@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/components/ui/use-toast"
-import { saveSocialMedia, getSocialMedia } from "@/services/socialMediaService"
-import { saveEmailSetting, getEmailSetting } from "@/services/emailSettingService"
+import { updateSocialMedia, getSocialMedia } from "@/services/socialMediaService"
+import { updateEmailSetting, getEmailSetting } from "@/services/emailSettingService"
 import { updateGeneralSetting, getGeneralSetting, fileToBase64 } from "@/services/generalSettingService"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -765,17 +765,27 @@ export default function SettingsPage() {
                     setIsSavingSocialMedia(true)
 
                     const socialMediaData = {
-                      id: socialMediaId,
                       facebook_url: facebook,
                       instagram_url: instagram,
                       linkedin_url: linkedin,
                       youtube_url: youtube
                     }
 
-                    const result = await saveSocialMedia(socialMediaData)
+                    const result = await updateSocialMedia(socialMediaData)
 
-                    if (result && result.id) {
-                      setSocialMediaId(result.id)
+                    if (result) {
+                      // Backend returns message or the object; just refetch to sync
+                      try {
+                        const updated = await getSocialMedia()
+                        if (updated) {
+                          setSocialMediaId(updated.id)
+                          setFacebook(updated.facebook_url)
+                          setInstagram(updated.instagram_url)
+                          setLinkedin(updated.linkedin_url)
+                          setYoutube(updated.youtube_url)
+                        }
+                      } catch (e) { /* ignore refetch error */ }
+
                       setSocialMediaSettingsExist(true)
                       setIsEditingSocialMedia(false)
                       toast({
@@ -981,7 +991,6 @@ export default function SettingsPage() {
                           setIsSavingEmailSetting(true)
 
                           const emailSettingData = {
-                            id: emailSettingId,
                             smtp_host: smtpHost,
                             smtp_port: parseInt(smtpPort),
                             smtp_username: smtpUser,
@@ -990,9 +999,9 @@ export default function SettingsPage() {
                             sender_email: senderEmail
                           }
 
-                          const result = await saveEmailSetting(emailSettingData)
+                          const result = await updateEmailSetting(emailSettingData)
 
-                          if (result && result.id) {
+                          if (result) {
                             // Refetch the email settings to get the latest data from database
                             try {
                               const updatedData = await getEmailSetting()
