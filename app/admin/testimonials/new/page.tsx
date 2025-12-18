@@ -13,23 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Save, Star } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
-// Define interfaces to match API response
-interface Event {
-  event_id: number;
-  event_title: string;
-  event_description: string;
-  city_id: number;
-  venue_id: number;
-  event_date: string;
-  status: string;
-}
-
-interface City {
-  id: number;
-  city_name: string;
-  state: string;
-  is_active: boolean;
-}
+import { getAllCities, City } from "@/services/cityService"
 
 export default function NewTestimonialPage() {
   const router = useRouter()
@@ -61,7 +45,7 @@ export default function NewTestimonialPage() {
       try {
         setError(null)
         console.log('Fetching data...')
-        
+
         // Fetch events from API
         const eventsResponse = await fetch('/api/events/get-all')
         if (!eventsResponse.ok) {
@@ -71,20 +55,16 @@ export default function NewTestimonialPage() {
         console.log('Events data:', eventsData)
         setEvents(eventsData)
 
-        // Fetch cities from internal API route
-        const citiesResponse = await fetch('/api/cities/get-all')
-        if (!citiesResponse.ok) {
-          throw new Error('Failed to fetch cities')
-        }
-        const citiesData = await citiesResponse.json()
+        // Fetch cities using the service
+        const citiesData = await getAllCities()
         console.log('Cities data:', citiesData)
 
-        // Clean up city names by trimming whitespace and ensure proper structure
+        // Clean up city names and ensure proper structure
         const cleanedCities = citiesData.map((city: any) => ({
           id: city.id,
           city_name: city.city_name ? city.city_name.trim() : '',
           state: city.state,
-          is_active: city.is_active
+          is_active: city.is_active === 1 || city.is_active === true
         }))
 
         console.log('Cleaned cities data:', cleanedCities)
@@ -217,7 +197,7 @@ export default function NewTestimonialPage() {
       }
       if (!selectedCityName || selectedCityName.trim() === '') {
         console.error('City validation failed:', { selectedCityName, selectedCityId });
-        throw new Error('Please select a city')  
+        throw new Error('Please select a city')
       }
 
       // Format date to match API requirement (YYYY-MM-DD)
@@ -362,15 +342,15 @@ export default function NewTestimonialPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Customer Name</Label>
-              <Input 
-                id="name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Enter customer name"
                 required
               />
             </div>
-            
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
@@ -430,7 +410,7 @@ export default function NewTestimonialPage() {
                 </Select>
                 {error && <p className="text-sm text-red-500">{error}</p>}
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="event">Event</Label>
                 <Select value={selectedEventId} onValueChange={setSelectedEventId} required disabled={isDataLoading}>
@@ -453,29 +433,28 @@ export default function NewTestimonialPage() {
                 </Select>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="rating">Rating</Label>
-              <RadioGroup 
-                id="rating" 
-                value={rating} 
+              <RadioGroup
+                id="rating"
+                value={rating}
                 onValueChange={setRating}
                 className="flex space-x-2"
               >
                 {[1, 2, 3, 4, 5].map((value) => (
                   <div key={value} className="flex flex-col items-center space-y-1">
-                    <RadioGroupItem 
-                      value={value.toString()} 
-                      id={`rating-${value}`} 
-                      className="sr-only" 
+                    <RadioGroupItem
+                      value={value.toString()}
+                      id={`rating-${value}`}
+                      className="sr-only"
                     />
-                    <label 
+                    <label
                       htmlFor={`rating-${value}`}
-                      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full ${
-                        parseInt(rating) >= value 
-                          ? "bg-yellow-100 text-yellow-500 dark:bg-yellow-900/20" 
+                      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full ${parseInt(rating) >= value
+                          ? "bg-yellow-100 text-yellow-500 dark:bg-yellow-900/20"
                           : "bg-muted text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       <Star className={`h-6 w-6 ${parseInt(rating) >= value ? "fill-yellow-500" : ""}`} />
                     </label>
@@ -484,13 +463,13 @@ export default function NewTestimonialPage() {
                 ))}
               </RadioGroup>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="testimonialText">Testimonial</Label>
-              <Textarea 
-                id="testimonialText" 
-                value={testimonialText} 
-                onChange={(e) => setTestimonialText(e.target.value)} 
+              <Textarea
+                id="testimonialText"
+                value={testimonialText}
+                onChange={(e) => setTestimonialText(e.target.value)}
                 placeholder="Enter testimonial text"
                 rows={5}
                 required
@@ -499,9 +478,9 @@ export default function NewTestimonialPage() {
                 Enter the customer's testimonial about their experience with NIBOG events.
               </p>
             </div>
-            
+
             <Separator className="my-4" />
-            
+
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
               <Input

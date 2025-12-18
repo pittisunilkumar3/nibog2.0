@@ -19,6 +19,8 @@ export async function GET() {
       return NextResponse.json(cachedStats, { status: 200 });
     }
 
+    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
+
     // Fetch data from all three endpoints in parallel
     const [usersResponse, citiesResponse, gamesResponse] = await Promise.all([
       fetch(USER_API.GET_ALL, {
@@ -26,8 +28,8 @@ export async function GET() {
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
       }),
-      fetch(CITY_API.GET_ALL, {
-        method: "GET", 
+      fetch(`${BACKEND_URL}/api/city/`, {
+        method: "GET",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
       }),
@@ -70,7 +72,7 @@ export async function GET() {
         const citiesData = await citiesResponse.json();
         if (Array.isArray(citiesData)) {
           // Count only active cities
-          cityCount = citiesData.filter(city => city.is_active !== false).length;
+          cityCount = citiesData.filter(city => city.is_active === true || city.is_active === 1).length;
           console.log("Homepage stats API: City count:", cityCount);
         }
       } catch (error) {
@@ -110,7 +112,7 @@ export async function GET() {
 
     console.log("Homepage stats API: Final stats:", stats);
 
-    return NextResponse.json(stats, { 
+    return NextResponse.json(stats, {
       status: 200,
       headers: {
         'Cache-Control': 'public, max-age=300', // 5 minutes
@@ -120,7 +122,7 @@ export async function GET() {
 
   } catch (error) {
     console.error("Homepage stats API: Error fetching stats:", error);
-    
+
     // Return fallback stats in case of error
     const fallbackStats = {
       userRegistrations: 1500,

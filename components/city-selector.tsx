@@ -11,15 +11,7 @@ interface CitySelectorProps {
   onCityChange?: (cityId: number) => void;
 }
 
-// City type definition based on API response
-interface City {
-  id: number;
-  city_name: string;
-  state: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { getAllCities, City } from "@/services/cityService"
 
 export default function CitySelector({ onCityChange }: CitySelectorProps) {
   const [open, setOpen] = useState(false)
@@ -32,58 +24,31 @@ export default function CitySelector({ onCityChange }: CitySelectorProps) {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchCities = async () => {
+    const fetchCitiesData = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Use the direct API endpoint since we're now allowing it in the middleware
-        const apiUrl = 'https://ai.nibog.in/webhook/v1/nibog/city/get-all';
-        console.log('Fetching cities from direct API endpoint...');
 
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        });
-
-        console.log('API Response Status:', response.status, response.statusText);
-        
-        const responseText = await response.text();
-        console.log('Raw response (first 200 chars):', responseText.substring(0, 200));
-
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`);
-        }
-
-        // Parse the JSON response
-        const data = JSON.parse(responseText);
-        console.log('Parsed response data:', data);
+        console.log('Fetching cities via cityService...');
+        const activeCities = await getAllCities();
 
         if (!isMounted) return;
 
-        if (!Array.isArray(data)) {
-          throw new Error('Invalid response format: expected an array of cities');
-        }
+        console.log(`Found ${activeCities.length} cities`);
 
-        // Process the cities data
-        const activeCities = data.filter((city: City) => city.is_active);
-        console.log(`Found ${activeCities.length} active cities`);
-        
         if (activeCities.length === 0) {
-          console.warn('No active cities found in the response');
+          console.warn('No cities found');
         }
 
-        setCities(activeCities);
-        
+        // The service already returns the cities, we can filter for active ones here if needed
+        // but the service should probably handle that or it returns all
+        const filteredCities = activeCities.filter(city => city.is_active === 1 || city.is_active === true);
+        setCities(filteredCities);
+
         // If there's only one city, select it by default
-        if (activeCities.length === 1 && onCityChange) {
-          setValue(activeCities[0].id.toString());
-          onCityChange(activeCities[0].id);
+        if (filteredCities.length === 1 && onCityChange) {
+          setValue(filteredCities[0].id!.toString());
+          onCityChange(filteredCities[0].id!);
         }
       } catch (error) {
         const err = error as Error;
@@ -96,7 +61,7 @@ export default function CitySelector({ onCityChange }: CitySelectorProps) {
       }
     };
 
-    fetchCities();
+    fetchCitiesData();
 
     // Cleanup function to prevent state updates after unmount
     return () => {

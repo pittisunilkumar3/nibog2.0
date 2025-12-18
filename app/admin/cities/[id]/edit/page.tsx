@@ -135,17 +135,13 @@ export default function EditCityPage({ params }: { params: { id: string } }) {
       console.log("Updating city with data:", cityDataToUpdate)
 
       // Update city using the API service
-      const updatedCity = await updateCity(cityDataToUpdate)
+      const result = await updateCity(cityId, {
+        city_name: cityName.trim(),
+        state: state.trim(),
+        is_active: isActive ? 1 : 0
+      })
 
-      console.log("City updated successfully:", updatedCity)
-
-      // Update local state with the returned data
-      if (updatedCity) {
-        setCity(updatedCity)
-        setCityName(updatedCity.city_name || cityName)
-        setState(updatedCity.state || state)
-        setIsActive(Boolean(updatedCity.is_active))
-      }
+      console.log("City updated successfully:", result)
 
       toast({
         title: "Success",
