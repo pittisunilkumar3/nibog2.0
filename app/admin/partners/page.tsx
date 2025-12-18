@@ -59,7 +59,7 @@ interface Partner {
   updated_at?: string
 }
 
-const API_BASE_URL = "https://ai.nibog.in/webhook"
+import { getAllPartners, createPartner, updatePartner, deletePartner } from '@/services/partnerService'
 
 export default function PartnersPage() {
   const router = useRouter()
@@ -88,16 +88,8 @@ export default function PartnersPage() {
   const fetchPartners = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/partners`, {
-        cache: 'no-store',
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setPartners(Array.isArray(data) ? data : [])
-      } else {
-        throw new Error('Failed to fetch partners')
-      }
+      const data = await getAllPartners()
+      setPartners(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching partners:', error)
       toast({
@@ -199,38 +191,18 @@ export default function PartnersPage() {
     setIsSubmitting(true)
 
     try {
-      const url = editingPartner
-        ? `${API_BASE_URL}/partners/update`
-        : `${API_BASE_URL}/partners/create`
-
-      const payload = editingPartner
-        ? { ...formData, id: editingPartner.id }
-        : formData
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: editingPartner
-            ? "Partner updated successfully"
-            : "Partner created successfully",
-        })
-        
-        // Reset form
-        resetForm()
-        
-        // Refresh partners list
-        await fetchPartners()
+        // Use service functions which handle auth and internal routes
+      if (editingPartner) {
+        await updatePartner(editingPartner.id, formData as any)
+        toast({ title: 'Success', description: 'Partner updated successfully' })
       } else {
-        throw new Error('Operation failed')
+        await createPartner(formData as any)
+        toast({ title: 'Success', description: 'Partner created successfully' })
       }
+
+      // Reset and refresh
+      resetForm()
+      await fetchPartners()
     } catch (error) {
       console.error('Error saving partner:', error)
       toast({
@@ -252,28 +224,15 @@ export default function PartnersPage() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/partners/delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id: partnerToDelete.id }),
-      })
+      await deletePartner(partnerToDelete.id)
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Partner deleted successfully",
-        })
-        
-        setShowDeleteDialog(false)
-        setPartnerToDelete(null)
-        
-        // Refresh partners list
-        await fetchPartners()
-      } else {
-        throw new Error('Delete failed')
-      }
+      toast({ title: 'Success', description: 'Partner deleted successfully' })
+
+      setShowDeleteDialog(false)
+      setPartnerToDelete(null)
+      
+      // Refresh partners list
+      await fetchPartners()
     } catch (error) {
       console.error('Error deleting partner:', error)
       toast({

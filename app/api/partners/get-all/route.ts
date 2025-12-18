@@ -6,16 +6,29 @@ export async function GET() {
   try {
     console.log("Server API route: Fetching partners...");
 
-    const apiUrl = 'https://ai.nibog.in/webhook/partners';
-    console.log("Server API route: Calling API URL:", apiUrl);
+    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
+    const primaryApiUrl = `${BACKEND_URL}/api/partners/get-all`;
+    const fallbackApiUrl = `${BACKEND_URL}/api/partners`;
 
-    const response = await fetch(apiUrl, {
+    console.log("Server API route: Calling primary API URL:", primaryApiUrl);
+
+    let response = await fetch(primaryApiUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
       cache: "no-store",
     });
+
+    // If primary endpoint fails, try fallback
+    if (!response.ok) {
+      console.warn(`Server API route: Primary endpoint failed with status ${response.status}, trying fallback: ${fallbackApiUrl}`);
+      response = await fetch(fallbackApiUrl, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+    }
 
     console.log(`Server API route: Get partners response status: ${response.status}`);
 

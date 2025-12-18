@@ -22,12 +22,16 @@ export function PartnersSection() {
       try {
         const response = await fetch('/api/partners/get-all')
         if (response.ok) {
-          const data = await response.json()
+          const payload = await response.json()
+          // payload may be an array or an object { success, data }
+          const arr = Array.isArray(payload) ? payload : (payload && payload.data) ? payload.data : []
           // Filter only active partners and sort by display_priority
-          const activePartners = data
+          const activePartners = arr
             .filter((partner: Partner) => partner.status === 'Active')
             .sort((a: Partner, b: Partner) => a.display_priority - b.display_priority)
           setPartners(activePartners)
+        } else {
+          console.warn('Partners fetch returned non-ok status:', response.status)
         }
       } catch (error) {
         console.error('Error fetching partners:', error)
