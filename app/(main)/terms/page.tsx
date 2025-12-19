@@ -20,23 +20,24 @@ export default function TermsPage() {
       setError(null)
 
       try {
-        const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/termsandconditionsget', {
+        const response = await fetch('/api/terms', {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store'
         })
 
         if (!response.ok) {
           throw new Error(`API returned error status: ${response.status}`)
         }
 
-        const data: TermsConditionsData[] = await response.json()
+        const data = await response.json()
         console.log('Fetched terms & conditions data:', data)
 
-        if (data && Array.isArray(data) && data.length > 0 && data[0].html_content) {
-          setTermsContent(data[0].html_content)
-          setLastUpdated(data[0].created_at)
+        // Expected shape: { success: true, terms: { html_content, updated_at } }
+        // Backend stores in html_content field
+        if (data && data.success && data.terms && (data.terms.html_content || data.terms.terms_text)) {
+          setTermsContent(data.terms.html_content || data.terms.terms_text)
+          setLastUpdated(data.terms.updated_at || data.terms.created_at || new Date().toISOString())
         } else {
           throw new Error('No terms & conditions content found')
         }

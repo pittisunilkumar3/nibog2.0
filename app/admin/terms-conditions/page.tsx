@@ -16,6 +16,7 @@ import {
 import { PageTransition, FadeIn } from "@/components/ui/animated-components"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { MobileTestHelper } from "@/components/admin/mobile-test-helper"
+import { getTerms, updateTerms } from "@/services/termsService"
 
 // Types for terms & conditions content
 interface TermsConditionsContent {
@@ -113,48 +114,37 @@ export default function TermsConditionsPage() {
   const [termsContent, setTermsContent] = useState<TermsConditionsContent>(mockTermsContent)
 
   useEffect(() => {
-    // Load terms & conditions content from API
+    // Load terms & conditions content from internal API/service
     const loadTermsContent = async () => {
       setIsLoading(true)
       try {
-        // Fetch existing terms & conditions content from API
-        const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/termsandconditionsget', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error(`API returned error status: ${response.status}`)
-        }
-
-        const data = await response.json()
+        const data = await getTerms()
         console.log('Fetched terms & conditions data:', data)
 
-        // Check if data exists and has content
-        if (data && Array.isArray(data) && data.length > 0 && data[0].html_content) {
-          const fetchedContent = data[0].html_content
-          setTermsContent({
-            websiteContent: fetchedContent,
-            mobileAppContent: fetchedContent, // Use same content for both tabs initially
-            lastUpdated: data[0].created_at || new Date().toISOString(),
-            version: "1.0"
-          })
+        // Normalize multiple possible shapes:
+        // Backend returns { success: true, terms: { html_content, created_at } }
+        if (data && data.success && data.terms) {
+          const html = data.terms.html_content || data.terms.terms_text || data.terms.text || '';
+          setTermsContent({ websiteContent: html, mobileAppContent: html, lastUpdated: data.terms.updated_at || data.terms.created_at || new Date().toISOString(), version: '1.0' })
+        } else if (Array.isArray(data) && data.length > 0 && (data[0].html_content || data[0].terms_text)) {
+          const html = data[0].html_content || data[0].terms_text || '';
+          setTermsContent({ websiteContent: html, mobileAppContent: html, lastUpdated: data[0].created_at || data[0].updated_at || new Date().toISOString(), version: '1.0' })
+        } else if (data && (data.html_content || data.terms_text)) {
+          const html = data.html_content || data.terms_text || '';
+          setTermsContent({ websiteContent: html, mobileAppContent: html, lastUpdated: data.updated_at || data.created_at || new Date().toISOString(), version: '1.0' })
         } else {
-          // Fallback to mock data if no content found
+          console.warn('Terms: Unrecognized response shape, falling back to defaults', data)
           setTermsContent(mockTermsContent)
         }
 
         setHasChanges(false)
       } catch (error) {
-        console.error("Failed to load terms & conditions content:", error)
-        // Fallback to mock data on error
+        console.error('Failed to load terms & conditions content:', error)
         setTermsContent(mockTermsContent)
         toast({
-          title: "Warning",
-          description: "Failed to load saved terms & conditions content. Using default values.",
-          variant: "destructive",
+          title: 'Warning',
+          description: 'Failed to load saved terms & conditions content. Using default values.',
+          variant: 'destructive',
         })
       } finally {
         setIsLoading(false)
@@ -170,42 +160,29 @@ export default function TermsConditionsPage() {
       // Get the content to save
       const contentToSave = termsContent.websiteContent
 
-      // Call the external API
-      const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/termsandcondition', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: contentToSave
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error(`API returned error status: ${response.status}`)
-      }
-
-      const result = await response.json()
+      // Use internal updateTerms service which forwards auth header
+      const result = await updateTerms(contentToSave)
       console.log('Terms & conditions saved successfully:', result)
 
-      // Update last updated timestamp
-      setTermsContent(prev => ({
-        ...prev,
-        lastUpdated: new Date().toISOString()
-      }))
+      // Re-fetch the saved content from server to reflect any normalization/sanitization
+      try {
+        const fresh = await getTerms()
+        if (fresh && fresh.success && fresh.terms) {
+          const html = fresh.terms.html_content || fresh.terms.terms_text || ''
+          setTermsContent(prev => ({ ...prev, websiteContent: html, mobileAppContent: html, lastUpdated: fresh.terms.updated_at || fresh.terms.created_at || new Date().toISOString() }))
+        } else {
+          setTermsContent(prev => ({ ...prev, lastUpdated: new Date().toISOString() }))
+        }
+      } catch (e) {
+        console.warn('Failed to re-fetch terms after save:', e)
+        setTermsContent(prev => ({ ...prev, lastUpdated: new Date().toISOString() }))
+      }
 
       setHasChanges(false)
-      toast({
-        title: "Success",
-        description: "Terms & conditions content saved successfully!",
-      })
+      toast({ title: 'Success', description: 'Terms & conditions content saved successfully!' })
     } catch (error) {
-      console.error("Failed to save terms & conditions content:", error)
-      toast({
-        title: "Error",
-        description: "Failed to save terms & conditions content. Please try again.",
-        variant: "destructive",
-      })
+      console.error('Failed to save terms & conditions content:', error)
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to save terms & conditions content. Please try again.', variant: 'destructive' })
     } finally {
       setIsSaving(false)
     }
