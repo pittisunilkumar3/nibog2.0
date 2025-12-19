@@ -3,16 +3,14 @@
 export interface BabyGame {
   id?: number;
   game_name: string;
+  image_url?: string;
   description?: string;
-  game_description?: string; // For API request
   min_age?: number;
-  min_age_months?: number; // For API request
   max_age?: number;
-  max_age_months?: number; // For API request
-  duration_minutes: number;
-  suggested_price?: number;
-  categories: string[];
-  is_active: boolean;
+  duration_minutes?: number;
+  categories: string[] | string;
+  priority?: number;
+  is_active: boolean | number;
   created_at?: string;
   updated_at?: string;
 }
@@ -33,6 +31,19 @@ export interface GameWithImage {
   updatedAt: string;
 }
 
+import { getSession } from "@/lib/auth/session";
+
+/**
+ * Get authentication headers with Bearer token
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const token = await getSession();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
+}
+
 /**
  * Create a new baby game
  * @param gameData The game data to create
@@ -40,24 +51,20 @@ export interface GameWithImage {
  */
 export async function createBabyGame(gameData: BabyGame): Promise<BabyGame> {
   try {
-    // Use our internal API route to avoid CORS issues
+    const authHeaders = await getAuthHeaders();
     const response = await fetch('/api/babygames/create', {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(gameData), // Send original gameData, let the API route handle field mapping
+      headers: authHeaders,
+      body: JSON.stringify(gameData),
     });
 
     if (!response.ok) {
-      await response.text(); // Consume the response body
-      throw new Error(`API returned error status: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`API returned error status: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-
-    // Return the first item if it's an array, otherwise return the data
-    return Array.isArray(data) ? data[0] : data;
+    return data.success && data.game ? data.game : (Array.isArray(data) ? data[0] : data);
   } catch (error) {
     throw error;
   }
@@ -156,7 +163,6 @@ export async function getAllActiveGamesWithImages(): Promise<GameWithImage[]> {
  */
 export async function getBabyGameById(id: number): Promise<BabyGame> {
   try {
-    // Use our internal API route to avoid CORS issues
     const response = await fetch('/api/babygames/get', {
       method: "POST",
       headers: {
@@ -172,14 +178,8 @@ export async function getBabyGameById(id: number): Promise<BabyGame> {
 
     const data = await response.json();
 
-    // Return the first item if it's an array, otherwise return the data
-    const gameData = Array.isArray(data) ? data[0] : data;
-
-    if (!gameData) {
-      throw new Error("No game data found");
-    }
-
-    return gameData;
+    // The proxy already extracts the game from { success, game } or returns original
+    return data;
   } catch (error) {
     throw error;
   }
@@ -196,24 +196,20 @@ export async function updateBabyGame(gameData: BabyGame): Promise<BabyGame> {
   }
 
   try {
-    // Use our internal API route to avoid CORS issues
+    const authHeaders = await getAuthHeaders();
     const response = await fetch('/api/babygames/update', {
-      method: "POST", // Changed from PUT to POST as per API documentation
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(gameData), // Send original gameData, let the API route handle field mapping
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify(gameData),
     });
 
     if (!response.ok) {
-      await response.text(); // Consume the response body
-      throw new Error(`API returned error status: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`API returned error status: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-
-    // Return the first item if it's an array, otherwise return the data
-    return Array.isArray(data) ? data[0] : data;
+    return data.success && data.game ? data.game : (Array.isArray(data) ? data[0] : data);
   } catch (error) {
     throw error;
   }
@@ -230,42 +226,20 @@ export async function deleteBabyGame(id: number): Promise<{ success: boolean }> 
   }
 
   try {
-    // Use our internal API route to avoid CORS issues
+    const authHeaders = await getAuthHeaders();
     const response = await fetch('/api/babygames/delete', {
-      method: "POST", // Changed from DELETE to POST as per API documentation
-      headers: {
-        "Content-Type": "application/json",
-      },
+      method: "POST",
+      headers: authHeaders,
       body: JSON.stringify({ id: Number(id) }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-
-      try {
-        // Try to parse the error response as JSON
-        const errorData = JSON.parse(errorText);
-        throw new Error(errorData.error || `API returned error status: ${response.status}`);
-      } catch (parseError) {
-        // If parsing fails, throw a generic error
-        throw new Error(`Failed to delete game. API returned status: ${response.status}`);
-      }
+      throw new Error(`Failed to delete game. API returned status: ${response.status} - ${errorText}`);
     }
 
-    // Try to parse the response
-    try {
-      const data = await response.json();
-
-      // Check if the response indicates success
-      if (data && (data.success === true || (Array.isArray(data) && data[0]?.success === true))) {
-        return { success: true };
-      }
-
-      return { success: true }; // Default to success if we got a 200 response
-    } catch (parseError) {
-      // If we can't parse the response but got a 200 status, consider it a success
-      return { success: true };
-    }
+    const data = await response.json();
+    return { success: data.success === true };
   } catch (error) {
     throw error;
   }

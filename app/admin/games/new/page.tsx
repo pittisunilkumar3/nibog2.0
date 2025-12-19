@@ -99,85 +99,51 @@ export default function NewGameTemplate() {
     setError(null)
 
     try {
-      // Format the data for the API
-      // Based on the API documentation, we need to use these exact field names
+      let finalImageUrl = gameImage;
+
+      // 1. Upload the image first if a new one was selected
+      if (gameImageFile) {
+        try {
+          console.log("Uploading game image before game creation...");
+          const uploadResult = await uploadGameImage(gameImageFile);
+          console.log("Game image uploaded:", uploadResult);
+          finalImageUrl = uploadResult.path;
+        } catch (imageError: any) {
+          console.error("Error uploading image:", imageError);
+          throw new Error(`Image upload failed: ${imageError.message || "Unknown error"}`);
+        }
+      }
+
+      // 2. Format the data for the new REST API
       const gameData = {
         game_name: name,
         description: description,
-        min_age_months: minAge,       // API expects min_age_months
-        max_age_months: maxAge,       // API expects max_age_months
+        min_age: minAge,
+        max_age: maxAge,
         duration_minutes: duration,
-        categories: categories,
-        is_active: isActive,
-        imagePath: gameImage,
-        imagePriority: imagePriority
+        categories: JSON.stringify(categories), // Send as JSON string for backend
+        is_active: isActive ? 1 : 0,
+        image_url: finalImageUrl,
+        priority: parseInt(imagePriority) || 1
       }
 
-      console.log("Baby game data:", gameData)
+      console.log("Creating baby game with data:", gameData)
 
-      // Log uploaded image path and priority if available
-      if (gameImage) {
-        console.log("Baby game image uploaded successfully:", gameImage)
-        console.log("Baby game priority:", imagePriority)
-      }
+      // 3. Call the API to create the game
+      const result = await createBabyGame(gameData as any)
+      console.log("Created game result:", result)
 
-      // Call the API to create the game
-      const result = await createBabyGame(gameData)
-      console.log("Created game:", result)
+      toast({
+        title: "Success",
+        description: `${name} has been created successfully!`,
+      })
 
-      // Get the game ID from the response
-      // Handle both response formats: {id: ...} or {game_id: ...}
-      const gameId = (result as any)?.id || (result as any)?.game_id
-      if (!gameId) {
-        throw new Error("Game created but no ID returned")
-      }
-
-      console.log("Game created with ID:", gameId)
-
-      // If there's an image file, upload it and send to webhook
-      if (gameImageFile) {
-        try {
-          console.log("Uploading game image after successful game creation...")
-
-          // Upload the image
-          const uploadResult = await uploadGameImage(gameImageFile)
-          console.log("Game image uploaded:", uploadResult)
-
-          // Send to webhook with the game ID
-          const webhookResult = await sendGameImageToWebhook(
-            gameId,
-            uploadResult.path,
-            parseInt(imagePriority),
-            true
-          )
-          console.log("Game image webhook result:", webhookResult)
-
-          toast({
-            title: "Success",
-            description: "Game created and image uploaded successfully!",
-          })
-        } catch (imageError: any) {
-          console.error("Error uploading image after game creation:", imageError)
-          toast({
-            title: "Warning",
-            description: `Game created successfully, but image upload failed: ${imageError.message || "Unknown error"}`,
-            variant: "destructive",
-          })
-        }
-      } else {
-        // Show success message for game creation only
-        toast({
-          title: "Game Created",
-          description: `${name} has been created successfully.`,
-          variant: "default",
-        })
-      }
-
-      // Redirect to the game templates list after a short delay to show the toast
+      // Redirect to list
       setTimeout(() => {
         router.push("/admin/games")
       }, 2000)
     } catch (error: any) {
+      console.error("Create game error:", error);
       setError(error.message || "Failed to create game. Please try again.")
 
       toast({

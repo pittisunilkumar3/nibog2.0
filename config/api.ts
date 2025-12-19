@@ -44,6 +44,11 @@ export const BABY_GAME_API = {
   DELETE: `${API_BASE_URL}/babygame/delete`,
 };
 
+// New Baby Games REST API (Backend)
+export const BABY_GAMES_REST_API = {
+  BASE: `${process.env.BACKEND_URL}/api/baby-games`,
+};
+
 // Basic Event API endpoints (for events without games/slots)
 export const BASIC_EVENT_API = {
   CREATE: `${API_BASE_URL}/event/create`, // POST

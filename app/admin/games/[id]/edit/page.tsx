@@ -112,13 +112,13 @@ export default function EditGameTemplate({ params }: Props) {
       // Enhanced filtering to handle empty objects and invalid data
       const validImages = Array.isArray(images)
         ? images.filter(img =>
-            img &&
-            typeof img === 'object' &&
-            img.id !== undefined &&
-            img.image_url !== undefined &&
-            img.image_url !== null &&
-            img.image_url.trim() !== ''
-          )
+          img &&
+          typeof img === 'object' &&
+          img.id !== undefined &&
+          img.image_url !== undefined &&
+          img.image_url !== null &&
+          img.image_url.trim() !== ''
+        )
         : []
 
       console.log(`📊 Valid images after filtering: ${validImages.length}`, validImages)
@@ -227,154 +227,55 @@ export default function EditGameTemplate({ params }: Props) {
       setIsSubmitting(true)
       setError(null)
 
-      // Prepare the game data for the API
+      let finalImageUrl = gameImage;
+
+      // 1. Upload the image first if a new one was selected
+      if (gameImageFile) {
+        try {
+          console.log("🖼️ Uploading new game image before game update...");
+          const uploadResult = await uploadGameImage(gameImageFile);
+          console.log("✅ Game image uploaded:", uploadResult);
+          finalImageUrl = uploadResult.path;
+        } catch (imageError: any) {
+          console.error("❌ Error uploading image:", imageError);
+          throw new Error(`Image upload failed: ${imageError.message || "Unknown error"}`);
+        }
+      }
+
+      // 2. Prepare the game data for the new REST API
       const gameData = {
         id: gameId,
         game_name: name,
         description: description,
-        min_age_months: minAge,    // API expects min_age_months
-        max_age_months: maxAge,    // API expects max_age_months
+        min_age: minAge,
+        max_age: maxAge,
         duration_minutes: duration,
-        categories: categories,
-        is_active: isActive,
-        imagePath: gameImage,
-        imagePriority: imagePriority
+        categories: JSON.stringify(categories), // Send as JSON string for backend
+        is_active: isActive ? 1 : 0,
+        image_url: finalImageUrl,
+        priority: parseInt(imagePriority) || 1
       }
 
-      console.log("Baby game update data:", gameData)
+      console.log("Updating baby game with data:", gameData)
 
-      // Log uploaded image path and priority if available
-      if (gameImage) {
-        console.log("Baby game image uploaded successfully:", gameImage)
-        console.log("Baby game priority:", imagePriority)
-      }
+      // 3. Call the API to update the game
+      const result = await updateBabyGame(gameData as any)
+      console.log("Updated game result:", result)
 
-      // Call the API to update the game
-      const result = await updateBabyGame(gameData)
-      console.log("Updated game:", result)
-
-      // Handle image updates - either new image upload or priority change
-      if (gameImageFile) {
-        try {
-          console.log("🖼️ Uploading new game image after successful game update...")
-
-          // Upload the new image
-          const uploadResult = await uploadGameImage(gameImageFile)
-          console.log("✅ Game image uploaded:", uploadResult)
-
-          // Check if there are existing images to update or if we need to create new
-          if (existingImages.length > 0) {
-            console.log("🔄 Updating existing game image with new file...")
-            console.log(`📊 Current images: ${existingImages.length}, uploading new one`)
-
-            // Delete old image files from filesystem to save space
-            for (const existingImage of existingImages) {
-              if (existingImage.image_url) {
-                try {
-                  // Call API to delete the old file
-                  await fetch('/api/files/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filePath: existingImage.image_url })
-                  })
-                  console.log(`🗑️ Deleted old image file: ${existingImage.image_url}`)
-                } catch (deleteError) {
-                  console.warn(`⚠️ Failed to delete old image file: ${existingImage.image_url}`, deleteError)
-                }
-              }
-            }
-
-            // Update the image record with new file
-            const updateResult = await updateGameImage(
-              gameId,
-              uploadResult.path,
-              parseInt(imagePriority),
-              true
-            )
-            console.log("✅ Game image update result:", updateResult)
-          } else {
-            console.log("➕ Creating first game image...")
-            // Create new image record
-            const webhookResult = await sendGameImageToWebhook(
-              gameId,
-              uploadResult.path,
-              parseInt(imagePriority),
-              true
-            )
-            console.log("✅ First game image created:", webhookResult)
-          }
-
-          toast({
-            title: "Success",
-            description: existingImages.length > 0
-              ? "Game and image updated successfully!"
-              : "Game updated and image uploaded successfully!",
-          })
-        } catch (imageError: any) {
-          console.error("❌ Error uploading image after game update:", imageError)
-          toast({
-            title: "Warning",
-            description: `Game updated successfully, but image upload failed: ${imageError.message || "Unknown error"}`,
-            variant: "destructive",
-          })
-        }
-      } else if (existingImages.length > 0) {
-        // No new image file, but update existing image priority if it changed
-        try {
-          console.log("🔄 Updating existing game image priority (no new file)...")
-
-          // Get the latest existing image
-          const sortedImages = [...existingImages].sort((a, b) => {
-            if (a.priority !== b.priority) {
-              return b.priority - a.priority;
-            }
-            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-          });
-          const latestImage = sortedImages[0];
-
-          console.log(`📊 Current image: ${latestImage.image_url}, Priority: ${latestImage.priority}`);
-          console.log(`📊 New priority: ${imagePriority}`);
-
-          // Always call the secondary API to update priority (even if it's the same)
-          const updateResult = await updateGameImage(
-            gameId,
-            latestImage.image_url,
-            parseInt(imagePriority),
-            true
-          )
-          console.log("✅ Game image priority update result:", updateResult)
-
-          toast({
-            title: "Success",
-            description: "Game updated and image priority updated successfully!",
-          })
-        } catch (imageError: any) {
-          console.error("❌ Error updating image priority:", imageError)
-          toast({
-            title: "Warning",
-            description: `Game updated successfully, but image priority update failed: ${imageError.message || "Unknown error"}`,
-            variant: "destructive",
-          })
-        }
-      } else {
-        // No existing images and no new image file
-        console.log("ℹ️ No image updates needed - no existing images and no new file")
-        toast({
-          title: "Game Updated",
-          description: `${name} has been updated successfully.`,
-          variant: "default",
-        })
-      }
+      toast({
+        title: "Success",
+        description: `${name} has been updated successfully!`,
+      })
 
       // Show saved state
       setIsSaved(true)
       setTimeout(() => {
         setIsSaved(false)
-        // Redirect to the game details page
         router.push(`/admin/games`)
       }, 2000)
 
     } catch (error: any) {
+      console.error("Update game error:", error);
       setError(error.message || "Failed to update game. Please try again.")
 
       toast({
@@ -515,11 +416,10 @@ export default function EditGameTemplate({ params }: Props) {
                       .map((img, index) => (
                         <div
                           key={img.id || index}
-                          className={`p-3 border rounded-lg ${
-                            index === 0
+                          className={`p-3 border rounded-lg ${index === 0
                               ? 'bg-green-50 border-green-200' // Latest image gets green highlight
                               : 'bg-blue-50 border-blue-200'
-                          }`}
+                            }`}
                         >
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div><strong>Image:</strong> {img.image_url ? img.image_url.split('/').pop() : 'Unknown file'}</div>

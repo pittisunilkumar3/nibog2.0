@@ -46,15 +46,15 @@ export default function EventCard({
   featured = false,
 }: EventCardProps) {
   const [isFavorite, setIsFavorite] = useState(false)
-  
+
   const isSoldOut = spotsLeft === 0
   const isLowAvailability = spotsLeft <= 3 && spotsLeft > 0
-  
+
   const toggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsFavorite(!isFavorite)
-    
+
     // In a real app, this would call an API to save the favorite status
     console.log(`Toggle favorite for event ${id}: ${!isFavorite}`)
   }
@@ -71,6 +71,7 @@ export default function EventCard({
               src={image}
               alt={title}
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover transition-transform hover:scale-105"
             />
           </div>
