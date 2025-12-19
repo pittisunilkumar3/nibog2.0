@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
+import { getAllCities, City } from "@/services/cityService"
 
 // Interface for homepage stats
 interface HomepageStats {
@@ -258,8 +259,8 @@ import { AnimatedBackground } from "@/components/animated-background"
 import HomepageGamesSection from "@/components/homepage-games-section"
 import { PartnersSection } from "@/components/partners-section"
 
-// Dynamic Stats Component
-function DynamicStatsSection() {
+// Custom hook for homepage stats
+function useHomepageStats() {
   const [stats, setStats] = useState<HomepageStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -272,11 +273,6 @@ function DynamicStatsSection() {
       const response = await fetch('/api/homepage-stats', {
         method: 'GET',
         cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
       });
 
       if (!response.ok) {
@@ -284,13 +280,10 @@ function DynamicStatsSection() {
       }
 
       const data = await response.json();
-      console.log('Homepage: Fetched stats:', data);
       setStats(data);
-
     } catch (error) {
       console.error('Homepage: Error fetching stats:', error);
       setError(error instanceof Error ? error.message : 'Failed to load stats');
-
       // Set fallback stats
       setStats({
         userRegistrations: 1500,
@@ -305,12 +298,119 @@ function DynamicStatsSection() {
 
   useEffect(() => {
     fetchStats();
-
-    // Refresh stats every 5 minutes
     const interval = setInterval(fetchStats, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
+  return { stats, isLoading, error };
+}
+
+// Cities Section Component
+function CitiesSection() {
+  const [cities, setCities] = useState<City[]>([]);
+  const [showAllCities, setShowAllCities] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(11);
+  const [isCitiesLoading, setIsCitiesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCitiesData = async () => {
+      try {
+        setIsCitiesLoading(true);
+        const data = await getAllCities();
+        // Filter for active cities
+        const activeCities = data.filter(city => city.is_active === true || city.is_active === 1);
+        setCities(activeCities);
+      } catch (err) {
+        console.error("Failed to fetch cities for homepage:", err);
+      } finally {
+        setIsCitiesLoading(false);
+      }
+    };
+    fetchCitiesData();
+  }, []);
+
+  // Calculate number of cities to show based on screen size
+  const calculateVisibleCount = () => {
+    if (typeof window === 'undefined') return 11;
+    if (window.innerWidth >= 1024) return 11;
+    if (window.innerWidth >= 768) return 7;
+    if (window.innerWidth >= 640) return 5;
+    return 3;
+  };
+
+  // Update visible count on mount and resize
+  useEffect(() => {
+    setVisibleCount(calculateVisibleCount());
+
+    const handleResize = () => {
+      if (!showAllCities) {
+        setVisibleCount(calculateVisibleCount());
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [showAllCities]);
+
+  // Toggle between showing all cities and initial count
+  const toggleShowAll = () => {
+    setShowAllCities(!showAllCities);
+  };
+
+  // Determine which cities to show
+  const displayCities = showAllCities ? cities : cities.slice(0, visibleCount);
+
+  if (isCitiesLoading && cities.length === 0) {
+    return (
+      <div className="flex justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        {displayCities.map((city) => (
+          <Link key={city.id} href={`/events?city=${city.city_name.toLowerCase()}`}>
+            <Card className="group h-full flex flex-col justify-center transition-all hover:border-primary hover:shadow-sm dark:bg-slate-800/90 dark:hover:border-primary">
+              <CardContent className="flex flex-col items-center justify-center p-4 text-center h-full">
+                <MapPin className="mb-2 h-6 w-6 text-muted-foreground group-hover:text-primary" />
+                <span className="text-lg font-medium group-hover:text-primary dark:text-white uppercase">{city.city_name}</span>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+
+        {/* Show More/Less Button - only if more cities exist than visible */}
+        {cities.length > visibleCount && (
+          <div
+            onClick={toggleShowAll}
+            className="flex items-center justify-center cursor-pointer group"
+          >
+            <Card className="h-full w-full flex items-center justify-center transition-all hover:border-primary hover:shadow-sm dark:bg-slate-800/90 dark:hover:border-primary group-hover:bg-primary/5">
+              <CardContent className="flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-8 h-8 mb-2 flex items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 dark:bg-primary/20 dark:group-hover:bg-primary/30">
+                  {showAllCities ? (
+                    <span className="text-primary font-bold text-lg">−</span>
+                  ) : (
+                    <span className="text-primary font-bold text-lg">+</span>
+                  )}
+                </div>
+                <span className="font-medium text-primary">
+                  {showAllCities ? 'Show Less' : 'Show More'}
+                </span>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Dynamic Stats Component
+function DynamicStatsSection({ stats, isLoading, error }: { stats: HomepageStats | null, isLoading: boolean, error: string | null }) {
   // Format numbers with + suffix for display
   const formatCount = (count: number) => {
     if (count >= 1000) {
@@ -409,6 +509,8 @@ function DynamicStatsSection() {
 }
 
 export default function Home() {
+  const { stats, isLoading, error } = useHomepageStats();
+
   return (
     <AnimatedBackground variant="home">
       <div className="flex flex-col gap-12 pb-8">
@@ -468,7 +570,7 @@ export default function Home() {
             </div>
 
             <p className="max-w-[800px] text-lg md:text-xl text-neutral-charcoal/80 dark:text-white/80 leading-relaxed">
-              India's biggest baby Olympic games, executing in <span className="font-bold text-sunshine-600">21 cities</span> across India.
+              India's biggest baby Olympic games, executing in <span className="font-bold text-sunshine-600">{stats?.totalCities || 21} cities</span> across India.
               Join us for exciting baby games including <span className="font-semibold text-coral-600">crawling races</span>,
               <span className="font-semibold text-mint-600"> baby walker</span>,
               <span className="font-semibold text-lavender-600"> running races</span>, and more for children aged
@@ -632,110 +734,10 @@ export default function Home() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2 text-center">
                 <h2 className="text-2xl font-bold tracking-tight md:text-3xl">NIBOG Events Across India</h2>
-                <p className="mx-auto max-w-[700px] text-muted-foreground">Find NIBOG events in 21 cities across India</p>
+                <p className="mx-auto max-w-[700px] text-muted-foreground">Find NIBOG events in {stats?.totalCities || 21} cities across India</p>
               </div>
-
               <div className="w-full">
-                {(() => {
-                  const cities = [
-                    "Hyderabad",
-                    "Bangalore",
-                    "Chennai",
-                    "Vizag",
-                    "Patna",
-                    "Ranchi",
-                    "Nagpur",
-                    "Kochi",
-                    "Mumbai",
-                    "Indore",
-                    "Lucknow",
-                    "Chandigarh",
-                    "Kolkata",
-                    "Gurgaon",
-                    "Delhi",
-                    "Jaipur",
-                    "Ahmedabad",
-                    "Bhubaneswar",
-                    "Pune",
-                    "Raipur",
-                    "Gandhi Nagar",
-                  ];
-
-                  const [showAllCities, setShowAllCities] = useState(false);
-                  const [visibleCount, setVisibleCount] = useState(6); // Start with 6 cities
-
-                  // Calculate number of cities to show based on screen size
-                  const calculateVisibleCount = () => {
-                    if (typeof window === 'undefined') return 6;
-                    if (window.innerWidth >= 1024) return 11; // Show 11 + 1 (Show More) = 12 (2 rows of 6)
-                    if (window.innerWidth >= 768) return 7;   // Show 7 + 1 = 8 (2 rows of 4)
-                    if (window.innerWidth >= 640) return 5;   // Show 5 + 1 = 6 (2 rows of 3)
-                    return 3;                                 // Show 3 + 1 = 4 (2 rows of 2)
-                  };
-
-                  // Set initial visible count
-                  useEffect(() => {
-                    setVisibleCount(calculateVisibleCount());
-                  }, []);
-
-                  // Handle window resize
-                  useEffect(() => {
-                    const handleResize = () => {
-                      if (!showAllCities) {
-                        setVisibleCount(calculateVisibleCount());
-                      }
-                    };
-
-                    window.addEventListener('resize', handleResize);
-                    return () => window.removeEventListener('resize', handleResize);
-                  }, [showAllCities]);
-
-                  // Toggle between showing all cities and initial count
-                  const toggleShowAll = () => {
-                    setShowAllCities(!showAllCities);
-                  };
-
-                  // Determine which cities to show
-                  const displayCities = showAllCities ? cities : cities.slice(0, visibleCount);
-
-                  return (
-                    <div className="relative">
-                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                        {displayCities.map((city) => (
-                          <Link key={city} href={`/events?city=${city.toLowerCase()}`}>
-                            <Card className="group h-full flex flex-col justify-center transition-all hover:border-primary hover:shadow-sm dark:bg-slate-800/90 dark:hover:border-primary">
-                              <CardContent className="flex flex-col items-center justify-center p-4 text-center h-full">
-                                <MapPin className="mb-2 h-6 w-6 text-muted-foreground group-hover:text-primary" />
-                                <span className="text-lg font-medium group-hover:text-primary dark:text-white">{city}</span>
-                              </CardContent>
-                            </Card>
-                          </Link>
-                        ))}
-
-                        {/* Show More/Less Button - always visible as the last item */}
-                        <div
-                          onClick={toggleShowAll}
-                          className="flex items-center justify-center cursor-pointer group"
-                        >
-                          <Card className="h-full w-full flex items-center justify-center transition-all hover:border-primary hover:shadow-sm dark:bg-slate-800/90 dark:hover:border-primary group-hover:bg-primary/5">
-                            <CardContent className="flex flex-col items-center justify-center p-4 text-center">
-                              <div className="w-8 h-8 mb-2 flex items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 dark:bg-primary/20 dark:group-hover:bg-primary/30">
-                                {showAllCities ? (
-                                  <span className="text-primary font-bold text-lg">−</span>
-                                ) : (
-                                  <span className="text-primary font-bold text-lg">+</span>
-                                )}
-                              </div>
-                              <span className="font-medium text-primary">
-                                {showAllCities ? 'Show Less' : 'Show More'}
-                              </span>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+                <CitiesSection />
               </div>
             </div>
           </div>
@@ -744,7 +746,7 @@ export default function Home() {
 
 
         {/* Stats Section - Now Dynamic */}
-        <DynamicStatsSection />
+        <DynamicStatsSection stats={stats} isLoading={isLoading} error={error} />
 
         {/* CTA Section */}
         <section className="container py-16">

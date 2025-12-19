@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Save, Star } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
+import { getAllCities, City } from "@/services/cityService"
+
 // Testimonial statuses
 const statuses = [
   { id: "1", name: "published", label: "Published" },
@@ -29,7 +31,7 @@ type Props = {
 export default function EditTestimonialPage({ params }: Props) {
   const router = useRouter()
   const testimonialId = params.id
-  
+
   const [testimonial, setTestimonial] = useState<any>(null)
   const [name, setName] = useState("")
   const [city, setCity] = useState("")
@@ -41,13 +43,9 @@ export default function EditTestimonialPage({ params }: Props) {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [cities, setCities] = useState<Array<{id: number, city_name: string}>>([])
-  const [events, setEvents] = useState<Array<{id: number, title: string}>>([])
+  const [cities, setCities] = useState<City[]>([])
+  const [events, setEvents] = useState<Array<{ id: number, title: string }>>([])
 
-  // New fields for image upload and priority
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
   // Helper to convert local path to public URL
   const getImageUrl = (path: string | null) => {
     if (!path) return null;
@@ -85,42 +83,36 @@ export default function EditTestimonialPage({ params }: Props) {
       return `/api/serve-image/upload/testmonialimage/${path}`;
     }
   }
+
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null)
   const [priority, setPriority] = useState<number>(1)
 
   useEffect(() => {
-    // Fetch cities
-    const fetchCities = async () => {
+    // Fetch cities and events
+    const fetchData = async () => {
       try {
-        const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/city/get-all')
-        if (!response.ok) {
-          throw new Error('Failed to fetch cities')
+        const [citiesData, eventsResponse] = await Promise.all([
+          getAllCities(),
+          fetch('https://ai.nibog.in/webhook/v1/nibog/event/get-all')
+        ]);
+
+        setCities(citiesData);
+
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          setEvents(eventsData);
         }
-        const data = await response.json()
-        setCities(data)
       } catch (error) {
-        console.error('Error fetching cities:', error)
+        console.error('Error fetching data:', error)
       }
     }
-    
-    // Fetch events
-    const fetchEvents = async () => {
-      try {
-        const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/event/get-all')
-        if (!response.ok) {
-          throw new Error('Failed to fetch events')
-        }
-        const data = await response.json()
-        setEvents(data)
-      } catch (error) {
-        console.error('Error fetching events:', error)
-      }
-    }
-    
-    fetchCities()
-    fetchEvents()
+
+    fetchData()
   }, [])
 
   useEffect(() => {
@@ -143,7 +135,7 @@ export default function EditTestimonialPage({ params }: Props) {
         const data = await response.json()
         if (data && data.length > 0) {
           const testimonialData = data[0]
-          
+
           // Find event name from event_id
           let eventName = ''
           if (events.length > 0) {
@@ -176,7 +168,7 @@ export default function EditTestimonialPage({ params }: Props) {
     const fetchTestimonialImage = async () => {
       try {
         console.log('Fetching existing testimonial image for ID:', testimonialId)
-        
+
         const response = await fetch('/api/testimonials/images/get-single', {
           method: 'POST',
           headers: {
@@ -195,10 +187,10 @@ export default function EditTestimonialPage({ params }: Props) {
 
         const data = await response.json()
         console.log('Existing testimonial image data:', data)
-        
+
         // Handle array response (API returns array)
         const imageData = Array.isArray(data) ? data[0] : data
-        
+
         if (imageData && imageData.image_url) {
           // Set the existing image data
           console.log('📸 Loading existing image:', imageData.image_url)
@@ -376,7 +368,7 @@ export default function EditTestimonialPage({ params }: Props) {
       // Always call the testimonial images API to update priority and image
       // This ensures priority is updated even if no new image is uploaded
       console.log('Calling testimonial images API for testimonial ID:', testimonialId)
-      
+
       const imageData = {
         testimonial_id: parseInt(testimonialId),
         image_url: uploadedImagePath || "https://example.com/default-testimonial-image.jpg", // Use uploaded image, existing image, or default
@@ -387,29 +379,29 @@ export default function EditTestimonialPage({ params }: Props) {
       console.log('Submitting image data:', imageData)
 
       try {
-          const imageResponse = await fetch('/api/testimonials/images/update', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(imageData)
-          })
+        const imageResponse = await fetch('/api/testimonials/images/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(imageData)
+        })
 
-          if (!imageResponse.ok) {
-            const errorText = await imageResponse.text()
-            console.error('Image API error response:', errorText)
-            throw new Error(`Failed to update testimonial image: ${errorText}`)
-          }
+        if (!imageResponse.ok) {
+          const errorText = await imageResponse.text()
+          console.error('Image API error response:', errorText)
+          throw new Error(`Failed to update testimonial image: ${errorText}`)
+        }
 
-          const imageResult = await imageResponse.json()
-          console.log('Image API response:', imageResult)
+        const imageResult = await imageResponse.json()
+        console.log('Image API response:', imageResult)
 
-          // Handle array response
-          if (Array.isArray(imageResult) && imageResult.length > 0) {
-            console.log('Image associated successfully with ID:', imageResult[0].id)
-          } else {
-            console.log('Image API response (non-array):', imageResult)
-          }
+        // Handle array response
+        if (Array.isArray(imageResult) && imageResult.length > 0) {
+          console.log('Image associated successfully with ID:', imageResult[0].id)
+        } else {
+          console.log('Image API response (non-array):', imageResult)
+        }
 
       } catch (imageError) {
         console.error('Error calling testimonial images API:', imageError)
@@ -486,15 +478,15 @@ export default function EditTestimonialPage({ params }: Props) {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Customer Name</Label>
-              <Input 
-                id="name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Enter customer name"
                 required
               />
             </div>
-            
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
@@ -511,7 +503,7 @@ export default function EditTestimonialPage({ params }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="event">Event</Label>
                 <Select value={event} onValueChange={setEvent} required>
@@ -528,29 +520,28 @@ export default function EditTestimonialPage({ params }: Props) {
                 </Select>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="rating">Rating</Label>
-              <RadioGroup 
-                id="rating" 
-                value={rating} 
+              <RadioGroup
+                id="rating"
+                value={rating}
                 onValueChange={setRating}
                 className="flex space-x-2"
               >
                 {[1, 2, 3, 4, 5].map((value) => (
                   <div key={value} className="flex flex-col items-center space-y-1">
-                    <RadioGroupItem 
-                      value={value.toString()} 
-                      id={`rating-${value}`} 
-                      className="sr-only" 
+                    <RadioGroupItem
+                      value={value.toString()}
+                      id={`rating-${value}`}
+                      className="sr-only"
                     />
-                    <label 
+                    <label
                       htmlFor={`rating-${value}`}
-                      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full ${
-                        parseInt(rating) >= value 
-                          ? "bg-yellow-100 text-yellow-500 dark:bg-yellow-900/20" 
-                          : "bg-muted text-muted-foreground"
-                      }`}
+                      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full ${parseInt(rating) >= value
+                        ? "bg-yellow-100 text-yellow-500 dark:bg-yellow-900/20"
+                        : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       <Star className={`h-6 w-6 ${parseInt(rating) >= value ? "fill-yellow-500" : ""}`} />
                     </label>
@@ -559,21 +550,21 @@ export default function EditTestimonialPage({ params }: Props) {
                 ))}
               </RadioGroup>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="testimonialText">Testimonial</Label>
-              <Textarea 
-                id="testimonialText" 
-                value={testimonialText} 
-                onChange={(e) => setTestimonialText(e.target.value)} 
+              <Textarea
+                id="testimonialText"
+                value={testimonialText}
+                onChange={(e) => setTestimonialText(e.target.value)}
                 placeholder="Enter testimonial text"
                 rows={5}
                 required
               />
             </div>
-            
+
             <Separator className="my-4" />
-            
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
@@ -590,7 +581,7 @@ export default function EditTestimonialPage({ params }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
                 <Input
