@@ -1,4 +1,4 @@
-import { VENUE_API } from "@/config/api";
+import { getSession } from "@/lib/auth/session";
 
 export interface Venue {
   id?: number;
@@ -6,9 +6,20 @@ export interface Venue {
   city_id: number;
   address: string;
   capacity: number;
-  is_active: boolean;
+  is_active: boolean | number;
   created_at?: string;
   updated_at?: string;
+}
+
+/**
+ * Get authentication headers with Bearer token
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const token = await getSession();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
 }
 
 /**
@@ -113,12 +124,11 @@ export const createVenue = async (venueData: Omit<Venue, "id" | "created_at" | "
   try {
     console.log("Creating venue with data:", venueData);
 
+    const authHeaders = await getAuthHeaders();
     // Use our internal API route to avoid CORS issues
     const response = await fetch('/api/venues/create', {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: authHeaders,
       body: JSON.stringify(venueData),
     });
 
@@ -170,12 +180,11 @@ export const updateVenue = async (venueData: Venue): Promise<Venue> => {
     console.log("Updating venue with data:", venueData);
     console.log("Venue service: Sending data to API:", JSON.stringify(venueData, null, 2));
 
+    const authHeaders = await getAuthHeaders();
     // Use our internal API route to avoid CORS issues
     const response = await fetch('/api/venues/update', {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: authHeaders,
       body: JSON.stringify(venueData),
     });
 
@@ -232,12 +241,11 @@ export const deleteVenue = async (id: number): Promise<{ success: boolean }> => 
 
     console.log(`Attempting to delete venue with ID: ${id}`);
 
+    const authHeaders = await getAuthHeaders();
     // Use our internal API route to avoid CORS issues
     const response = await fetch('/api/venues/delete', {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: authHeaders,
       body: JSON.stringify({ id }),
     });
 
@@ -342,9 +350,9 @@ export const getVenuesByCity = async (cityId: number): Promise<Venue[]> => {
  */
 export const getAllVenuesWithCity = async (): Promise<any[]> => {
   try {
-    console.log("Fetching all venues with city details from new API...");
+    console.log("Fetching all venues with city details from internal proxy...");
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/venues/getall-with-city-event-count', {
+    const response = await fetch('/api/venues/getall-with-city', {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

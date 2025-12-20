@@ -24,16 +24,6 @@ export const CITY_API = {
   DELETE: `${API_BASE_URL}/city/delete`,     // DELETE with body
 };
 
-// Venue API endpoints - Exactly as specified in the API documentation with correct case
-export const VENUE_API = {
-  CREATE: `${API_BASE_URL}/venues/create`,
-  UPDATE: `${API_BASE_URL}/venues/update`,
-  GET: `${API_BASE_URL}/venues/get`,
-  GET_ALL: `${API_BASE_URL}/venues/get-all`,
-  GET_BY_CITY: `${API_BASE_URL}/venues/get-by-city`,
-  GET_ALL_WITH_CITY: `${API_BASE_URL}/venues/getall-with-city`,
-  DELETE: `${API_BASE_URL}/venues/delete`,
-};
 
 // Baby Game API endpoints
 export const BABY_GAME_API = {
@@ -49,13 +39,18 @@ export const BABY_GAMES_REST_API = {
   BASE: `${process.env.BACKEND_URL}/api/baby-games`,
 };
 
+// New Venues REST API (Backend)
+export const VENUES_REST_API = {
+  BASE: `${process.env.BACKEND_URL}/api/venue`,
+};
+
 // Basic Event API endpoints (for events without games/slots)
 export const BASIC_EVENT_API = {
   CREATE: `${API_BASE_URL}/event/create`, // POST
   GET: `${API_BASE_URL}/event/get`,       // POST with id in body
   GET_ALL: `${API_BASE_URL}/event/get-all`, // GET
   UPDATE: `${API_BASE_URL}/event/update`, // POST with full event data
-  DELETE:  `${API_BASE_URL}/event/delete`, // POST with id in body
+  DELETE: `${API_BASE_URL}/event/delete`, // POST with id in body
 };
 
 // Event Registration API endpoints (for events with games and slots)
@@ -65,7 +60,7 @@ export const EVENT_API = {
   GET: `${API_BASE_URL}/event-registration/get`,
   GET_ALL: `${API_BASE_URL}/event-registration/get-all`, // GET
   UPDATE: `${API_BASE_URL}/event-registration/update`, // POST with full event data
-  DELETE:  `${API_BASE_URL}/event-registration/delete`, // POST with id in body
+  DELETE: `${API_BASE_URL}/event-registration/delete`, // POST with id in body
 };
 
 // Event Game Slot API endpoints (for individual game slot management)
@@ -74,7 +69,7 @@ export const EVENT_GAME_SLOT_API = {
   GET: `${API_BASE_URL}/event-game-slot/get`,       // POST with id in body
   GET_ALL: `${API_BASE_URL}/event-game-slot/get-all`, // GET
   UPDATE: `${API_BASE_URL}/event-game-slot/update`, // POST with full event data
-  DELETE:  `${API_BASE_URL}/event-game-slot/delete`, // POST with id in body
+  DELETE: `${API_BASE_URL}/event-game-slot/delete`, // POST with id in body
 };
 
 
