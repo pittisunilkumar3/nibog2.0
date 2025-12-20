@@ -39,7 +39,11 @@ export async function getAllUsers(): Promise<User[]> {
       throw new Error(`Failed to fetch users: ${response.status}`);
     }
 
+    // The API now returns an array directly
     const data = await response.json();
+    if (!Array.isArray(data)) {
+      throw new Error('Unexpected response format: expected array');
+    }
     return data;
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -50,8 +54,42 @@ export async function getAllUsers(): Promise<User[]> {
 // Get user by ID
 export async function getUserById(userId: number): Promise<User | null> {
   try {
-    const users = await getAllUsers();
-    return users.find(user => user.user_id === userId) || null;
+    console.log(`[getUserById] Fetching user with ID: ${userId}`);
+    
+    // Get token from local/session storage - try superadmin token first, then admin token
+    let token = '';
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('superadminToken') || 
+              sessionStorage.getItem('superadminToken') || 
+              localStorage.getItem('adminToken') || 
+              sessionStorage.getItem('adminToken') || 
+              localStorage.getItem('token') || 
+              sessionStorage.getItem('token') || '';
+    }
+    
+    console.log(`[getUserById] Token present: ${!!token}`);
+    
+    const response = await fetch(`/api/users/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      cache: 'no-store',
+    });
+    
+    console.log(`[getUserById] Response status: ${response.status}`);
+    
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      console.error(`[getUserById] Error response:`, data);
+      throw new Error(data.message || `Failed to fetch user: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log(`[getUserById] User data received:`, data);
+    
+    return data || null;
   } catch (error) {
     console.error(`Error fetching user with ID ${userId}:`, error);
     throw error;
@@ -163,9 +201,9 @@ export async function createUser(userData: CreateUserData): Promise<User> {
 // Update user
 export interface UpdateUserData {
   user_id: number;
-  full_name: string;
-  email: string;
-  phone: string;
+  full_name?: string;
+  email?: string;
+  phone?: string;
   password?: string;
   city_id?: number | null;
   accept_terms?: boolean;
@@ -173,83 +211,66 @@ export interface UpdateUserData {
   is_locked?: boolean;
 }
 
-export async function updateUser(userData: UpdateUserData): Promise<User> {
-  console.log(`Attempting to update user with ID: ${userData.user_id}`);
-
-  // Validate required fields
+export async function updateUser(userData: UpdateUserData): Promise<any> {
   if (!userData.user_id || isNaN(Number(userData.user_id)) || Number(userData.user_id) <= 0) {
     throw new Error("Invalid user ID. ID must be a positive number.");
   }
 
-  if (!userData.full_name || userData.full_name.trim() === '') {
-    throw new Error("Full name is required");
-  }
+  console.log(`[updateUser] Updating user with ID: ${userData.user_id}`);
+  console.log(`[updateUser] Input data:`, userData);
 
-  if (!userData.email || userData.email.trim() === '') {
-    throw new Error("Email is required");
-  }
-
-  if (!userData.phone || userData.phone.trim() === '') {
-    throw new Error("Phone is required");
-  }
-
-  // Make city_id validation optional
-  if (userData.city_id !== undefined && userData.city_id !== null && isNaN(Number(userData.city_id))) {
-    throw new Error("City ID must be a number if provided");
-  }
-
-  try {
-    // Prepare the data to send, explicitly handling null values
-    const requestData = {
-      ...userData,
-      // Ensure city_id is included as null if explicitly set to null
-      ...(userData.city_id === null && { city_id: null })
-    };
-
-    console.log('Sending POST request to /api/users/edit with user data');
-    console.log('Request body:', JSON.stringify(requestData, null, 2));
-
-    const response = await fetch('/api/users/edit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
-
-    console.log(`Update user response status: ${response.status}`);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
-
-      try {
-        // Try to parse the error response as JSON
-        const errorData = JSON.parse(errorText);
-        throw new Error(errorData.error || `API returned error status: ${response.status}`);
-      } catch (parseError) {
-        // If parsing fails, throw a generic error
-        throw new Error(`Failed to update user. API returned status: ${response.status}`);
-      }
+  // Only send fields that are provided (partial update)
+  const { user_id, accept_terms, ...fields } = userData;
+  const payload: Record<string, any> = {};
+  
+  // Only include fields that are explicitly set and not undefined
+  for (const key in fields) {
+    const value = fields[key];
+    if (value !== undefined) {
+      payload[key] = value;
     }
-
-    const data = await response.json();
-    console.log(`Update user response data:`, data);
-
-    // Return the first item if it's an array, otherwise return the data
-    if (Array.isArray(data) && data.length > 0) {
-      return data[0];
-    } else if (data && typeof data === 'object') {
-      return data;
-    }
-
-    // If we get here, the response format was unexpected
-    console.error(`Unexpected response format:`, data);
-    throw new Error("Failed to update user: Unexpected response format");
-  } catch (error) {
-    console.error("Error updating user:", error);
-    throw error;
   }
+
+  // Don't send accept_terms for updates - it's only for registration
+  console.log(`[updateUser] Final payload (without user_id and accept_terms):`, payload);
+
+  // Get token from local/session storage - try superadmin token first, then admin token
+  let token = '';
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('superadminToken') || 
+            sessionStorage.getItem('superadminToken') || 
+            localStorage.getItem('adminToken') || 
+            sessionStorage.getItem('adminToken') || 
+            localStorage.getItem('token') || 
+            sessionStorage.getItem('token') || '';
+  }
+
+  console.log(`[updateUser] Token present: ${!!token}`);
+  console.log(`[updateUser] Token value (first 20 chars): ${token.substring(0, 20)}...`);
+
+  if (!token) {
+    throw new Error('No authentication token found. Please log in again.');
+  }
+
+  const response = await fetch(`/api/users/${user_id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
+
+  console.log(`[updateUser] Response status: ${response.status}`);
+
+  const data = await response.json();
+  console.log(`[updateUser] Response data:`, data);
+  
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || 'Failed to update user');
+  }
+  return data;
 }
 
 // Delete user

@@ -65,7 +65,31 @@ export default function EditUserPage({ params }: Props) {
         setIsLoading(true)
         setError(null)
 
+        // Check for authentication tokens
+        const superadminToken = localStorage.getItem('superadminToken') || sessionStorage.getItem('superadminToken');
+        const adminToken = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        
+        console.log('Available tokens:', {
+          superadmin: !!superadminToken,
+          admin: !!adminToken,
+          token: !!token
+        });
+
+        if (!superadminToken && !adminToken && !token) {
+          setError("No authentication token found. Please log in again.");
+          toast({
+            title: "Error",
+            description: "You are not logged in. Please log in again.",
+            variant: "destructive",
+          });
+          // Redirect to login page
+          router.push('/admin/login');
+          return;
+        }
+
         // Fetch user data from API
+        console.log(`Fetching user with ID: ${userId}`);
         const userData = await getUserById(userId)
         console.log('Fetched user data:', userData);
 
@@ -92,9 +116,12 @@ export default function EditUserPage({ params }: Props) {
         setError(error.message || "Failed to load user details")
         toast({
           title: "Error",
-          description: "Failed to load user details. Please try again.",
+          description: `Failed to load user details: ${error.message}`,
           variant: "destructive",
         })
+        
+        // Don't redirect automatically, let user see the error
+        // router.push('/admin/users')
       } finally {
         setIsLoading(false)
       }
@@ -119,7 +146,7 @@ export default function EditUserPage({ params }: Props) {
       fetchUserData()
       fetchCities()
     }
-  }, [userId, toast])
+  }, [userId, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
