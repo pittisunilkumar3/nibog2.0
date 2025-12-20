@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { VENUE_API } from '@/config/api';
+import { VENUES_REST_API } from '@/config/api';
 
 export async function GET() {
   try {
-    // Forward the request to the external API
-    const apiUrl = VENUE_API.GET_ALL;
+    const apiUrl = VENUES_REST_API.BASE;
+    console.log(`📡 Fetching all venues from: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -16,32 +16,17 @@ export async function GET() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      
-      let errorMessage = `Error fetching venues: ${response.status}`;
-      try {
-        const errorData = JSON.parse(errorText);
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch (e) {
-        // If we can't parse the error as JSON, use the status code
-      }
-
+      console.error(`❌ API error status: ${response.status}`, errorText);
       return NextResponse.json(
-        { error: errorMessage },
+        { error: `API returned error status: ${response.status}` },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-
-    // Validate the data structure
-    if (!Array.isArray(data)) {
-      return NextResponse.json([], { status: 200 });
-    }
-
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
+    console.error(`❌ Error fetching venues:`, error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch venues" },
       { status: 500 }

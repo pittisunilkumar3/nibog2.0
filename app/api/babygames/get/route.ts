@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { BABY_GAME_API } from '@/config/api';
+import { BABY_GAMES_REST_API } from '@/config/api';
 
 export async function POST(request: Request) {
   try {
-    // Parse the request body
     const data = await request.json();
     const id = data.id;
 
@@ -14,75 +13,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // Forward the request to the external API with the correct URL
-    const apiUrl = BABY_GAME_API.GET;
+    const apiUrl = `${BABY_GAMES_REST_API.BASE}/${id}`;
+    console.log(`📡 Fetching baby game ${id} from: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
-      method: "POST", // According to API documentation, this should be POST
+      method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ id }),
       cache: "no-store",
     });
 
     if (!response.ok) {
-      // If the first attempt fails, try with the webhook-test URL
-
-      const alternativeUrl = apiUrl.replace("webhook/v1", "webhook-test/v1");
-      const alternativeResponse = await fetch(alternativeUrl, {
-        method: "POST", // According to API documentation, this should be POST
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id }),
-        cache: "no-store",
-      });
-
-      if (!alternativeResponse.ok) {
-        const errorText = await alternativeResponse.text();
-        return NextResponse.json(
-          { error: `API returned error status: ${alternativeResponse.status}` },
-          { status: alternativeResponse.status }
-        );
-      }
-
-      // Get the response data from successful alternative attempt
-      const responseText = await alternativeResponse.text();
-
-      try {
-        const responseData = JSON.parse(responseText);
-        return NextResponse.json(responseData, { status: 200 });
-      } catch (parseError) {
-        return NextResponse.json(
-          {
-            error: "Failed to parse API response",
-            rawResponse: responseText.substring(0, 500) // Limit the size of the raw response
-          },
-          { status: 500 }
-        );
-      }
-    }
-
-    // Get the response data
-    const responseText = await response.text();
-
-    try {
-      // Try to parse the response as JSON
-      const responseData = JSON.parse(responseText);
-
-      return NextResponse.json(responseData, { status: 200 });
-    } catch (parseError) {
-      // If parsing fails, return the error
+      const errorText = await response.text();
+      console.error(`❌ API error status: ${response.status}`, errorText);
       return NextResponse.json(
-        {
-          error: "Failed to parse API response",
-          rawResponse: responseText.substring(0, 500) // Limit the size of the raw response
-        },
-        { status: 500 }
+        { error: `API returned error status: ${response.status}` },
+        { status: response.status }
       );
     }
+
+    const responseData = await response.json();
+
+    // The new API returns { success: true, game: { ... } }
+    let game = responseData.success && responseData.game ? responseData.game : responseData;
+
+    if (game && typeof game.categories === 'string') {
+      try {
+        game.categories = JSON.parse(game.categories);
+      } catch (e) {
+        game.categories = [];
+      }
+    }
+
+    return NextResponse.json(game, { status: 200 });
   } catch (error: any) {
+    console.error(`❌ Error fetching baby game:`, error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch baby game" },
       { status: 500 }

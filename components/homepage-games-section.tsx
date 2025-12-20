@@ -54,7 +54,7 @@ export default function HomepageGamesSection() {
     } catch (error) {
       console.error('❌ Homepage: Error fetching games:', error);
       setError(error instanceof Error ? error.message : 'Failed to load games');
-      
+
       // Set fallback games data
       setGames([]);
     } finally {
@@ -74,7 +74,7 @@ export default function HomepageGamesSection() {
   const formatAgeRange = (minAge: number, maxAge: number) => {
     const minMonths = minAge;
     const maxMonths = maxAge;
-    
+
     if (minMonths < 12 && maxMonths < 12) {
       return `${minMonths}-${maxMonths} months`;
     } else if (minMonths < 12) {
@@ -91,7 +91,7 @@ export default function HomepageGamesSection() {
   const getGameEmoji = (categories: string[], gameName: string) => {
     const name = gameName.toLowerCase();
     const cats = categories.map(c => c.toLowerCase());
-    
+
     if (name.includes('crawling') || cats.includes('crawling')) return '🍼';
     if (name.includes('walker') || cats.includes('walker')) return '🚶‍♀️';
     if (name.includes('running') || name.includes('race') || cats.includes('race')) return '🏃‍♂️';
@@ -101,7 +101,7 @@ export default function HomepageGamesSection() {
     if (name.includes('shot put') || cats.includes('shot put')) return '🏋️‍♀️';
     if (name.includes('high jump') || cats.includes('high')) return '🤸‍♀️';
     if (name.includes('hurdle') || name.includes('toddle')) return '🏃‍♀️';
-    
+
     return '🎮'; // Default game emoji
   };
 
@@ -210,20 +210,21 @@ export default function HomepageGamesSection() {
 
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {games.map((game, index) => (
-                <Link key={game.id} href={`/events?gameId=${game.id}`} className="group">
-                  <Card className="card-baby-gradient overflow-hidden h-full">
-                    <div className="relative h-48">
-                      <Image
-                        src={game.imageUrl || '/images/default-game.jpg'}
-                        alt={game.name}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-110 duration-500"
-                        onError={(e) => {
-                          // Fallback to a default image if the game image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/images/default-game.jpg';
-                        }}
-                      />
+              <Link key={game.id} href={`/events?gameId=${game.id}`} className="group">
+                <Card className="card-baby-gradient overflow-hidden h-full">
+                  <div className="relative h-48">
+                    <Image
+                      src={game.imageUrl || '/images/default-game.jpg'}
+                      alt={game.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover transition-transform group-hover:scale-110 duration-500"
+                      onError={(e) => {
+                        // Fallback to a default image if the game image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/default-game.jpg';
+                      }}
+                    />
                     <div className={`absolute inset-0 bg-gradient-to-t ${getGradientColors(index)}`} />
                     <div className="absolute top-4 right-4">
                       <div className="bg-white/90 rounded-full p-2 text-2xl animate-bounce-gentle">
@@ -234,8 +235,8 @@ export default function HomepageGamesSection() {
                       <h3 className="text-xl font-bold text-white mb-1">{game.name}</h3>
                       <p className="text-white/90 font-semibold">{formatAgeRange(game.minAge, game.maxAge)}</p>
                       <p className="text-white/80 text-sm mt-2 line-clamp-2">
-                        {game.description.length > 80 
-                          ? `${game.description.substring(0, 80)}...` 
+                        {game.description.length > 80
+                          ? `${game.description.substring(0, 80)}...`
                           : game.description
                         }
                       </p>
