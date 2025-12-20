@@ -58,6 +58,17 @@ export interface UpdateTestimonialPayload {
   is_active?: number;
 }
 
+// Helper to read auth token from multiple storage locations
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  // Prefer adminToken keys used across the app, fallback to generic 'token'
+  return (
+    (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken')) ||
+    (localStorage.getItem('token') || sessionStorage.getItem('token')) ||
+    null
+  );
+}
+
 /**
  * Get all testimonials with images
  * @returns Promise with array of testimonials including image data
@@ -80,6 +91,13 @@ export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
+      
+      // If backend is unreachable (503), return empty array for graceful fallback
+      if (response.status === 503) {
+        console.warn('Backend service is unavailable. Returning empty testimonials array.');
+        return [];
+      }
+      
       throw new Error(`Failed to fetch testimonials: ${response.status} - ${errorText}`);
     }
 
@@ -100,7 +118,9 @@ export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
     return [];
   } catch (error: any) {
     console.error("Error fetching testimonials:", error);
-    throw error;
+    // Return empty array instead of throwing to allow UI to continue with fallback data
+    console.warn('Returning empty testimonials array due to error.');
+    return [];
   }
 }
 
@@ -155,8 +175,8 @@ export async function createTestimonial(testimonialData: CreateTestimonialPayloa
   try {
     console.log("Creating testimonial with data:", testimonialData);
 
-    // Get auth token from session storage
-    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+    // Get auth token (check localStorage for adminToken, then fallback to generic token)
+    const token = getAuthToken();
 
     // Use the new RESTful API endpoint
     const response = await fetch('/api/testimonials', {
@@ -173,7 +193,29 @@ export async function createTestimonial(testimonialData: CreateTestimonialPayloa
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
-      throw new Error(`API returned error status: ${response.status}`);
+      
+      // Parse the error response to get the message
+      let errorMessage = `Failed to create testimonial: ${response.status}`;
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If can't parse JSON, use default message
+      }
+      
+      // If backend requires authentication (401), throw a clear error
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please log in to create testimonials.');
+      }
+      
+      // If backend is unreachable (503), throw a user-friendly error
+      if (response.status === 503) {
+        throw new Error('Backend service is unavailable. Please ensure the backend is running or try again later.');
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const result = await response.json();
@@ -202,8 +244,8 @@ export async function updateTestimonial(testimonialId: number, testimonialData: 
   try {
     console.log("Updating testimonial with data:", testimonialData);
 
-    // Get auth token from session storage
-    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+    // Get auth token (check localStorage for adminToken, then fallback to generic token)
+    const token = getAuthToken();
 
     // Use the new RESTful API endpoint
     const response = await fetch(`/api/testimonials/${testimonialId}`, {
@@ -220,7 +262,29 @@ export async function updateTestimonial(testimonialId: number, testimonialData: 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
-      throw new Error(`API returned error status: ${response.status}`);
+      
+      // Parse the error response to get the message
+      let errorMessage = `Failed to update testimonial: ${response.status}`;
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If can't parse JSON, use default message
+      }
+      
+      // If backend requires authentication (401), throw a clear error
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please log in to update testimonials.');
+      }
+      
+      // If backend is unreachable (503), throw a user-friendly error
+      if (response.status === 503) {
+        throw new Error('Backend service is unavailable. Please ensure the backend is running or try again later.');
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const result = await response.json();
@@ -249,8 +313,8 @@ export async function deleteTestimonial(testimonialId: number): Promise<{ succes
   try {
     console.log(`Deleting testimonial with ID: ${testimonialId}`);
 
-    // Get auth token from session storage
-    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+    // Get auth token (check localStorage for adminToken, then fallback to generic token)
+    const token = getAuthToken();
 
     // Use the new RESTful API endpoint
     const response = await fetch(`/api/testimonials/${testimonialId}`, {
@@ -266,7 +330,29 @@ export async function deleteTestimonial(testimonialId: number): Promise<{ succes
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
-      throw new Error(`Failed to delete testimonial: ${response.status} - ${errorText}`);
+      
+      // Parse the error response to get the message
+      let errorMessage = `Failed to delete testimonial: ${response.status}`;
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If can't parse JSON, use default message
+      }
+      
+      // If backend requires authentication (401), throw a clear error
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please log in to delete testimonials.');
+      }
+      
+      // If backend is unreachable (503), throw a user-friendly error
+      if (response.status === 503) {
+        throw new Error('Backend service is unavailable. Please ensure the backend is running or try again later.');
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const result = await response.json();
@@ -290,8 +376,8 @@ export async function updateTestimonialStatus(testimonialId: number, status: str
   try {
     console.log(`Updating testimonial ${testimonialId} status to ${status}`);
 
-    // Get auth token from session storage
-    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+    // Get auth token (check localStorage for adminToken, then fallback to generic token)
+    const token = getAuthToken();
 
     // Update with new status
     const updatedData: UpdateTestimonialPayload = {

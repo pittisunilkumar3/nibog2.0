@@ -11,13 +11,24 @@ export async function GET(request: NextRequest) {
             ? `${BACKEND_URL}/api/city/with-venues/list`
             : `${BACKEND_URL}/api/city/`;
 
-        const response = await fetch(endpoint, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            cache: 'no-store',
-        });
+        // If backend is unreachable, fetch() will throw — catch it and return a 503
+        // with an empty data array so public pages can fall back gracefully.
+        let response;
+        try {
+            response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                cache: 'no-store',
+            });
+        } catch (err) {
+            console.error(`Failed to reach backend at ${endpoint}:`, err);
+            return NextResponse.json(
+                { success: false, message: 'Backend unreachable', data: [] },
+                { status: 503 }
+            );
+        }
 
         if (!response.ok) {
             return NextResponse.json(

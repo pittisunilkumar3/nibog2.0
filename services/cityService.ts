@@ -62,6 +62,11 @@ export const getAllCities = async (): Promise<City[]> => {
     });
 
     if (!response.ok) {
+      // If backend is unreachable (503), return empty array for graceful fallback
+      if (response.status === 503) {
+        console.warn('[Cities API] Backend service is unavailable. Returning empty cities array.');
+        return [];
+      }
       throw new Error(`Error fetching cities: ${response.status}`);
     }
 
@@ -83,7 +88,9 @@ export const getAllCities = async (): Promise<City[]> => {
     }));
   } catch (error: any) {
     console.error(`[Cities API] Fetch failed:`, error.message);
-    throw error;
+    // Return empty array instead of throwing to allow UI to continue
+    console.warn('[Cities API] Returning empty cities array due to error.');
+    return [];
   }
 };
 

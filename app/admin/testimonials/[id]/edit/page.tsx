@@ -364,7 +364,8 @@ export default function EditTestimonialPage({ params }: Props) {
 
       console.log('Submitting update with data:', updateData)
 
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null
+      console.log('Using token for testimonial update:', token ? (token.length > 12 ? `${token.slice(0,6)}...${token.slice(-6)}` : '****') : 'no-token')
       if (!token) {
         throw new Error('No authentication token found. Please log in again.')
       }
@@ -389,7 +390,13 @@ export default function EditTestimonialPage({ params }: Props) {
 
       if (!response.ok) {
         console.error('Error response:', parsedData);
-        throw new Error(parsedData.message || 'Failed to update testimonial');
+        
+        // Specific handling for authentication errors
+        if (response.status === 401) {
+          throw new Error('Your session has expired or you are not authenticated. Please log in again and try updating the testimonial.');
+        }
+        
+        throw new Error(parsedData.message || `Failed to update testimonial (Status: ${response.status})`);
       }
 
       // Always call the testimonial images API to update priority and image

@@ -253,11 +253,19 @@ export default function NewTestimonialPage() {
 
       console.log('Payload for API:', payload);
 
+      // Get authentication token (support adminToken in localStorage)
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null;
+      console.log('Using token for testimonial create:', token ? (token.length > 12 ? `${token.slice(0,6)}...${token.slice(-6)}` : '****') : 'no-token');
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
       // Step 1: Create testimonial
       const response = await fetch('/api/testimonials', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       })

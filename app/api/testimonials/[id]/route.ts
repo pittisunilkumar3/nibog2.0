@@ -24,17 +24,26 @@ export async function GET(
 
     console.log(`GET /api/testimonials/${id} - Fetching testimonial`);
 
-    // Call external API to get single testimonial
-    const response = await fetch(
-      `${BACKEND_URL}/api/testimonials/${id}`,
-      {
+    // Call external backend API to get single testimonial
+    const base = (BACKEND_URL || '').replace(/\/$/, '');
+    const getUrl = `${base}/api/testimonials/${id}`;
+
+    let response;
+    try {
+      response = await fetch(getUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
         cache: 'no-store',
-      }
-    );
+      });
+    } catch (err) {
+      console.error(`Failed to reach backend at ${getUrl}:`, err);
+      return NextResponse.json(
+        { success: false, message: 'Backend service unavailable' },
+        { status: 503 }
+      );
+    }
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -56,7 +65,72 @@ export async function GET(
     
     // Handle both direct data and wrapped response
     const testimonial = result.data || result;
-    
+
+    // Enrich testimonial with city_name and event_name
+    try {
+      const citiesResp = await fetch(`${base}/api/city/`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' });
+      const eventsResp = await fetch(`${base}/api/events/list`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' });
+
+      let cities: any[] = [];
+      let events: any[] = [];
+
+      if (citiesResp.ok) {
+        const cityData = await citiesResp.json();
+        cities = Array.isArray(cityData) ? cityData : (cityData.data || []);
+      }
+
+      if (eventsResp.ok) {
+        const eventData = await eventsResp.json();
+        events = Array.isArray(eventData) ? eventData : (eventData.data || eventData);
+      }
+
+      const cityMap = new Map<number, string>();
+      cities.forEach((c: any) => {
+        const id = c.id || c.city_id;
+        const name = c.city_name || c.name || c.city || '';
+        if (id) cityMap.set(Number(id), name);
+      });
+
+      const eventMap = new Map<number, string>();
+      events.forEach((e: any) => {
+        const id = e.id || e.event_id;
+        const title = e.title || e.event_title || e.name || '';
+        if (id) eventMap.set(Number(id), title);
+      });
+
+      if (testimonial && testimonial.city_id && !testimonial.city_name) {
+        const name = cityMap.get(Number(testimonial.city_id));
+        if (name) testimonial.city_name = name;
+      }
+
+      // Backwards compatibility: ensure `city` string is present for UI
+      if (testimonial && !testimonial.city) {
+        if (testimonial.city_name) {
+          testimonial.city = testimonial.city_name;
+        } else if (testimonial.city_id) {
+          const name = cityMap.get(Number(testimonial.city_id));
+          if (name) testimonial.city = name;
+        }
+      }
+
+      if (testimonial && testimonial.event_id && !testimonial.event_name) {
+        const en = eventMap.get(Number(testimonial.event_id));
+        if (en) testimonial.event_name = en;
+      }
+
+      // Backwards compatibility: ensure `event_title` is present
+      if (testimonial && !testimonial.event_title) {
+        if (testimonial.event_name) {
+          testimonial.event_title = testimonial.event_name;
+        } else if (testimonial.event_id) {
+          const en = eventMap.get(Number(testimonial.event_id));
+          if (en) testimonial.event_title = en;
+        }
+      }
+    } catch (enrichErr) {
+      console.warn(`Failed to enrich testimonial ${id} with city/event names:`, enrichErr);
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -84,10 +158,13 @@ export async function PUT(
   try {
     const { id } = params;
 
+    console.log(`[PUT /api/testimonials/${id}] Starting update request`);
+
     // Check for authorization header
     const authHeader = request.headers.get('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log(`[PUT /api/testimonials/${id}] No authorization header`);
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -115,32 +192,57 @@ export async function PUT(
 
     console.log(`PUT /api/testimonials/${id} - Updating testimonial:`, body);
 
-    // Prepare payload for external API (only include fields that are provided)
-    const payload: any = { id: Number(id) };
-    
-    if (body.name !== undefined) payload.name = body.name;
-    if (body.city_id !== undefined) payload.city_id = body.city_id;
-    if (body.event_id !== undefined) payload.event_id = body.event_id;
-    if (body.rating !== undefined) payload.rating = body.rating;
-    if (body.testimonial !== undefined) payload.testimonial = body.testimonial;
-    if (body.submitted_at !== undefined) payload.submitted_at = body.submitted_at;
-    if (body.status !== undefined) payload.status = body.status;
-    if (body.image_url !== undefined) payload.image_url = body.image_url;
-    if (body.priority !== undefined) payload.priority = body.priority;
-    if (body.is_active !== undefined) payload.is_active = body.is_active;
+    // Prepare payload for backend API
+    const payload: any = { 
+      name: body.name,
+      city_id: body.city_id || null,
+      event_id: body.event_id,
+      rating: body.rating,
+      testimonial: body.testimonial,
+      submitted_at: body.date || body.submitted_at || new Date().toISOString().split('T')[0],
+      status: body.status || 'Published',
+      priority: body.priority || 1,
+      is_active: body.is_active !== undefined ? body.is_active : true
+    };
 
-    // Call external API to update testimonial
-    const response = await fetch(
-      `${BACKEND_URL}/api/testimonials/${id}`,
-      {
+    // Use BACKEND_URL to call the backend API directly
+    const base = (BACKEND_URL || '').replace(/\/$/, '');
+    const updateUrl = `${base}/api/testimonials/${id}`;
+
+    console.log(`[PUT] Calling backend at: ${updateUrl}`);
+
+    let response;
+    try {
+      response = await fetch(updateUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': authHeader
+          'Authorization': authHeader // Forward the auth header
         },
         body: JSON.stringify(payload)
-      }
-    );
+      });
+    } catch (err) {
+      console.error(`Failed to reach backend at ${updateUrl}:`, err);
+      return NextResponse.json(
+        { success: false, message: 'Backend service unavailable' },
+        { status: 503 }
+      );
+    }
+
+    console.log(`[PUT] Backend response status: ${response.status}`);
+
+    // If we get 401 (unauthorized), return clear auth error
+    if (response.status === 401) {
+      const errorBody = await response.text();
+      console.log(`[PUT /api/testimonials/${id}] Backend returned 401:`, errorBody);
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Authentication required. Please ensure you are logged in with valid admin credentials.' 
+        },
+        { status: 401 }
+      );
+    }
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -151,7 +253,7 @@ export async function PUT(
       }
       
       const errorText = await response.text();
-      console.error('External API error:', errorText);
+      console.error('Backend API error:', errorText);
       return NextResponse.json(
         { success: false, message: `Failed to update testimonial: ${response.status}` },
         { status: response.status }
@@ -159,14 +261,27 @@ export async function PUT(
     }
 
     const data = await response.json();
+    console.log('Backend update response:', data);
     
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Testimonial updated'
-      },
-      { status: 200 }
-    );
+    // Check if the response indicates success
+    if (data && data.success) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: data.message || 'Testimonial updated',
+          data: data.data
+        },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          success: false,
+          message: data?.message || 'Update failed'
+        },
+        { status: 400 }
+      );
+    }
   } catch (error: any) {
     console.error(`PUT /api/testimonials/[id] - Error:`, error);
     return NextResponse.json(
@@ -187,10 +302,13 @@ export async function DELETE(
   try {
     const { id } = params;
 
+    console.log(`[DELETE /api/testimonials/${id}] Starting delete request`);
+
     // Check for authorization header
     const authHeader = request.headers.get('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log(`[DELETE /api/testimonials/${id}] No authorization header`);
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -207,18 +325,30 @@ export async function DELETE(
 
     console.log(`DELETE /api/testimonials/${id} - Deleting testimonial`);
 
-    // Call external API to delete testimonial
-    const response = await fetch(
-      `${BACKEND_URL}/api/testimonials/${id}`,
-      {
+    // Use BACKEND_URL to call the backend API directly
+    const base = (BACKEND_URL || '').replace(/\/$/, '');
+    const deleteUrl = `${base}/api/testimonials/${id}`;
+
+    console.log(`[DELETE] Calling backend at: ${deleteUrl}`);
+
+    let response;
+    try {
+      response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': authHeader
-        },
-        body: JSON.stringify({ id: Number(id) })
-      }
-    );
+          'Authorization': authHeader // Forward the auth header
+        }
+      });
+    } catch (err) {
+      console.error(`Failed to reach backend at ${deleteUrl}:`, err);
+      return NextResponse.json(
+        { success: false, message: 'Backend service unavailable' },
+        { status: 503 }
+      );
+    }
+
+    console.log(`[DELETE] Backend response status: ${response.status}`);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -229,7 +359,7 @@ export async function DELETE(
       }
       
       const errorText = await response.text();
-      console.error('External API error:', errorText);
+      console.error('Backend API error:', errorText);
       return NextResponse.json(
         { success: false, message: `Failed to delete testimonial: ${response.status}` },
         { status: response.status }
@@ -237,14 +367,26 @@ export async function DELETE(
     }
 
     const data = await response.json();
+    console.log('Backend delete response:', data);
     
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Testimonial deleted'
-      },
-      { status: 200 }
-    );
+    // Check if the response indicates success
+    if (data && data.success) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: data.message || 'Testimonial deleted'
+        },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          success: false,
+          message: data?.message || 'Delete failed'
+        },
+        { status: 400 }
+      );
+    }
   } catch (error: any) {
     console.error(`DELETE /api/testimonials/[id] - Error:`, error);
     return NextResponse.json(

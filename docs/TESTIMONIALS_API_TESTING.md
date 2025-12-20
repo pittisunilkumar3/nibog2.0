@@ -364,6 +364,8 @@ fetch('/api/testimonials/123', {
 ### Issue: "Failed to fetch testimonials"
 **Solution:** Check if backend API at BACKEND_URL is running and accessible
 
+**Note:** If the backend is unreachable, the Next.js proxy will return **503** with a JSON body like `{ "success": false, "message": "Backend unreachable", "data": [] }`. Public pages should fall back to sample testimonials or show an empty list. Administrators trying to refresh data should start the backend and retry.
+
 ### Issue: City/Event names not showing
 **Solution:** Ensure external API returns these fields or implement join logic
 

@@ -111,13 +111,19 @@ export default function TestimonialDetailPage({ params }: Props) {
     try {
       setIsProcessing("delete")
 
-      // Use local API instead of external API
-      const response = await fetch('/api/testimonials/delete', {
-        method: 'POST',
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.')
+      }
+
+      // Use RESTful DELETE endpoint
+      const response = await fetch(`/api/testimonials/${testimonial?.id}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id: testimonial?.id })
+          'Authorization': `Bearer ${token}`
+        }
       })
 
       if (!response.ok) {
@@ -129,8 +135,8 @@ export default function TestimonialDetailPage({ params }: Props) {
       const data = await response.json()
       console.log('Delete response:', data)
 
-      if (!data[0]?.success) {
-        throw new Error('Delete operation failed')
+      if (!data.success) {
+        throw new Error(data.message || 'Delete operation failed')
       }
 
       router.push("/admin/testimonials")
@@ -148,13 +154,24 @@ export default function TestimonialDetailPage({ params }: Props) {
       if (!testimonial) return;
       
       setIsProcessing("approve")
-      const response = await fetch('/api/testimonials/update', {
-        method: 'POST',
+      
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.')
+      }
+
+      const response = await fetch(`/api/testimonials/${testimonial.id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...testimonial,
+          name: testimonial.name,
+          event_id: testimonial.event_id,
+          rating: testimonial.rating,
+          testimonial: testimonial.testimonial,
           status: "Published"
         })
       })
@@ -178,13 +195,24 @@ export default function TestimonialDetailPage({ params }: Props) {
       if (!testimonial) return;
       
       setIsProcessing("reject")
-      const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/testimonials/update', {
-        method: 'POST',
+      
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.')
+      }
+
+      const response = await fetch(`/api/testimonials/${testimonial.id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...testimonial,
+          name: testimonial.name,
+          event_id: testimonial.event_id,
+          rating: testimonial.rating,
+          testimonial: testimonial.testimonial,
           status: "Rejected"
         })
       })
@@ -363,7 +391,7 @@ export default function TestimonialDetailPage({ params }: Props) {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Event</span>
-                    <span>Event ID: {testimonial.event_id}</span>
+                    <span>{testimonial.event_name ? testimonial.event_name : `Event ${testimonial.event_id}`}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Date</span>

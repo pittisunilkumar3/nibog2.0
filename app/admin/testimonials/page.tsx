@@ -73,6 +73,8 @@ export default function TestimonialsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [testimonialToDelete, setTestimonialToDelete] = useState<number | null>(null)
 
   // Fetch real data from database
   useEffect(() => {
@@ -158,18 +160,32 @@ export default function TestimonialsPage() {
     }
   }
 
-  // Handle delete testimonial
-  const handleDeleteTestimonial = async (id: number) => {
-    try {
-      setIsProcessing(String(id))
+  // Handle delete testimonial - open confirmation dialog
+  const handleDeleteClick = (id: number) => {
+    setTestimonialToDelete(id)
+    setDeleteDialogOpen(true)
+  }
 
-      // Use local API instead of external API
-      const response = await fetch('/api/testimonials/delete', {
-        method: 'POST',
+  // Confirm and execute delete
+  const confirmDelete = async () => {
+    if (!testimonialToDelete) return
+
+    try {
+      setIsProcessing(String(testimonialToDelete))
+
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.')
+      }
+
+      // Use RESTful DELETE endpoint
+      const response = await fetch(`/api/testimonials/${testimonialToDelete}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id })
+          'Authorization': `Bearer ${token}`
+        }
       })
 
       if (!response.ok) {
@@ -181,17 +197,21 @@ export default function TestimonialsPage() {
       const data = await response.json()
       console.log('Delete response:', data)
 
-      if (!data[0]?.success) {
-        throw new Error('Delete operation failed')
+      if (!data.success) {
+        throw new Error(data.message || 'Delete operation failed')
       }
 
       // Remove from local state
-      setTestimonialsList(testimonialsList.filter(testimonial => testimonial.id !== id))
+      setTestimonialsList(testimonialsList.filter(testimonial => testimonial.id !== testimonialToDelete))
 
       toast({
         title: "Success",
         description: "Testimonial deleted successfully",
       })
+
+      // Close dialog
+      setDeleteDialogOpen(false)
+      setTestimonialToDelete(null)
     } catch (error: any) {
       console.error("Failed to delete testimonial:", error)
       toast({
@@ -298,13 +318,13 @@ export default function TestimonialsPage() {
     // Search query filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
+      const eventLabel = (testimonial.event_name || testimonial.event_title) || getEventName(testimonial.event_id)
       const searchableFields = [
         testimonial.name?.toLowerCase() || '',
         testimonial.testimonial?.toLowerCase() || '',
         testimonial.city?.toLowerCase() || '',
-        getEventName(testimonial.event_id)?.toLowerCase() || ''
-      ]
-
+        (eventLabel && eventLabel.toLowerCase()) || ''
+      ];
       const matchesSearch = searchableFields.some(field =>
         field.includes(query)
       )
@@ -320,7 +340,8 @@ export default function TestimonialsPage() {
     }
 
     // Event filter
-    if (selectedEvent !== "all" && getEventName(testimonial.event_id) !== selectedEvent) {
+    const evLabel = testimonial.event_name || testimonial.event_title || getEventName(testimonial.event_id)
+    if (selectedEvent !== "all" && evLabel !== selectedEvent) {
       return false
     }
 
@@ -386,7 +407,11 @@ export default function TestimonialsPage() {
       sortable: true,
       priority: 2, // Important for mobile
       render: (value, row) => {
-        // Try to find the event title from the events list
+        // Prefer event name from the testimonial if present (enriched by server)
+        if (row?.event_name) return row.event_name;
+        if (row?.event_title) return row.event_title;
+
+        // Fallback to finding the event from the events list
         const event = events.find(e => (e.event_id || e.id) === value);
         return event ? (event.event_title || event.title || event.name || `Event #${value}`) : `Event #${value}`;
       }
@@ -458,7 +483,7 @@ export default function TestimonialsPage() {
     {
       label: "Delete",
       icon: <Trash className="h-4 w-4" />,
-      onClick: (testimonial: TestimonialWithImage) => handleDeleteTestimonial(testimonial.id),
+      onClick: (testimonial: TestimonialWithImage) => handleDeleteClick(testimonial.id),
       variant: 'destructive'
     }
   ]
@@ -480,7 +505,10 @@ export default function TestimonialsPage() {
       label: "Delete Selected",
       icon: <Trash className="h-4 w-4" />,
       onClick: (selectedTestimonials: TestimonialWithImage[]) => {
-        selectedTestimonials.forEach(testimonial => handleDeleteTestimonial(testimonial.id))
+        // For bulk delete, we'll delete each one (ideally with confirmation)
+        if (confirm(`Are you sure you want to delete ${selectedTestimonials.length} testimonial(s)?`)) {
+          selectedTestimonials.forEach(testimonial => handleDeleteClick(testimonial.id))
+        }
       },
       variant: 'destructive'
     }
@@ -595,6 +623,38 @@ export default function TestimonialsPage() {
         emptyMessage="No testimonials found"
         className="min-h-[400px]"
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the testimonial
+              from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTestimonialToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isProcessing !== null}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -37,17 +37,48 @@ export async function GET(request: NextRequest) {
     queryParams.append('limit', limit);
     queryParams.append('offset', offset);
 
-    // Call external API
-    const response = await fetch(
-      `${BACKEND_URL}/api/testimonials?${queryParams.toString()}`,
-      {
+    // Call external API to get all testimonials using configured BACKEND_URL
+    const base = (BACKEND_URL || '').replace(/\/$/, '');
+    const apiUrl = `${base}/api/testimonials?${queryParams.toString()}`;
+
+    console.log(`GET /api/testimonials - Calling backend: ${apiUrl}`);
+
+    // If the backend is down, fetch() will throw; catch it and return a clear 503 so
+    // the frontend can gracefully fall back to sample data instead of failing.
+    let response;
+    try {
+      response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
         cache: 'no-store',
+      });
+    } catch (err) {
+      console.error(`Failed to reach backend at ${apiUrl}:`, err);
+      return NextResponse.json(
+        { success: false, message: 'Backend unreachable', data: [] },
+        { status: 503 }
+      );
+    }
+
+    // If primary returns 404, attempt configured fallback URL (optional)
+    if (!response.ok && process.env.BACKEND_FALLBACK_URL) {
+      const primaryBody = await response.text().catch(() => '<no-body>');
+      console.warn(`Primary testimonials endpoint ${apiUrl} returned ${response.status}. Body: ${primaryBody}`);
+
+      const fallback = process.env.BACKEND_FALLBACK_URL.replace(/\/$/, '') + `/testimonials/get-all`;
+      console.log(`Attempting fallback testimonials endpoint: ${fallback}`);
+      try {
+        response = await fetch(fallback, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+        });
+      } catch (err) {
+        console.error('Fallback fetch failed:', err);
       }
-    );
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -63,7 +94,76 @@ export async function GET(request: NextRequest) {
     // Check if external API already returns the correct format
     const testimonials = result.data || result;
     const total = result.total || result.meta?.total || testimonials.length;
-    
+
+    // Enrich testimonials with city_name and event_name when missing
+    try {
+      // Fetch cities and events from backend
+      const citiesResp = await fetch(`${base}/api/city/`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' });
+      const eventsResp = await fetch(`${base}/api/events/list`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' });
+
+      let cities: any[] = [];
+      let events: any[] = [];
+
+      if (citiesResp.ok) {
+        const cityData = await citiesResp.json();
+        cities = Array.isArray(cityData) ? cityData : (cityData.data || []);
+      }
+
+      if (eventsResp.ok) {
+        const eventData = await eventsResp.json();
+        events = Array.isArray(eventData) ? eventData : (eventData.data || eventData);
+      }
+
+      const cityMap = new Map<number, string>();
+      cities.forEach((c: any) => {
+        const id = c.id || c.city_id;
+        const name = c.city_name || c.name || c.city || '';
+        if (id) cityMap.set(Number(id), name);
+      });
+
+      const eventMap = new Map<number, string>();
+      events.forEach((e: any) => {
+        const id = e.id || e.event_id;
+        const title = e.title || e.event_title || e.name || '';
+        if (id) eventMap.set(Number(id), title);
+      });
+
+      // Apply enrichment and add backward-compatible display fields
+      for (const t of testimonials) {
+        if (t.city_id && !t.city_name) {
+          const name = cityMap.get(Number(t.city_id));
+          if (name) t.city_name = name;
+        }
+
+        // Backwards compatibility: many UI components expect `city` (string)
+        if (!t.city) {
+          if (t.city_name) {
+            t.city = t.city_name;
+          } else if (t.city_id) {
+            const name = cityMap.get(Number(t.city_id));
+            if (name) t.city = name;
+          }
+        }
+
+        if (t.event_id && !t.event_name) {
+          const en = eventMap.get(Number(t.event_id));
+          if (en) t.event_name = en;
+        }
+
+        // Backwards compatibility: expose `event_title` for list rendering
+        if (!t.event_title) {
+          if (t.event_name) {
+            t.event_title = t.event_name;
+          } else if (t.event_id) {
+            const en = eventMap.get(Number(t.event_id));
+            if (en) t.event_title = en;
+          }
+        }
+      }
+    } catch (enrichErr) {
+      console.warn('Failed to enrich testimonials with city/event names:', enrichErr);
+    }
+
     // Format response according to API documentation
     return NextResponse.json(
       {
@@ -136,25 +236,34 @@ export async function POST(request: NextRequest) {
       event_id: body.event_id || null,
       rating: body.rating || 5,
       testimonial: body.testimonial || '',
-      submitted_at: body.submitted_at || new Date().toISOString().split('T')[0],
+      submitted_at: body.submitted_at || body.date || new Date().toISOString().split('T')[0],
       status: body.status || 'Pending',
       image_url: body.image_url || null,
       priority: body.priority || 0,
       is_active: body.is_active !== undefined ? body.is_active : 1
     };
 
-    // Call external API to create testimonial
-    const response = await fetch(
-      `${BACKEND_URL}/api/testimonials/create`,
-      {
+    // Call external backend API to create testimonial
+    const base = (BACKEND_URL || '').replace(/\/$/, '');
+    const createUrl = `${base}/api/testimonials`;
+
+    let response;
+    try {
+      response = await fetch(createUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': authHeader
+          'Authorization': authHeader // forwarded from client
         },
         body: JSON.stringify(payload)
-      }
-    );
+      });
+    } catch (err) {
+      console.error(`Failed to reach backend at ${createUrl}:`, err);
+      return NextResponse.json(
+        { success: false, message: 'Backend service unavailable' },
+        { status: 503 }
+      );
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

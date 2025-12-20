@@ -1,5 +1,5 @@
 // Service Worker for NIBOG
-const CACHE_NAME = 'nibog-cache-v1';
+const CACHE_NAME = 'nibog-cache-v2-20251220';
 
 // Assets to cache immediately on service worker install
 const PRECACHE_ASSETS = [
