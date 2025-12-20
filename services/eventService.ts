@@ -1352,3 +1352,107 @@ export async function updateEventImage(
     throw error;
   }
 }
+
+/**
+ * Get all events with details (new API structure)
+ * Returns events with venue_name, city_name, and event_games_with_slots
+ * @returns Promise with array of events with full details
+ */
+export async function getAllEventsWithDetails(): Promise<any[]> {
+  try {
+    console.log('Fetching all events with details from new API');
+
+    const response = await fetch('/api/events/list', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error fetching events:', errorText);
+      throw new Error(`Failed to fetch events: ${response.status}`);
+    }
+
+    const events = await response.json();
+    console.log(`Fetched ${events.length} events with details`);
+    
+    return events;
+  } catch (error: any) {
+    console.error('Error in getAllEventsWithDetails:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get event with details by ID (new API structure)
+ * Returns event with venue_name, city_name, and event_games_with_slots
+ * @param eventId Event ID
+ * @returns Promise with event details
+ */
+export async function getEventWithDetails(eventId: number): Promise<any> {
+  try {
+    console.log(`Fetching event ${eventId} with details from new API`);
+
+    const response = await fetch(`/api/events/${eventId}/details`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Event not found');
+      }
+      const errorText = await response.text();
+      console.error('Error fetching event:', errorText);
+      throw new Error(`Failed to fetch event: ${response.status}`);
+    }
+
+    const event = await response.json();
+    console.log(`Fetched event ${eventId} with details`);
+    
+    return event;
+  } catch (error: any) {
+    console.error(`Error in getEventWithDetails(${eventId}):`, error);
+    throw error;
+  }
+}
+
+/**
+ * Get all events for a specific city
+ * @param cityId City ID
+ * @returns Promise with array of events for the city
+ */
+export async function getEventsByCityId(cityId: number): Promise<any[]> {
+  try {
+    console.log(`Fetching events for city ${cityId}`);
+
+    const response = await fetch(`/api/city/${cityId}/events`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error fetching events for city:', errorText);
+      throw new Error(`Failed to fetch events for city: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log(`Fetched ${result.data?.length || 0} events for city ${cityId}`);
+    
+    // Return the data array
+    return result.success && result.data ? result.data : [];
+  } catch (error: any) {
+    console.error(`Error in getEventsByCityId(${cityId}):`, error);
+    throw error;
+  }
+}

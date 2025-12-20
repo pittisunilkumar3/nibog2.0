@@ -14,6 +14,7 @@ import { ArrowLeft, Save, Star } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { getAllCities, City } from "@/services/cityService"
+import { getAllEventsWithDetails, getEventsByCityId } from "@/services/eventService"
 
 // Testimonial statuses
 const statuses = [
@@ -34,7 +35,7 @@ export default function EditTestimonialPage({ params }: Props) {
 
   const [testimonial, setTestimonial] = useState<any>(null)
   const [name, setName] = useState("")
-  const [city, setCity] = useState("")
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [event, setEvent] = useState("")
   const [rating, setRating] = useState("")
   const [testimonialText, setTestimonialText] = useState("")
@@ -45,6 +46,7 @@ export default function EditTestimonialPage({ params }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [cities, setCities] = useState<City[]>([])
   const [events, setEvents] = useState<Array<{ id: number, title: string }>>([])
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false)
 
   // Helper to convert local path to public URL
   const getImageUrl = (path: string | null) => {
@@ -93,27 +95,47 @@ export default function EditTestimonialPage({ params }: Props) {
   const [priority, setPriority] = useState<number>(1)
 
   useEffect(() => {
-    // Fetch cities and events
-    const fetchData = async () => {
+    // Fetch cities on mount
+    const fetchCities = async () => {
       try {
-        const [citiesData, eventsResponse] = await Promise.all([
-          getAllCities(),
-          fetch('https://ai.nibog.in/webhook/v1/nibog/event/get-all')
-        ]);
-
+        const citiesData = await getAllCities();
         setCities(citiesData);
-
-        if (eventsResponse.ok) {
-          const eventsData = await eventsResponse.json();
-          setEvents(eventsData);
-        }
       } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error('Error fetching cities:', error)
       }
     }
 
-    fetchData()
+    fetchCities()
   }, [])
+
+  // Load events when city is selected
+  useEffect(() => {
+    const fetchEvents = async () => {
+      if (!selectedCityId) {
+        setEvents([]);
+        return;
+      }
+
+      setIsLoadingEvents(true);
+      try {
+        const eventsData = await getEventsByCityId(selectedCityId);
+        
+        // Transform events to consistent format
+        const transformedEvents = eventsData.map((e: any) => ({
+          id: e.id || e.event_id,
+          title: e.title || e.event_title
+        }));
+        setEvents(transformedEvents);
+      } catch (error) {
+        console.error('Error fetching events:', error)
+        setEvents([]);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    }
+
+    fetchEvents()
+  }, [selectedCityId])
 
   useEffect(() => {
     const fetchTestimonial = async () => {
@@ -136,21 +158,19 @@ export default function EditTestimonialPage({ params }: Props) {
         if (data && data.length > 0) {
           const testimonialData = data[0]
 
-          // Find event name from event_id
-          let eventName = ''
-          if (events.length > 0) {
-            const matchedEvent = events.find(e => e.id === testimonialData.event_id)
-            eventName = matchedEvent ? matchedEvent.title : ''
-          }
-
           setTestimonial(testimonialData)
           setName(testimonialData.name)
-          setCity(testimonialData.city)
-          setEvent(eventName)
+          setSelectedCityId(testimonialData.city_id)
           setRating(testimonialData.rating.toString())
           setTestimonialText(testimonialData.testimonial)
           setStatus(testimonialData.status.toLowerCase()) // Convert to lowercase for frontend
           setDate(testimonialData.submitted_at.split('T')[0]) // Extract date from ISO string
+          setPriority(testimonialData.priority || 1)
+          
+          // Set event after events are loaded for the city
+          if (testimonialData.event_id) {
+            setEvent(testimonialData.event_id.toString())
+          }
         }
       } catch (error) {
         console.error('Error fetching testimonial:', error)
@@ -158,10 +178,10 @@ export default function EditTestimonialPage({ params }: Props) {
       }
     }
 
-    if (testimonialId && events.length > 0) {
+    if (testimonialId) {
       fetchTestimonial()
     }
-  }, [testimonialId, events])
+  }, [testimonialId])
 
   // Fetch existing testimonial image data
   useEffect(() => {
@@ -320,33 +340,40 @@ export default function EditTestimonialPage({ params }: Props) {
     setError(null)
 
     try {
-      // Find event ID from event title
-      const selectedEvent = events.find(e => e.title === event)
-      if (!selectedEvent) {
-        throw new Error('Invalid event selected')
+      if (!selectedCityId) {
+        throw new Error('Please select a city')
+      }
+
+      if (!event) {
+        throw new Error('Please select an event')
       }
 
       // Prepare update data
       const updateData = {
         id: parseInt(testimonialId),
         name,
-        city,
-        event_id: selectedEvent.id,
+        city_id: selectedCityId,
+        event_id: parseInt(event),
         rating: parseInt(rating),
         testimonial: testimonialText,
-        date,
+        date: date || new Date().toISOString().split('T')[0],
         status: status.charAt(0).toUpperCase() + status.slice(1), // Capitalize first letter
-        // New fields (frontend-only, not sent to API)
-        image_path: uploadedImagePath,
-        priority: priority
+        priority: priority,
+        is_active: true
       }
 
       console.log('Submitting update with data:', updateData)
 
-      const response = await fetch('/api/testimonials/update', {
-        method: 'POST',
+      const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.')
+      }
+
+      const response = await fetch(`/api/testimonials/${testimonialId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updateData)
       })
@@ -490,13 +517,20 @@ export default function EditTestimonialPage({ params }: Props) {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
-                <Select value={city} onValueChange={setCity} required>
+                <Select 
+                  value={selectedCityId?.toString()} 
+                  onValueChange={(value) => {
+                    setSelectedCityId(parseInt(value));
+                    setEvent(""); // Reset event when city changes
+                  }} 
+                  required
+                >
                   <SelectTrigger id="city">
                     <SelectValue placeholder="Select city" />
                   </SelectTrigger>
                   <SelectContent>
                     {cities.map((c) => (
-                      <SelectItem key={c.id} value={c.city_name}>
+                      <SelectItem key={c.id} value={c.id.toString()}>
                         {c.city_name}
                       </SelectItem>
                     ))}
@@ -506,13 +540,24 @@ export default function EditTestimonialPage({ params }: Props) {
 
               <div className="space-y-2">
                 <Label htmlFor="event">Event</Label>
-                <Select value={event} onValueChange={setEvent} required>
+                <Select 
+                  value={event} 
+                  onValueChange={setEvent} 
+                  required
+                  disabled={!selectedCityId || isLoadingEvents}
+                >
                   <SelectTrigger id="event">
-                    <SelectValue placeholder="Select event" />
+                    <SelectValue placeholder={
+                      !selectedCityId 
+                        ? "Select a city first" 
+                        : isLoadingEvents 
+                          ? "Loading events..." 
+                          : "Select event"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
                     {events.map((e) => (
-                      <SelectItem key={e.id} value={e.title}>
+                      <SelectItem key={e.id} value={e.id.toString()}>
                         {e.title}
                       </SelectItem>
                     ))}

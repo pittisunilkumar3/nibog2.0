@@ -2,65 +2,60 @@
 export interface Testimonial {
   id: number;
   name: string;
-  city: string;
-  event_id: number;
+  city_id?: number;
+  city_name?: string; // Name of the city (if city_id is set)
+  event_id?: number;
+  event_name?: string; // Name of the event (if event_id is set)
   rating: number;
   testimonial: string;
   submitted_at: string;
   status: string;
-  // Image-related fields from testimonial images API
-  image_id?: number;
   image_url?: string;
+  priority?: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Extended testimonial interface for testimonials with images
+export interface TestimonialWithImage extends Testimonial {
+  // Additional fields for backward compatibility
+  testimonial_id?: number;
+  testimonial_name?: string;
+  city?: string; // Deprecated: use city_name instead
+  image_id?: number;
   image_priority?: number;
   image_is_active?: boolean;
   image_created_at?: string;
   image_updated_at?: string;
 }
 
-// Extended testimonial interface for testimonials with images
-export interface TestimonialWithImage {
-  // Standard testimonial fields (for compatibility)
-  id: number;
-  name: string;
-  city: string;
-  event_id: number;
-  rating: number;
-  testimonial: string;
-  submitted_at: string;
-  status: string;
-  // Original API response fields
-  testimonial_id: number;
-  testimonial_name: string;
-  // Image fields
-  image_id: number;
-  image_url: string;
-  image_priority: number;
-  image_is_active: boolean;
-  image_created_at: string;
-  image_updated_at: string;
-}
-
 // Create testimonial payload interface
 export interface CreateTestimonialPayload {
   name: string;
-  city_id: string; // Changed from city to city_id to match API
-  event_id: number;
-  rating: number;
-  testimonial: string;
-  date: string;
-  status: string;
+  city_id?: number;
+  event_id?: number;
+  rating?: number;
+  testimonial?: string;
+  submitted_at?: string;
+  status?: string;
+  image_url?: string;
+  priority?: number;
+  is_active?: number;
 }
 
 // Update testimonial payload interface
 export interface UpdateTestimonialPayload {
-  id: number;
-  name: string;
-  city: string;
-  event_id: number;
-  rating: number;
-  testimonial: string;
-  date: string;
-  status: string;
+  name?: string;
+  city_id?: number;
+  event_id?: number;
+  rating?: number;
+  testimonial?: string;
+  submitted_at?: string;
+  status?: string;
+  image_url?: string;
+  priority?: number;
+  is_active?: number;
 }
 
 /**
@@ -69,10 +64,10 @@ export interface UpdateTestimonialPayload {
  */
 export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
   try {
-    console.log("Fetching all testimonials with images from database");
+    console.log("Fetching all testimonials from API");
 
-    // Use the testimonial images API endpoint that returns complete data
-    const response = await fetch('/api/testimonials/get-all-with-images', {
+    // Use the new RESTful API endpoint
+    const response = await fetch('/api/testimonials', {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -88,16 +83,21 @@ export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
       throw new Error(`Failed to fetch testimonials: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
-    console.log("Testimonials retrieved successfully:", data);
+    const result = await response.json();
+    console.log("Testimonials retrieved successfully:", result);
 
-    // Ensure we return an array
-    if (!Array.isArray(data)) {
-      console.warn("API returned non-array data:", data);
-      return [];
+    // New API returns { success, data, meta }
+    if (result.success && Array.isArray(result.data)) {
+      return result.data;
     }
 
-    return data;
+    // Fallback for backward compatibility
+    if (Array.isArray(result)) {
+      return result;
+    }
+
+    console.warn("API returned unexpected data format:", result);
+    return [];
   } catch (error: any) {
     console.error("Error fetching testimonials:", error);
     throw error;
@@ -113,13 +113,13 @@ export async function getTestimonialById(testimonialId: string | number): Promis
   try {
     console.log(`Fetching testimonial with ID: ${testimonialId}`);
 
-    // Use our internal API route to avoid CORS issues
-    const response = await fetch('/api/testimonials/get', {
-      method: "POST",
+    // Use the new RESTful API endpoint
+    const response = await fetch(`/api/testimonials/${testimonialId}`, {
+      method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ id: Number(testimonialId) }),
+      cache: "no-store",
     });
 
     console.log(`Get testimonial by ID response status: ${response.status}`);
@@ -130,11 +130,16 @@ export async function getTestimonialById(testimonialId: string | number): Promis
       throw new Error(`API returned error status: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log("Testimonial retrieved successfully:", data);
+    const result = await response.json();
+    console.log("Testimonial retrieved successfully:", result);
 
-    // The API returns an array, so we take the first item
-    return Array.isArray(data) ? data[0] : data;
+    // New API returns { success, data }
+    if (result.success && result.data) {
+      return result.data;
+    }
+
+    // Fallback for backward compatibility
+    return Array.isArray(result) ? result[0] : result;
   } catch (error: any) {
     console.error(`Error fetching testimonial ${testimonialId}:`, error);
     throw error;
@@ -150,11 +155,15 @@ export async function createTestimonial(testimonialData: CreateTestimonialPayloa
   try {
     console.log("Creating testimonial with data:", testimonialData);
 
-    // Use our internal API route to avoid CORS issues
-    const response = await fetch('/api/testimonials/create', {
+    // Get auth token from session storage
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+
+    // Use the new RESTful API endpoint
+    const response = await fetch('/api/testimonials', {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` })
       },
       body: JSON.stringify(testimonialData),
     });
@@ -167,11 +176,16 @@ export async function createTestimonial(testimonialData: CreateTestimonialPayloa
       throw new Error(`API returned error status: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log("Testimonial created successfully:", data);
+    const result = await response.json();
+    console.log("Testimonial created successfully:", result);
 
-    // The API returns an array, so we take the first item
-    return Array.isArray(data) ? data[0] : data;
+    // New API returns { success, message, id, data }
+    if (result.success && result.data) {
+      return result.data;
+    }
+
+    // Fallback for backward compatibility
+    return Array.isArray(result) ? result[0] : result;
   } catch (error: any) {
     console.error("Error creating testimonial:", error);
     throw error;
@@ -180,18 +194,23 @@ export async function createTestimonial(testimonialData: CreateTestimonialPayloa
 
 /**
  * Update a testimonial
+ * @param testimonialId The testimonial ID to update
  * @param testimonialData The testimonial data to update
  * @returns Promise with the updated testimonial data
  */
-export async function updateTestimonial(testimonialData: UpdateTestimonialPayload): Promise<Testimonial> {
+export async function updateTestimonial(testimonialId: number, testimonialData: UpdateTestimonialPayload): Promise<Testimonial> {
   try {
     console.log("Updating testimonial with data:", testimonialData);
 
-    // Use our internal API route to avoid CORS issues
-    const response = await fetch('/api/testimonials/update', {
-      method: "POST",
+    // Get auth token from session storage
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+
+    // Use the new RESTful API endpoint
+    const response = await fetch(`/api/testimonials/${testimonialId}`, {
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` })
       },
       body: JSON.stringify(testimonialData),
     });
@@ -204,11 +223,17 @@ export async function updateTestimonial(testimonialData: UpdateTestimonialPayloa
       throw new Error(`API returned error status: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log("Testimonial updated successfully:", data);
+    const result = await response.json();
+    console.log("Testimonial updated successfully:", result);
 
-    // The API returns an array, so we take the first item
-    return Array.isArray(data) ? data[0] : data;
+    // New API returns { success, message }
+    // Fetch updated testimonial to return complete data
+    if (result.success) {
+      return await getTestimonialById(testimonialId);
+    }
+
+    // Fallback for backward compatibility
+    return Array.isArray(result) ? result[0] : result;
   } catch (error: any) {
     console.error("Error updating testimonial:", error);
     throw error;
@@ -216,21 +241,24 @@ export async function updateTestimonial(testimonialData: UpdateTestimonialPayloa
 }
 
 /**
- * Delete a testimonial from local storage
+ * Delete a testimonial
  * @param testimonialId Testimonial ID to delete
  * @returns Promise with deletion result
  */
 export async function deleteTestimonial(testimonialId: number): Promise<{ success: boolean }> {
   try {
-    console.log(`Deleting testimonial with ID: ${testimonialId} from local storage`);
+    console.log(`Deleting testimonial with ID: ${testimonialId}`);
 
-    // Use our internal API route that works with local storage
-    const response = await fetch('/api/testimonials/delete', {
-      method: "POST",
+    // Get auth token from session storage
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+
+    // Use the new RESTful API endpoint
+    const response = await fetch(`/api/testimonials/${testimonialId}`, {
+      method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` })
       },
-      body: JSON.stringify({ id: testimonialId }),
     });
 
     console.log(`Delete testimonial response status: ${response.status}`);
@@ -241,11 +269,11 @@ export async function deleteTestimonial(testimonialId: number): Promise<{ succes
       throw new Error(`Failed to delete testimonial: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
-    console.log("Testimonial deleted successfully:", data);
+    const result = await response.json();
+    console.log("Testimonial deleted successfully:", result);
 
-    // The API returns an array with success status
-    return Array.isArray(data) ? data[0] : data;
+    // New API returns { success, message }
+    return { success: result.success || true };
   } catch (error: any) {
     console.error(`Error deleting testimonial ${testimonialId}:`, error);
     throw error;
@@ -262,26 +290,41 @@ export async function updateTestimonialStatus(testimonialId: number, status: str
   try {
     console.log(`Updating testimonial ${testimonialId} status to ${status}`);
 
-    // First get the current testimonial data
-    const currentTestimonial = await getTestimonialById(testimonialId);
-    
-    // Convert submitted_at to date format for the update API
-    const submittedDate = new Date(currentTestimonial.submitted_at);
-    const dateString = submittedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-    
-    // Update with new status and proper date format
+    // Get auth token from session storage
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+
+    // Update with new status
     const updatedData: UpdateTestimonialPayload = {
-      id: currentTestimonial.id,
-      name: currentTestimonial.name,
-      city: currentTestimonial.city,
-      event_id: currentTestimonial.event_id,
-      rating: currentTestimonial.rating,
-      testimonial: currentTestimonial.testimonial,
-      date: dateString,
       status: status
     };
 
-    return await updateTestimonial(updatedData);
+    // Use the new RESTful API endpoint
+    const response = await fetch(`/api/testimonials/${testimonialId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` })
+      },
+      body: JSON.stringify(updatedData),
+    });
+
+    console.log(`Update testimonial status response: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error response: ${errorText}`);
+      throw new Error(`API returned error status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Testimonial status updated successfully:", result);
+
+    // Fetch updated testimonial to return complete data
+    if (result.success) {
+      return await getTestimonialById(testimonialId);
+    }
+
+    throw new Error("Failed to update testimonial status");
   } catch (error: any) {
     console.error(`Error updating testimonial ${testimonialId} status:`, error);
     throw error;

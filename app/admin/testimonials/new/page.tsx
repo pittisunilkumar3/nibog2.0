@@ -14,11 +14,11 @@ import { ArrowLeft, Save, Star } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { getAllCities, City } from "@/services/cityService"
+import { getAllEventsWithDetails, getEventsByCityId } from "@/services/eventService"
 
 export default function NewTestimonialPage() {
   const router = useRouter()
   const [name, setName] = useState("")
-  const [selectedCityName, setSelectedCityName] = useState("")
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [selectedEventId, setSelectedEventId] = useState("")
   const [rating, setRating] = useState("5")
@@ -27,8 +27,9 @@ export default function NewTestimonialPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [events, setEvents] = useState<Event[]>([])
+  const [events, setEvents] = useState<any[]>([])
   const [cities, setCities] = useState<City[]>([])
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false)
 
   // New fields for image upload and priority
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -38,22 +39,13 @@ export default function NewTestimonialPage() {
   const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null)
   const [priority, setPriority] = useState<number>(1)
 
-  // Fetch games and cities data
+  // Fetch cities data on mount
   useEffect(() => {
     const fetchData = async () => {
       setIsDataLoading(true)
       try {
         setError(null)
-        console.log('Fetching data...')
-
-        // Fetch events from API
-        const eventsResponse = await fetch('/api/events/get-all')
-        if (!eventsResponse.ok) {
-          throw new Error('Failed to fetch events')
-        }
-        const eventsData = await eventsResponse.json()
-        console.log('Events data:', eventsData)
-        setEvents(eventsData)
+        console.log('Fetching cities...')
 
         // Fetch cities using the service
         const citiesData = await getAllCities()
@@ -71,8 +63,8 @@ export default function NewTestimonialPage() {
         setCities(cleanedCities)
 
       } catch (error) {
-        console.error('Error fetching data:', error)
-        const errorMessage = error instanceof Error ? error.message : 'Failed to load required data'
+        console.error('Error fetching cities:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load cities'
         console.error('Error details:', error)
         setError(errorMessage)
       } finally {
@@ -82,6 +74,38 @@ export default function NewTestimonialPage() {
 
     fetchData()
   }, [])
+
+  // Fetch events when city is selected
+  useEffect(() => {
+    const fetchEventsForCity = async () => {
+      if (!selectedCityId) {
+        setEvents([])
+        return
+      }
+
+      setIsLoadingEvents(true)
+      setError(null)
+      
+      try {
+        console.log(`Fetching events for city ${selectedCityId}...`)
+        const eventsData = await getEventsByCityId(selectedCityId)
+        console.log('Events data for city:', eventsData)
+        setEvents(eventsData)
+        
+        // Reset selected event when city changes
+        setSelectedEventId("")
+      } catch (error) {
+        console.error('Error fetching events:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load events'
+        setError(errorMessage)
+        setEvents([])
+      } finally {
+        setIsLoadingEvents(false)
+      }
+    }
+
+    fetchEventsForCity()
+  }, [selectedCityId])
 
   // Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,50 +219,42 @@ export default function NewTestimonialPage() {
       if (!selectedEventId) {
         throw new Error('Please select an event')
       }
-      if (!selectedCityName || selectedCityName.trim() === '') {
-        console.error('City validation failed:', { selectedCityName, selectedCityId });
+      if (!selectedCityId) {
+        console.error('City validation failed:', { selectedCityId });
         throw new Error('Please select a city')
       }
 
       // Format date to match API requirement (YYYY-MM-DD)
-      const formattedDate = new Date(date).toISOString().split('T')[0];
+      const formattedDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
       // Prepare payload for API
-      // Send city name as city_id field value
       const payload = {
         name: name.trim(),
-        city_id: selectedCityName.trim(), // Send city name as city_id value
+        city_id: selectedCityId, // Send city ID as integer
         event_id: parseInt(selectedEventId),
         rating: parseInt(rating),
         testimonial: testimonialText.trim(),
-        date: formattedDate,
-        status: "Published"
+        submitted_at: formattedDate,
+        status: "Published",
+        priority: priority,
+        is_active: 1
       }
 
-      // Extensive debug logging
+      // Debug logging
       console.log('Form Data:', {
         name,
-        selectedCityName,
         selectedCityId,
         selectedEventId,
         rating,
         testimonialText,
-        date
+        date,
+        priority
       });
 
       console.log('Payload for API:', payload);
 
-      // Additional validation logging
-      console.log('City validation:', {
-        selectedCityName: selectedCityName,
-        selectedCityNameLength: selectedCityName?.length,
-        selectedCityNameTrimmed: selectedCityName?.trim(),
-        selectedCityId: selectedCityId,
-        cityIdInPayload: payload.city_id
-      });
-
       // Step 1: Create testimonial
-      const response = await fetch('/api/testimonials/create', {
+      const response = await fetch('/api/testimonials', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -355,35 +371,14 @@ export default function NewTestimonialPage() {
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
                 <Select
-                  value={selectedCityName}
-                  onValueChange={(cityName) => {
-                    console.log('City selection changed:', {
-                      cityName,
-                      cityNameType: typeof cityName,
-                      cityNameLength: cityName?.length,
-                      availableCities: cities.map(c => c.city_name)
-                    });
+                  value={selectedCityId?.toString() || ""}
+                  onValueChange={(value) => {
+                    const cityId = parseInt(value)
+                    console.log('City selection changed:', { cityId })
 
-                    setSelectedCityName(cityName);
-
-                    // Find the corresponding city ID for the selected city name
-                    const selectedCity = cities.find(c => c.city_name === cityName);
-                    if (selectedCity) {
-                      console.log('Found matching city:', selectedCity);
-                      setSelectedCityId(selectedCity.id);
-                    } else {
-                      console.log('No matching city found for:', cityName);
-                      console.log('Available cities:', cities.map(c => ({ id: c.id, name: c.city_name })));
-                      setSelectedCityId(null);
-                    }
-
-                    // Verify state after setting
-                    setTimeout(() => {
-                      console.log('State after city selection:', {
-                        selectedCityName: cityName,
-                        selectedCityId: selectedCity?.id || null
-                      });
-                    }, 100);
+                    setSelectedCityId(cityId)
+                    
+                    // Events will be loaded automatically by the useEffect
                   }}
                   required
                   disabled={isDataLoading}
@@ -396,7 +391,7 @@ export default function NewTestimonialPage() {
                       cities.map((c) => (
                         <SelectItem
                           key={c.id}
-                          value={c.city_name}
+                          value={c.id.toString()}
                         >
                           {c.city_name}
                         </SelectItem>
@@ -413,20 +408,42 @@ export default function NewTestimonialPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="event">Event</Label>
-                <Select value={selectedEventId} onValueChange={setSelectedEventId} required disabled={isDataLoading}>
+                <Select 
+                  value={selectedEventId} 
+                  onValueChange={setSelectedEventId} 
+                  required 
+                  disabled={isLoadingEvents || !selectedCityId}
+                >
                   <SelectTrigger id="event">
-                    <SelectValue placeholder={isDataLoading ? "Loading events..." : "Select event"} />
+                    <SelectValue 
+                      placeholder={
+                        !selectedCityId 
+                          ? "Select a city first" 
+                          : isLoadingEvents 
+                            ? "Loading events..." 
+                            : events.length === 0
+                              ? "No events available"
+                              : "Select event"
+                      } 
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {events && events.length > 0 ? (
                       events.map((event) => (
-                        <SelectItem key={event.event_id} value={event.event_id.toString()}>
-                          {event.event_title}
+                        <SelectItem 
+                          key={event.id} 
+                          value={event.id.toString()}
+                        >
+                          {event.title}
                         </SelectItem>
                       ))
                     ) : (
                       <SelectItem value="_empty" disabled>
-                        {isDataLoading ? "Loading..." : "No events available"}
+                        {!selectedCityId 
+                          ? "Please select a city first" 
+                          : isLoadingEvents 
+                            ? "Loading..." 
+                            : "No events available for this city"}
                       </SelectItem>
                     )}
                   </SelectContent>
