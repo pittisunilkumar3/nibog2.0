@@ -661,13 +661,13 @@ export function formatEventDataForUpdate(
 }
 
 /**
- * Get upcoming events by city ID with automatic retry logic
+ * Get upcoming events by city ID with automatic retry logic (Direct external API call)
  * @param cityId City ID to retrieve events for
  * @param maxRetries Maximum number of retry attempts (default: 3)
  * @param retryDelay Delay between retries in milliseconds (default: 1000)
  * @returns Promise with array of upcoming events for the specified city
  */
-export async function getEventsByCityId(
+export async function getUpcomingEventsByCityId(
   cityId: number,
   maxRetries: number = 3,
   retryDelay: number = 1000
@@ -1424,11 +1424,12 @@ export async function getEventWithDetails(eventId: number): Promise<any> {
 }
 
 /**
- * Get all events for a specific city
+ * Get all events for a specific city (simplified for forms/dropdowns)
+ * Calls the local API endpoint /api/city/{cityId}/events
  * @param cityId City ID
- * @returns Promise with array of events for the city
+ * @returns Promise with array of events for the city with id and title
  */
-export async function getEventsByCityId(cityId: number): Promise<any[]> {
+export async function getEventsByCityId(cityId: number): Promise<Array<{ id: number; title: string }>> {
   try {
     console.log(`Fetching events for city ${cityId}`);
 
@@ -1449,8 +1450,14 @@ export async function getEventsByCityId(cityId: number): Promise<any[]> {
     const result = await response.json();
     console.log(`Fetched ${result.data?.length || 0} events for city ${cityId}`);
     
-    // Return the data array
-    return result.success && result.data ? result.data : [];
+    // Return the data array, ensuring it has id and title fields
+    const events = result.success && result.data ? result.data : [];
+    
+    // Transform to consistent format with id and title
+    return events.map((event: any) => ({
+      id: event.id || event.event_id,
+      title: event.title || event.event_title
+    }));
   } catch (error: any) {
     console.error(`Error in getEventsByCityId(${cityId}):`, error);
     throw error;
