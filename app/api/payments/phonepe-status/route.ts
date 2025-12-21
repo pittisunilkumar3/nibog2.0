@@ -4,7 +4,7 @@ import { validateGameData, formatGamesForAPI, createFallbackGame } from '@/utils
 import { generateConsistentBookingRef } from '@/utils/bookingReference';
 
 // Use environment variable for API base URL or fallback to production
-const API_BASE_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3004";
+const API_BASE_URL = process.env.BACKEND_URL || "http://localhost:3004";
 const BOOKING_CREATE_API = `${API_BASE_URL}/api/bookings`;
 import { sendBookingConfirmationFromServer } from '@/services/emailNotificationService';
 import { sendTicketEmail, TicketEmailData } from '@/services/ticketEmailService';

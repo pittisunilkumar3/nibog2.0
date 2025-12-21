@@ -6,7 +6,7 @@ import { Baby, Loader2, AlertTriangle } from "lucide-react"
 import { formatAge } from "@/lib/age-calculation"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
-import { useCustomerProfile } from "@/lib/swr-hooks"
+import { useUserProfileWithBookings } from "@/lib/swr-hooks"
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export default function ChildrenPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-  const { customerProfile, isLoading: profileLoading, isError, mutate } = useCustomerProfile(user?.user_id || null)
+  const { userProfile, isLoading: profileLoading, isError, mutate } = useUserProfileWithBookings(user?.user_id || null)
 
   // Show loading state while checking authentication or loading profile
   if (authLoading || profileLoading) {
@@ -43,7 +43,7 @@ export default function ChildrenPage() {
   }
 
   // Show error state
-  if (isError || !customerProfile) {
+  if (isError || !userProfile) {
     return (
       <div className="container py-8">
         <div className="mb-6">
@@ -64,7 +64,7 @@ export default function ChildrenPage() {
     )
   }
 
-  const children = customerProfile.children || []
+  const children = userProfile.children || []
 
   return (
     <div className="container py-8">

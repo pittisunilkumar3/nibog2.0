@@ -17,7 +17,7 @@ import { formatAge } from "@/lib/age-calculation"
 import { formatDateShort } from "@/lib/utils"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
-import { useCustomerProfile } from "@/lib/swr-hooks"
+import { useUserProfileWithBookings } from "@/lib/swr-hooks"
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -34,7 +34,7 @@ const cities = [
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-  const { customerProfile, isLoading: profileLoading, isError } = useCustomerProfile(user?.user_id || null)
+  const { userProfile, isLoading: profileLoading, isError } = useUserProfileWithBookings(user?.user_id || null)
 
   const [isEditing, setIsEditing] = useState(false)
   const [name, setName] = useState("")
@@ -42,92 +42,93 @@ export default function DashboardPage() {
   const [phone, setPhone] = useState("")
   const [defaultCity, setDefaultCity] = useState("")
 
-  // Update form fields when customer profile is loaded
+  // Update form fields when user profile is loaded
   useEffect(() => {
-    if (customerProfile) {
-      setName(customerProfile.user_name || "")
-      setEmail(customerProfile.email || "")
-      setPhone(customerProfile.phone || "")
-      setDefaultCity(customerProfile.city || "")
+    if (userProfile?.user) {
+      setName(userProfile.user.full_name || "")
+      setEmail(userProfile.user.email || "")
+      setPhone(userProfile.user.phone || "")
+      setDefaultCity(userProfile.user.city_name || "")
     }
-  }, [customerProfile])
+  }, [userProfile])
 
   // Get upcoming bookings (future events)
   const upcomingBookings = useMemo(() => {
-    if (!customerProfile?.bookings) {
+    if (!userProfile?.bookings) {
       return []
     }
 
     const now = new Date()
     now.setHours(0, 0, 0, 0) // Set to start of today for better comparison
 
-    return customerProfile.bookings
+    return userProfile.bookings
       .filter((booking) => {
-        const eventDate = new Date(booking.event_date)
+        const eventDate = new Date(booking.event.event_date)
         const isFuture = eventDate >= now
         const isNotCancelled = booking.status?.toLowerCase() !== "cancelled"
         return isFuture && isNotCancelled
       })
-      .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()) // Sort by date ascending (nearest first)
+      .sort((a, b) => new Date(a.event.event_date).getTime() - new Date(b.event.event_date).getTime()) // Sort by date ascending (nearest first)
       .slice(0, 5) // Show only first 5
-  }, [customerProfile])
+  }, [userProfile])
 
   // Get past bookings (past events)
   const pastBookings = useMemo(() => {
-    if (!customerProfile?.bookings) {
+    if (!userProfile?.bookings) {
       return []
     }
 
     const now = new Date()
     now.setHours(0, 0, 0, 0) // Set to start of today for better comparison
 
-    return customerProfile.bookings
+    return userProfile.bookings
       .filter((booking) => {
-        const eventDate = new Date(booking.event_date)
+        const eventDate = new Date(booking.event.event_date)
         const isPast = eventDate < now
         const isNotCancelled = booking.status?.toLowerCase() !== "cancelled"
         return isPast && isNotCancelled
       })
-      .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()) // Sort by date descending (most recent first)
+      .sort((a, b) => new Date(b.event.event_date).getTime() - new Date(a.event.event_date).getTime()) // Sort by date descending (most recent first)
       .slice(0, 5) // Show only first 5
-  }, [customerProfile])
+  }, [userProfile])
 
   // Get all bookings count for display
   const totalBookingsCount = useMemo(() => {
-    return customerProfile?.bookings?.length || 0
-  }, [customerProfile])
+    return userProfile?.bookings?.length || 0
+  }, [userProfile])
 
   // Get recent payments from bookings
   const recentPayments = useMemo(() => {
-    if (!customerProfile?.bookings) {
+    if (!userProfile?.bookings) {
       return []
     }
 
     // Extract all payments from all bookings
-    const allPayments = customerProfile.bookings
+    const allPayments = userProfile.bookings
       .filter(booking => booking.payments && booking.payments.length > 0)
       .flatMap(booking =>
         booking.payments.map(payment => ({
           ...payment,
+          payment_date: payment.payment_created_at,
           booking_ref: booking.booking_ref,
-          event_name: booking.event_name,
-          event_date: booking.event_date,
+          event_name: booking.event.event_name,
+          event_date: booking.event.event_date,
         }))
       )
       .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()) // Sort by date descending
       .slice(0, 5) // Show only 5 most recent payments
 
     return allPayments
-  }, [customerProfile])
+  }, [userProfile])
 
   // Get total payments count
   const totalPaymentsCount = useMemo(() => {
-    if (!customerProfile?.bookings) return 0
+    if (!userProfile?.bookings) return 0
     
-    return customerProfile.bookings
+    return userProfile.bookings
       .filter(booking => booking.payments && booking.payments.length > 0)
       .reduce((count, booking) => count + booking.payments.length, 0)
-  }, [customerProfile])
+  }, [userProfile])
 
   // Get user initials for avatar
   const getInitials = (name: string) => {
@@ -146,7 +147,7 @@ export default function DashboardPage() {
 
     // In a real app, this would be an API call to update the profile
     console.log({
-      user_id: customerProfile?.user_id,
+      user_id: userProfile?.user.user_id,
       name,
       email,
       phone,
@@ -183,7 +184,7 @@ export default function DashboardPage() {
   }
 
   // Show error state
-  if (isError || !customerProfile) {
+  if (isError || !userProfile) {
     return (
       <div className="container py-8">
         <div className="mb-6">
@@ -285,21 +286,21 @@ export default function DashboardPage() {
                   <div className="flex justify-center">
                     <Avatar className="h-24 w-24">
                       <AvatarImage
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(customerProfile.user_name)}&background=random&color=fff&size=128`}
-                        alt={customerProfile.user_name}
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.user.full_name || 'User')}&background=random&color=fff&size=128`}
+                        alt={userProfile?.user.full_name || 'User'}
                       />
-                      <AvatarFallback>{getInitials(customerProfile.user_name)}</AvatarFallback>
+                      <AvatarFallback>{getInitials(userProfile?.user.full_name || 'User')}</AvatarFallback>
                     </Avatar>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span>{customerProfile.user_name}</span>
+                      <span>{userProfile?.user.full_name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm truncate">{customerProfile.email}</span>
-                      {customerProfile.email_status === "Verified" && (
+                      <span className="text-sm truncate">{userProfile?.user.email}</span>
+                      {userProfile?.user.email_verified === 1 && (
                         <Badge variant="outline" className="ml-auto text-xs text-green-500">
                           Verified
                         </Badge>
@@ -307,21 +308,21 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{customerProfile.phone}</span>
-                      {customerProfile.phone_status === "Verified" && (
+                      <span>{userProfile?.user.phone}</span>
+                      {userProfile?.user.phone_verified === 1 && (
                         <Badge variant="outline" className="ml-auto text-xs text-green-500">
                           Verified
                         </Badge>
                       )}
                     </div>
-                    {customerProfile.city && (
+                    {userProfile?.user.city_name && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{customerProfile.city}</span>
+                        <span>{userProfile.user.city_name}{userProfile.user.state && `, ${userProfile.user.state}`}</span>
                       </div>
                     )}
                     <div className="text-xs text-muted-foreground">
-                      <span>User ID: {customerProfile.user_id}</span>
+                      <span>User ID: {userProfile?.user.user_id}</span>
                     </div>
                   </div>
                 </div>
@@ -342,43 +343,48 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {!customerProfile.children || customerProfile.children.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <Baby className="h-8 w-8 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">No children added yet</p>
-                  <Button className="mt-4" size="sm" asChild>
-                    <Link href="/dashboard/children">Add Child</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {customerProfile.children.map((child) => (
-                    <div key={child.child_id} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{child.child_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {child.date_of_birth}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatAge(child.age_in_months)}
-                        </p>
+              {(() => {
+                // Extract unique children from all bookings
+                const childrenMap = new Map();
+                userProfile?.bookings?.forEach(booking => {
+                  booking.children?.forEach(child => {
+                    if (!childrenMap.has(child.child_id)) {
+                      childrenMap.set(child.child_id, child);
+                    }
+                  });
+                });
+                const children = Array.from(childrenMap.values());
+
+                return children.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <Baby className="h-8 w-8 text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">No children information available</p>
+                    <p className="text-xs text-muted-foreground mt-1">Children details will appear when you make a booking</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {children.map((child) => (
+                      <div key={child.child_id} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{child.full_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {child.date_of_birth}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {child.gender} • {child.school_name}
+                          </p>
+                        </div>
                       </div>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/dashboard/children?edit=${child.child_id}`}>
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
             </CardContent>
             <CardFooter>
               <Button className="w-full" variant="outline" asChild>
                 <Link href="/dashboard/children">
                   <Baby className="mr-2 h-4 w-4" />
-                  {customerProfile.children && customerProfile.children.length > 0 ? "Manage Children" : "Add Child"}
+                  Manage Children
                 </Link>
               </Button>
             </CardFooter>
@@ -407,13 +413,13 @@ export default function DashboardPage() {
                       <Calendar className="h-12 w-12 text-muted-foreground" />
                       <h3 className="mt-4 text-lg font-semibold">No Upcoming Bookings</h3>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        {customerProfile?.bookings && customerProfile.bookings.length > 0
+                      {userProfile?.bookings && userProfile.bookings.length > 0
                           ? "All your bookings are in the past or cancelled."
                           : "You don't have any upcoming events booked."}
-                      </p>
-                      {customerProfile?.bookings && customerProfile.bookings.length > 0 && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Total bookings: {customerProfile.bookings.length}
+                    </p>
+                    {userProfile?.bookings && userProfile.bookings.length > 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Total bookings: {userProfile.bookings.length}
                         </p>
                       )}
                       <Button className="mt-4" asChild>
@@ -426,16 +432,21 @@ export default function DashboardPage() {
                         <div key={booking.booking_id} className="rounded-lg border p-4">
                           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                             <div>
-                              <h3 className="font-semibold">{booking.event_name}</h3>
+                              <h3 className="font-semibold">{booking.event.event_name}</h3>
                               <p className="text-sm text-muted-foreground">
                                 Booking Ref: {booking.booking_ref}
                               </p>
                               <div className="mt-1 flex items-center gap-2">
-                                <Badge variant="outline">{formatDateShort(booking.event_date)}</Badge>
+                                <Badge variant="outline">{formatDateShort(booking.event.event_date)}</Badge>
                               </div>
-                              {booking.games && booking.games.length > 0 && (
+                              {booking.children && booking.children.length > 0 && (
                                 <p className="mt-2 text-sm">
-                                  <span className="font-medium">Games:</span> {booking.games.map(g => g.game_name).join(", ")}
+                                  <span className="font-medium">Children:</span> {booking.children.map(c => c.full_name).join(", ")}
+                                </p>
+                              )}
+                              {booking.children?.[0]?.booking_games && booking.children[0].booking_games.length > 0 && (
+                                <p className="mt-1 text-sm">
+                                  <span className="font-medium">Games:</span> {booking.children[0].booking_games.map(g => g.game_name).join(", ")}
                                 </p>
                               )}
                             </div>
@@ -493,16 +504,21 @@ export default function DashboardPage() {
                         <div key={booking.booking_id} className="rounded-lg border p-4">
                           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                             <div>
-                              <h3 className="font-semibold">{booking.event_name}</h3>
+                              <h3 className="font-semibold">{booking.event.event_name}</h3>
                               <p className="text-sm text-muted-foreground">
                                 Booking Ref: {booking.booking_ref}
                               </p>
                               <div className="mt-1 flex items-center gap-2">
-                                <Badge variant="outline">{formatDateShort(booking.event_date)}</Badge>
+                                <Badge variant="outline">{formatDateShort(booking.event.event_date)}</Badge>
                               </div>
-                              {booking.games && booking.games.length > 0 && (
+                              {booking.children && booking.children.length > 0 && (
                                 <p className="mt-2 text-sm">
-                                  <span className="font-medium">Games:</span> {booking.games.map(g => g.game_name).join(", ")}
+                                  <span className="font-medium">Children:</span> {booking.children.map(c => c.full_name).join(", ")}
+                                </p>
+                              )}
+                              {booking.children?.[0]?.booking_games && booking.children[0].booking_games.length > 0 && (
+                                <p className="mt-1 text-sm">
+                                  <span className="font-medium">Games:</span> {booking.children[0].booking_games.map(g => g.game_name).join(", ")}
                                 </p>
                               )}
                             </div>

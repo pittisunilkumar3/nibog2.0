@@ -10,13 +10,20 @@ import { CreditCard, Search, Download, Calendar, CheckCircle, XCircle, Clock, Lo
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
-import { useCustomerProfile, CustomerProfilePayment } from "@/lib/swr-hooks"
+import { useUserProfileWithBookings } from "@/lib/swr-hooks"
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
 
 // Payment with booking reference
-interface PaymentWithBooking extends CustomerProfilePayment {
+interface PaymentWithBooking {
+  payment_id: number
+  booking_id: number
+  amount: number
+  payment_status: string
+  payment_method: string
+  transaction_id: string
+  payment_date: string
   booking_ref: string
   event_name: string
 }
@@ -24,22 +31,28 @@ interface PaymentWithBooking extends CustomerProfilePayment {
 export default function PaymentsPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-  const { customerProfile, isLoading: profileLoading, isError, mutate } = useCustomerProfile(user?.user_id || null)
+  const { userProfile, isLoading: profileLoading, isError, mutate } = useUserProfileWithBookings(user?.user_id || null)
   const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
 
   // Extract all payments from bookings
   const allPayments = useMemo(() => {
-    if (!customerProfile?.bookings) return []
+    if (!userProfile?.bookings) return []
 
     const payments: PaymentWithBooking[] = []
-    customerProfile.bookings.forEach((booking) => {
+    userProfile.bookings.forEach((booking) => {
       if (booking.payments && booking.payments.length > 0) {
         booking.payments.forEach((payment) => {
           payments.push({
-            ...payment,
+            payment_id: payment.payment_id,
+            booking_id: booking.booking_id,
+            amount: payment.amount,
+            payment_status: payment.payment_status,
+            payment_method: payment.payment_method,
+            transaction_id: payment.transaction_id,
+            payment_date: payment.payment_date,
             booking_ref: booking.booking_ref,
-            event_name: booking.event_name,
+            event_name: booking.event?.event_name || 'Unknown Event',
           })
         })
       }
@@ -49,7 +62,7 @@ export default function PaymentsPage() {
     return payments.sort((a, b) =>
       new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
     )
-  }, [customerProfile])
+  }, [userProfile])
 
   // Filter payments based on status and search query
   const filteredPayments = allPayments.filter((payment) => {
@@ -160,7 +173,7 @@ export default function PaymentsPage() {
   }
 
   // Show error state
-  if (isError || !customerProfile) {
+  if (isError || !userProfile) {
     return (
       <div className="container py-8">
         <div className="mb-6">

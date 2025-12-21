@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -10,34 +10,8 @@ import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Calendar, Clock, MapPin, User, Baby, CreditCard, Loader2, AlertTriangle, RefreshCw, Mail, Phone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
+import { useUserProfileWithBookings } from "@/lib/swr-hooks"
 import { formatDateShort } from "@/lib/utils"
-
-// Interface for booking details
-interface BookingDetails {
-  booking_id: number
-  booking_ref: string
-  booking_status: string
-  total_amount: string
-  payment_method: string
-  payment_status: string
-  booking_created_at: string
-  parent_name: string
-  parent_email: string
-  additional_phone: string
-  child_name: string
-  date_of_birth: string
-  school_name: string
-  gender: string
-  event_title: string
-  event_date: string
-  event_description: string
-  venue_name: string
-  city_name: string
-  game_price?: string
-  start_time?: string
-  end_time?: string
-  slot_price?: string
-}
 
 const getStatusBadge = (status: string) => {
   switch (status.toLowerCase()) {
@@ -64,56 +38,54 @@ export default function BookingDetailPage({ params }: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const { user, isLoading: authLoading } = useAuth()
-  const [booking, setBooking] = useState<BookingDetails | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { userProfile, isLoading: profileLoading, isError } = useUserProfileWithBookings(user?.user_id || null)
 
   const bookingRef = params.bookingId
 
-  // Fetch booking data
-  useEffect(() => {
-    const fetchBooking = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
+  // Find the booking from user profile
+  const booking = useMemo(() => {
+    if (!userProfile?.bookings) return null
+    
+    const found = userProfile.bookings.find(b => b.booking_ref === bookingRef)
+    if (!found) return null
 
-        // Use the booking ref to fetch details
-        const response = await fetch('/api/bookings/get-by-ref', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            booking_ref_id: bookingRef
-          })
-        })
+    // Get child information
+    const child = userProfile.children?.find(c => c.child_id === found.child_id)
+    
+    // Get parent information
+    const parent = userProfile.parents?.[0]
+    
+    // Get payment information
+    const payment = found.payments?.[0]
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("Booking not found")
-          }
-          throw new Error(`Failed to fetch booking: ${response.status}`)
-        }
-
-        const data = await response.json()
-        setBooking(data)
-      } catch (error: any) {
-        console.error("Failed to fetch booking:", error)
-        setError(error.message || "Failed to load booking details")
-        toast({
-          title: "Error",
-          description: "Failed to load booking details. Please try again.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
-      }
+    return {
+      booking_id: found.booking_id,
+      booking_ref: found.booking_ref,
+      booking_status: found.booking_status,
+      total_amount: found.total_amount.toString(),
+      payment_method: payment?.payment_method || 'N/A',
+      payment_status: payment?.payment_status || 'Pending',
+      booking_created_at: found.created_at,
+      parent_name: parent?.parent_name || userProfile.user?.name || 'N/A',
+      parent_email: parent?.email || userProfile.user?.email || 'N/A',
+      additional_phone: parent?.phone || 'N/A',
+      child_name: child?.child_name || 'N/A',
+      date_of_birth: child?.date_of_birth || 'N/A',
+      school_name: child?.school_name || '',
+      gender: child?.gender || 'N/A',
+      event_title: found.event?.event_name || 'Unknown Event',
+      event_date: found.event?.event_date || '',
+      event_description: found.event?.event_description || '',
+      venue_name: found.event?.venue_name || 'N/A',
+      city_name: found.event?.city_name || 'N/A',
+      game_price: found.booking_games?.[0]?.game_price?.toString() || '',
+      start_time: found.event?.start_time || '',
+      end_time: found.event?.end_time || '',
+      slot_price: found.event?.slot_price?.toString() || '',
+      games: found.booking_games || [],
+      payments: found.payments || []
     }
-
-    if (bookingRef && !authLoading && user) {
-      fetchBooking()
-    }
-  }, [bookingRef, toast, authLoading, user])
+  }, [userProfile, bookingRef])
 
   // Redirect to login if not authenticated
   if (!authLoading && !user) {
@@ -123,6 +95,8 @@ export default function BookingDetailPage({ params }: Props) {
 
   // Loading state
   if (authLoading || isLoading) {
+    return (
+      <div className=profileLoading) {
     return (
       <div className="container py-8">
         <div className="flex h-[400px] items-center justify-center">
@@ -137,7 +111,7 @@ export default function BookingDetailPage({ params }: Props) {
   }
 
   // Error state
-  if (error || !booking) {
+  if (isError || !booking) {
     return (
       <div className="container py-8">
         <div className="flex h-[400px] items-center justify-center">
@@ -145,9 +119,7 @@ export default function BookingDetailPage({ params }: Props) {
             <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto" />
             <h2 className="text-2xl font-bold">Booking Not Found</h2>
             <p className="text-muted-foreground">
-              {error || "The booking you're looking for doesn't exist or has been removed."}
-            </p>
-            <Button asChild>
+              The booking you're looking for doesn't exist or has been removed.
               <Link href="/dashboard/bookings">Back to Bookings</Link>
             </Button>
           </div>
@@ -284,6 +256,18 @@ export default function BookingDetailPage({ params }: Props) {
               <Separator />
 
               <div className="space-y-2">
+                {booking.games && booking.games.length > 0 && (
+                  <>
+                    <h3 className="font-medium mb-2">Games Booked</h3>
+                    {booking.games.map((bookingGame: any, index: number) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span>{bookingGame.game?.game_name || 'Unknown Game'}</span>
+                        <span>₹{bookingGame.game_price}</span>
+                      </div>
+                    ))}
+                    <Separator className="my-2" />
+                  </>
+                )}
                 <div className="flex justify-between font-medium text-lg">
                   <p>Total Amount</p>
                   <p>₹{booking.total_amount}</p>
@@ -305,11 +289,16 @@ export default function BookingDetailPage({ params }: Props) {
                   <span className="font-medium break-all">{booking.booking_ref}</span>
                 </div>
               </div>
-              {booking.game_price && (
+              {booking.games && booking.games.length > 0 && (
                 <div className="rounded-lg border p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Game Price</span>
-                    <span className="font-medium">₹{booking.game_price}</span>
+                  <h3 className="text-sm font-medium mb-2">Booked Games</h3>
+                  <div className="space-y-2">
+                    {booking.games.map((bookingGame: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <span>{bookingGame.game?.game_name || 'Unknown Game'}</span>
+                        <Badge variant="outline">₹{bookingGame.game_price}</Badge>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -319,6 +308,30 @@ export default function BookingDetailPage({ params }: Props) {
                   {getStatusBadge(booking.booking_status)}
                 </div>
               </div>
+
+              {booking.payments && booking.payments.length > 0 && (
+                <div className="rounded-lg border p-4">
+                  <h3 className="text-sm font-medium mb-2">Payment Details</h3>
+                  <div className="space-y-2">
+                    {booking.payments.map((payment: any, index: number) => (
+                      <div key={index} className="text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Method:</span>
+                          <span>{payment.payment_method}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Transaction ID:</span>
+                          <span className="break-all">{payment.transaction_id}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Amount:</span>
+                          <span>₹{payment.amount}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <Separator />
 

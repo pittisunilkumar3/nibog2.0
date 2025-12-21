@@ -580,3 +580,145 @@ export function useCustomerProfile(userId: number | null) {
     mutate,
   };
 }
+
+// Types for the new User Profile with Bookings API
+export interface UserProfileData {
+  user: {
+    user_id: number;
+    full_name: string;
+    email: string;
+    email_verified: number;
+    phone: string;
+    phone_verified: number;
+    city_id: number;
+    city_name: string;
+    state: string;
+    accepted_terms: number;
+    terms_accepted_at: string;
+    is_active: number;
+    is_locked: number;
+    locked_until: string | null;
+    deactivated_at: string | null;
+    created_at: string;
+    updated_at: string;
+    last_login_at: string;
+  };
+  parents: Array<{
+    id: number;
+    parent_name: string;
+    email: string;
+    phone: string;
+    created_at: string;
+    updated_at: string;
+  }>;
+  bookings: Array<{
+    booking_id: number;
+    booking_ref: string;
+    status: string;
+    total_amount: number;
+    payment_method: string;
+    payment_status: string;
+    created_at: string;
+    updated_at: string;
+    parent: {
+      parent_id: number;
+      parent_name: string;
+      email: string;
+      phone: string;
+    };
+    event: {
+      event_id: number;
+      event_name: string;
+      event_date: string;
+      start_time: string;
+      end_time: string;
+      event_description: string;
+      venue: {
+        venue_id: number;
+        venue_name: string;
+        address: string;
+        city: string;
+      };
+    };
+    children: Array<{
+      child_id: number;
+      full_name: string;
+      date_of_birth: string;
+      gender: string;
+      school_name: string;
+      created_at: string;
+      updated_at: string;
+      booking_games: Array<{
+        booking_game_id: number;
+        game_price: number;
+        booking_game_created_at: string;
+        game_id: number;
+        game_name: string;
+        game_description: string;
+        age_group: string;
+        game_base_price: number;
+        game_image_url: string;
+        slot_id: number;
+        slot_start_time: string;
+        slot_end_time: string;
+        available_spots: number;
+        booked_spots: number;
+      }>;
+    }>;
+    payments: Array<{
+      payment_id: number;
+      transaction_id: string;
+      amount: number;
+      payment_method: string;
+      payment_status: string;
+      payment_created_at: string;
+      payment_updated_at: string;
+    }>;
+  }>;
+}
+
+/**
+ * Hook to fetch user profile with bookings using the new API structure
+ * @param userId The user ID to fetch profile for
+ * @returns User profile data and loading/error states
+ */
+export function useUserProfileWithBookings(userId: number | null) {
+  const { data, error, isLoading, mutate } = useSWR<{ success: boolean; data: UserProfileData }>(
+    userId ? `/api/bookings/user/${userId}` : null,
+    async (url: string) => {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch user profile:', response.status, errorData);
+        throw new Error(`Failed to fetch user profile: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    },
+    {
+      revalidateOnFocus: true,
+      revalidateOnMount: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 2000,
+      refreshInterval: 0,
+      shouldRetryOnError: true,
+      errorRetryCount: 3,
+      errorRetryInterval: 1000,
+    }
+  );
+
+  return {
+    userProfile: data?.data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+  };
+}

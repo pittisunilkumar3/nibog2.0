@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useAuth } from "@/contexts/auth-context"
-import { useCustomerProfile, CustomerProfileBooking } from "@/lib/swr-hooks"
+import { useUserProfileWithBookings } from "@/lib/swr-hooks"
 import { useRouter } from "next/navigation"
 
 // Force dynamic rendering for this page
@@ -34,20 +34,20 @@ export default function BookingsPage() {
   const router = useRouter()
 
   // Fetch customer profile with bookings
-  const { customerProfile, isLoading: profileLoading, isError } = useCustomerProfile(user?.user_id || null)
+  const { userProfile, isLoading: profileLoading, isError } = useUserProfileWithBookings(user?.user_id || null)
 
   // Process and categorize bookings
   const { upcomingBookings, pastBookings } = useMemo(() => {
-    if (!customerProfile?.bookings || !Array.isArray(customerProfile.bookings)) {
+    if (!userProfile?.bookings || !Array.isArray(userProfile.bookings)) {
       return { upcomingBookings: [], pastBookings: [] }
     }
 
     const now = new Date()
-    const upcoming: CustomerProfileBooking[] = []
-    const past: CustomerProfileBooking[] = []
+    const upcoming: any[] = []
+    const past: any[] = []
 
-    customerProfile.bookings.forEach((booking) => {
-      const eventDate = new Date(booking.event_date)
+    userProfile.bookings.forEach((booking) => {
+      const eventDate = new Date(booking.event?.event_date || '')
       if (eventDate >= now) {
         upcoming.push(booking)
       } else {
@@ -56,7 +56,7 @@ export default function BookingsPage() {
     })
 
     return { upcomingBookings: upcoming, pastBookings: past }
-  }, [customerProfile])
+  }, [userProfile])
 
   // Filter bookings based on search query
   const filteredUpcomingBookings = upcomingBookings.filter((booking) => {
@@ -64,9 +64,9 @@ export default function BookingsPage() {
 
     const query = searchQuery.toLowerCase()
     return (
-      booking.event_name.toLowerCase().includes(query) ||
+      (booking.event?.event_name || '').toLowerCase().includes(query) ||
       booking.booking_ref.toLowerCase().includes(query) ||
-      (booking.games && booking.games.some(game => game.game_name.toLowerCase().includes(query)))
+      (booking.booking_games && booking.booking_games.some((game: any) => (game.game?.game_name || '').toLowerCase().includes(query)))
     )
   })
 
@@ -75,9 +75,9 @@ export default function BookingsPage() {
 
     const query = searchQuery.toLowerCase()
     return (
-      booking.event_name.toLowerCase().includes(query) ||
+      (booking.event?.event_name || '').toLowerCase().includes(query) ||
       booking.booking_ref.toLowerCase().includes(query) ||
-      (booking.games && booking.games.some(game => game.game_name.toLowerCase().includes(query)))
+      (booking.booking_games && booking.booking_games.some((game: any) => (game.game?.game_name || '').toLowerCase().includes(query)))
     )
   })
 
@@ -196,32 +196,32 @@ export default function BookingsPage() {
                       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-xl font-semibold">{booking.event_name}</h3>
-                            {booking.status === "Confirmed" && (
+                            <h3 className="text-xl font-semibold">{booking.event?.event_name || 'Unknown Event'}</h3>
+                            {booking.booking_status === "Confirmed" && (
                               <Badge className="bg-green-500 hover:bg-green-600">Confirmed</Badge>
                             )}
-                            {booking.status === "Pending" && (
+                            {booking.booking_status === "Pending" && (
                               <Badge variant="outline">Pending</Badge>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            <Badge variant="outline">{formatDate(booking.event_date)}</Badge>
+                            <Badge variant="outline">{formatDate(booking.event?.event_date || '')}</Badge>
                             <Badge variant="outline">₹{booking.total_amount}</Badge>
                           </div>
 
                           {/* Display Games */}
                           <div className="space-y-2">
                             <p className="text-sm font-medium">Games:</p>
-                            {booking.games && booking.games.length > 0 ? (
-                              booking.games.map((game, index) => (
+                            {booking.booking_games && booking.booking_games.length > 0 ? (
+                              booking.booking_games.map((bookingGame: any, index: number) => (
                                 <div key={index} className="ml-4 space-y-1">
-                                  <p className="text-sm font-medium">{game.game_name}</p>
+                                  <p className="text-sm font-medium">{bookingGame.game?.game_name || 'Unknown Game'}</p>
                                   <div className="flex gap-2">
                                     <Badge variant="outline" className="text-xs">
-                                      ₹{game.game_price}
+                                      ₹{bookingGame.game_price}
                                     </Badge>
                                     <Badge variant="outline" className="text-xs">
-                                      {game.attendance_status}
+                                      {bookingGame.attendance_status}
                                     </Badge>
                                   </div>
                                 </div>
@@ -261,12 +261,16 @@ export default function BookingsPage() {
                           </p>
                           <p className="text-sm">
                             <span className="font-medium">Payment:</span>{" "}
-                            {booking.payment_status === "Paid" ? (
-                              <span className="text-green-600">Paid</span>
-                            ) : booking.payment_status === "Pending" ? (
-                              <span className="text-amber-600">Pending</span>
+                            {booking.payments && booking.payments.length > 0 ? (
+                              booking.payments[0].payment_status === "Paid" || booking.payments[0].payment_status === "successful" ? (
+                                <span className="text-green-600">Paid</span>
+                              ) : booking.payments[0].payment_status === "Pending" ? (
+                                <span className="text-amber-600">Pending</span>
+                              ) : (
+                                <span className="text-gray-600">{booking.payments[0].payment_status}</span>
+                              )
                             ) : (
-                              <span className="text-gray-600">{booking.payment_status}</span>
+                              <span className="text-gray-600">No Payment</span>
                             )}
                           </p>
                         </div>
@@ -314,32 +318,32 @@ export default function BookingsPage() {
                       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-xl font-semibold">{booking.event_name}</h3>
-                            {booking.status === "Confirmed" && (
+                            <h3 className="text-xl font-semibold">{booking.event?.event_name || 'Unknown Event'}</h3>
+                            {booking.booking_status === "Confirmed" && (
                               <Badge className="bg-blue-500 hover:bg-blue-600">Completed</Badge>
                             )}
-                            {booking.status === "Cancelled" && (
+                            {booking.booking_status === "Cancelled" && (
                               <Badge className="bg-red-500 hover:bg-red-600">Cancelled</Badge>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            <Badge variant="outline">{formatDate(booking.event_date)}</Badge>
+                            <Badge variant="outline">{formatDate(booking.event?.event_date || '')}</Badge>
                             <Badge variant="outline">₹{booking.total_amount}</Badge>
                           </div>
 
                           {/* Display Games */}
                           <div className="space-y-2">
                             <p className="text-sm font-medium">Games:</p>
-                            {booking.games && booking.games.length > 0 ? (
-                              booking.games.map((game, index) => (
+                            {booking.booking_games && booking.booking_games.length > 0 ? (
+                              booking.booking_games.map((bookingGame: any, index: number) => (
                                 <div key={index} className="ml-4 space-y-1">
-                                  <p className="text-sm font-medium">{game.game_name}</p>
+                                  <p className="text-sm font-medium">{bookingGame.game?.game_name || 'Unknown Game'}</p>
                                   <div className="flex gap-2">
                                     <Badge variant="outline" className="text-xs">
-                                      ₹{game.game_price}
+                                      ₹{bookingGame.game_price}
                                     </Badge>
                                     <Badge variant="outline" className="text-xs">
-                                      {game.attendance_status}
+                                      {bookingGame.attendance_status}
                                     </Badge>
                                   </div>
                                 </div>
@@ -379,14 +383,18 @@ export default function BookingsPage() {
                           </p>
                           <p className="text-sm">
                             <span className="font-medium">Payment:</span>{" "}
-                            {booking.payment_status === "Paid" ? (
-                              <span className="text-green-600">Paid</span>
-                            ) : booking.payment_status === "Refunded" ? (
-                              <span className="text-blue-600">Refunded</span>
-                            ) : booking.payment_status === "Pending" ? (
-                              <span className="text-amber-600">Pending</span>
+                            {booking.payments && booking.payments.length > 0 ? (
+                              booking.payments[0].payment_status === "Paid" || booking.payments[0].payment_status === "successful" ? (
+                                <span className="text-green-600">Paid</span>
+                              ) : booking.payments[0].payment_status === "Refunded" ? (
+                                <span className="text-blue-600">Refunded</span>
+                              ) : booking.payments[0].payment_status === "Pending" ? (
+                                <span className="text-amber-600">Pending</span>
+                              ) : (
+                                <span className="text-gray-600">{booking.payments[0].payment_status}</span>
+                              )
                             ) : (
-                              <span className="text-gray-600">{booking.payment_status}</span>
+                              <span className="text-gray-600">No Payment</span>
                             )}
                           </p>
                         </div>
@@ -397,7 +405,7 @@ export default function BookingsPage() {
                               View Details
                             </Link>
                           </Button>
-                          {booking.status === "Confirmed" && (
+                          {booking.booking_status === "Confirmed" && (
                             <Button variant="outline" size="sm" asChild>
                               <Link href={`/dashboard/bookings/${booking.booking_ref}/review`}>
                                 Write Review

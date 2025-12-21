@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3004';
+// Use environment variable for API base URL or fallback to local development
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
 
 export async function PUT(
   request: NextRequest,
