@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     const apiUrl = `${VENUES_REST_API.BASE}/${id}`;
-    console.log(`📡 Fetching venue ${id} from: ${apiUrl}`);
+
 
     const response = await fetch(apiUrl, {
       method: "GET",

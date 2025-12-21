@@ -4,7 +4,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
 
 export async function GET() {
   try {
-    console.log("Server API route: Getting testimonials from backend API");
+
 
     // Call the backend API endpoint for testimonials
     const response = await fetch(`${BACKEND_URL}/api/testimonials?status=Published`, {
@@ -18,7 +18,7 @@ export async function GET() {
       cache: 'no-store', // Disable caching to get real-time data
     });
 
-    console.log(`Backend API response status: ${response.status}`);
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -30,13 +30,13 @@ export async function GET() {
     }
 
     const result = await response.json();
-    console.log("Testimonials data received:", result);
+
 
     // Extract data from the response
     const data = result.success && Array.isArray(result.data) ? result.data : [];
 
     // Transform the data to match our expected format
-    const transformedData = data.map(item => ({
+    const transformedData = data.map((item: any) => ({
       // Standard testimonial fields
       testimonial_id: item.id,
       testimonial_name: item.name,
@@ -54,9 +54,9 @@ export async function GET() {
       image_updated_at: item.updated_at
     }));
 
-    console.log(`Transformed ${transformedData.length} testimonials`);
 
-    return NextResponse.json(transformedData, { 
+
+    return NextResponse.json(transformedData, {
       status: 200,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -64,7 +64,7 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error("Server API route: Error getting testimonials:", error);
-    
+
     // Handle specific error types
     if (error.name === 'AbortError') {
       return NextResponse.json(
@@ -72,14 +72,14 @@ export async function GET() {
         { status: 504 }
       );
     }
-    
+
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
       return NextResponse.json(
         { error: "Unable to connect to testimonials service" },
         { status: 503 }
       );
     }
-    
+
     return NextResponse.json(
       { error: error.message || "Failed to get testimonials" },
       { status: 500 }

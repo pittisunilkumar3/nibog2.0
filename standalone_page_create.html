@@ -773,7 +773,7 @@
                 var a = $(event.relatedTarget);
                 popup_target = a[0].id;
                 var button = $(event.relatedTarget);
-                console.log(button);
+
                 var $modalDiv = $(event.delegateTarget);
                 $('.modal-media-body').html("");
 
@@ -927,7 +927,6 @@
 
         // Function to insert HTML into CKEditor
         function InsertHTML(content_html) {
-            console.log(content_html);
             var editor = CKEDITOR.instances.editor1;
 
             if (editor.mode == 'wysiwyg') {

@@ -50,7 +50,7 @@ export default function PaymentsPage() {
             payment_status: payment.payment_status,
             payment_method: payment.payment_method,
             transaction_id: payment.transaction_id,
-            payment_date: payment.payment_date,
+            payment_date: payment.payment_created_at,
             booking_ref: booking.booking_ref,
             event_name: booking.event?.event_name || 'Unknown Event',
           })
@@ -100,13 +100,13 @@ export default function PaymentsPage() {
   // Handle download receipt
   const handleDownloadReceipt = (paymentId: number) => {
     // In a real app, this would download the receipt
-    console.log("Download receipt for payment:", paymentId, "user:", user?.user_id)
+
   }
 
   // Get status badge
   const getStatusBadge = (status: string) => {
     const lowerStatus = status?.toLowerCase() || ''
-    
+
     if (lowerStatus === "paid" || lowerStatus === "successful") {
       return (
         <Badge className="bg-green-500 hover:bg-green-600">
@@ -115,7 +115,7 @@ export default function PaymentsPage() {
         </Badge>
       )
     }
-    
+
     if (lowerStatus === "pending") {
       return (
         <Badge variant="outline" className="text-amber-600 border-amber-600">
@@ -124,7 +124,7 @@ export default function PaymentsPage() {
         </Badge>
       )
     }
-    
+
     if (lowerStatus === "refunded") {
       return (
         <Badge variant="outline" className="text-blue-600 border-blue-600">
@@ -133,7 +133,7 @@ export default function PaymentsPage() {
         </Badge>
       )
     }
-    
+
     if (lowerStatus === "failed") {
       return (
         <Badge className="bg-red-500 hover:bg-red-600">
@@ -142,7 +142,7 @@ export default function PaymentsPage() {
         </Badge>
       )
     }
-    
+
     return <Badge variant="outline">{status}</Badge>
   }
 

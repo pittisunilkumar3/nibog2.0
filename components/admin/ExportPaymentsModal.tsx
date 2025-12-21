@@ -25,11 +25,11 @@ export interface ExportFilters {
   format: string
 }
 
-export function ExportPaymentsModal({ 
-  open, 
-  onOpenChange, 
-  onExport, 
-  isExporting = false 
+export function ExportPaymentsModal({
+  open,
+  onOpenChange,
+  onExport,
+  isExporting = false
 }: ExportPaymentsModalProps) {
   const [status, setStatus] = useState<string>("all")
   const [startDate, setStartDate] = useState<Date>()
@@ -45,7 +45,7 @@ export function ExportPaymentsModal({
     }
 
 
-    console.log('Export filters being sent:', filters);
+
     onExport(filters)
   }
 
@@ -65,7 +65,7 @@ export function ExportPaymentsModal({
             Configure your export settings and download payment data.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-4 py-4">
           {/* Payment Status Filter */}
           <div className="grid grid-cols-4 items-center gap-4">

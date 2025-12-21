@@ -84,7 +84,7 @@ export default function BookingsPage() {
   // Handle booking cancellation
   const handleCancelBooking = (bookingId: number) => {
     // In a real app, this would be an API call to cancel the booking
-    console.log("Cancel booking:", bookingId)
+
   }
 
   // Format date for display
@@ -235,7 +235,7 @@ export default function BookingsPage() {
                           {booking.payments && booking.payments.length > 0 && (
                             <div className="space-y-2">
                               <p className="text-sm font-medium">Payments:</p>
-                              {booking.payments.map((payment, index) => (
+                              {booking.payments.map((payment: any, index: number) => (
                                 <div key={index} className="ml-4 space-y-1">
                                   <p className="text-sm">
                                     {payment.payment_method} - ₹{payment.amount}
@@ -287,7 +287,7 @@ export default function BookingsPage() {
                               Download Ticket
                             </Link>
                           </Button>
-                          
+
                         </div>
                       </div>
                     </div>
@@ -357,7 +357,7 @@ export default function BookingsPage() {
                           {booking.payments && booking.payments.length > 0 && (
                             <div className="space-y-2">
                               <p className="text-sm font-medium">Payments:</p>
-                              {booking.payments.map((payment, index) => (
+                              {booking.payments.map((payment: any, index: number) => (
                                 <div key={index} className="ml-4 space-y-1">
                                   <p className="text-sm">
                                     {payment.payment_method} - ₹{payment.amount}

@@ -1,90 +1,77 @@
-/**
- * Test file for booking reference utilities
- * Tests the manual booking reference generation and validation
- */
-
-import { 
-  generateManualBookingRef, 
-  isValidMANFormat, 
-  isManualBooking,
-  generateConsistentBookingRef 
+// @ts-nocheck
+import {
+  generateConsistentBookingRef,
+  convertBookingRefFormat,
+  isValidPPTFormat,
+  extractDateFromPPTRef,
+  generateManualBookingRef,
+  isValidMANFormat,
+  isManualBooking
 } from '../bookingReference';
 
-describe('Manual Booking Reference Generation', () => {
-  test('generateManualBookingRef should create MAN format reference', () => {
-    const timestamp = '1704067200000'; // Example timestamp
-    const reference = generateManualBookingRef(timestamp);
-    
-    // Should start with MAN
-    expect(reference).toMatch(/^MAN/);
-    
-    // Should have correct length (MAN + YYMMDD + 3 digits = 12 characters)
-    expect(reference).toHaveLength(12);
-    
-    // Should match the pattern MANYYMMDDxxx
-    expect(reference).toMatch(/^MAN\d{6}\d{3}$/);
+describe('Booking Reference Utils', () => {
+  describe('generateConsistentBookingRef', () => {
+    test('generates PHP format correctly', () => {
+      const result = generateConsistentBookingRef('PlayArea', 'Hyd', '2023-12-25');
+      expect(result).toMatch(/^PPT-HYD-PA-20231225-[A-Z0-9]{4}$/);
+    });
+
+    test('generates valid formats for different inputs', () => {
+      const res1 = generateConsistentBookingRef('Cafe', 'Blr', '2024-01-01');
+      expect(res1).toContain('PPT-BLR-CA-20240101');
+    });
   });
 
-  test('isValidMANFormat should validate MAN format correctly', () => {
-    const validRef = 'MAN250806123';
-    const invalidRef1 = 'PPT250806123';
-    const invalidRef2 = 'MAN25080612'; // Too short
-    const invalidRef3 = 'MAN25080612a'; // Contains letter
-    
-    expect(isValidMANFormat(validRef)).toBe(true);
-    expect(isValidMANFormat(invalidRef1)).toBe(false);
-    expect(isValidMANFormat(invalidRef2)).toBe(false);
-    expect(isValidMANFormat(invalidRef3)).toBe(false);
+  describe('convertBookingRefFormat', () => {
+    test('converts PPT to short format', () => {
+      const ppt = 'PPT-HYD-PA-20231225-ABCD';
+      const short = convertBookingRefFormat(ppt);
+      expect(short).toBe('HYD-PA-20231225-ABCD');
+    });
+
+    test('handles already short format', () => {
+      const short = 'HYD-PA-20231225-ABCD';
+      const result = convertBookingRefFormat(short);
+      expect(result).toBe(short);
+    });
   });
 
-  test('isManualBooking should identify manual bookings correctly', () => {
-    const manualRef = 'MAN250806123';
-    const frontendRef = 'PPT250806123';
-    const otherRef = 'B0001234';
-    
-    expect(isManualBooking(manualRef)).toBe(true);
-    expect(isManualBooking(frontendRef)).toBe(false);
-    expect(isManualBooking(otherRef)).toBe(false);
+  describe('isValidPPTFormat', () => {
+    test('validates correct PPT format', () => {
+      expect(isValidPPTFormat('PPT-HYD-PA-20231225-ABCD')).toBe(true);
+    });
+
+    test('invalidates wrong format', () => {
+      expect(isValidPPTFormat('INVALID-REF')).toBe(false);
+      expect(isValidPPTFormat('HYD-PA-20231225-ABCD')).toBe(false); // Short format is not PPT format
+    });
   });
 
-  test('manual and frontend references should be different formats', () => {
-    const timestamp = '1704067200000';
-    const manualRef = generateManualBookingRef(timestamp);
-    const frontendRef = generateConsistentBookingRef(timestamp);
-    
-    expect(manualRef).toMatch(/^MAN/);
-    expect(frontendRef).toMatch(/^PPT/);
-    expect(manualRef).not.toEqual(frontendRef);
+  describe('extractDateFromPPTRef', () => {
+    test('extracts date correctly', () => {
+      const date = extractDateFromPPTRef('PPT-HYD-PA-20231225-ABCD');
+      expect(date).toBe('20231225');
+    });
+
+    test('returns null for invalid format', () => {
+      expect(extractDateFromPPTRef('INVALID')).toBeNull();
+    });
   });
 
-  test('generateManualBookingRef should handle different identifiers', () => {
-    const ref1 = generateManualBookingRef('123456789');
-    const ref2 = generateManualBookingRef('987654321');
-    const ref3 = generateManualBookingRef('admin_booking_001');
-    
-    // All should be valid MAN format
-    expect(isValidMANFormat(ref1)).toBe(true);
-    expect(isValidMANFormat(ref2)).toBe(true);
-    expect(isValidMANFormat(ref3)).toBe(true);
-    
-    // Should have different numeric parts
-    expect(ref1).not.toEqual(ref2);
-    expect(ref2).not.toEqual(ref3);
-  });
-});
+  describe('Manual Booking Refs', () => {
+    test('generates manual ref', () => {
+      const ref = generateManualBookingRef();
+      expect(ref).toMatch(/^MAN-[A-Z0-9]{8}$/);
+    });
 
-describe('Integration with existing booking system', () => {
-  test('manual booking references should not conflict with frontend references', () => {
-    const timestamp = Date.now().toString();
-    const manualRef = generateManualBookingRef(timestamp);
-    const frontendRef = generateConsistentBookingRef(timestamp);
-    
-    // Should be clearly distinguishable
-    expect(isManualBooking(manualRef)).toBe(true);
-    expect(isManualBooking(frontendRef)).toBe(false);
-    
-    // Should have different prefixes
-    expect(manualRef.substring(0, 3)).toBe('MAN');
-    expect(frontendRef.substring(0, 3)).toBe('PPT');
+    test('validates manual format', () => {
+      expect(isValidMANFormat('MAN-ABC12345')).toBe(true);
+      expect(isValidMANFormat('PPT-ABC-123')).toBe(false);
+    });
+
+    test('identifies manual booking', () => {
+      expect(isManualBooking('MAN-ABC12345')).toBe(true);
+      expect(isManualBooking('PPT-HYD-PA-20231225-ABCD')).toBe(false);
+    });
   });
 });

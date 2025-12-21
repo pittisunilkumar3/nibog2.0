@@ -16,11 +16,11 @@ function ensureDataDirectory() {
 // Read testimonials from local storage
 function readTestimonials() {
   ensureDataDirectory();
-  
+
   if (!fs.existsSync(TESTIMONIALS_FILE)) {
     return [];
   }
-  
+
   try {
     const data = fs.readFileSync(TESTIMONIALS_FILE, 'utf8');
     return JSON.parse(data);
@@ -33,7 +33,7 @@ function readTestimonials() {
 // Write testimonials to local storage
 function writeTestimonials(testimonials: any[]) {
   ensureDataDirectory();
-  
+
   try {
     fs.writeFileSync(TESTIMONIALS_FILE, JSON.stringify(testimonials, null, 2));
   } catch (error) {
@@ -44,11 +44,11 @@ function writeTestimonials(testimonials: any[]) {
 
 export async function POST(request: Request) {
   try {
-    console.log("Local Delete API: Deleting testimonial from local storage");
+
 
     // Parse the request body
     const { id } = await request.json();
-    console.log(`Local Delete API: Deleting testimonial with ID: ${id}`);
+
 
     if (!id || isNaN(Number(id)) || Number(id) <= 0) {
       return NextResponse.json(
@@ -61,13 +61,13 @@ export async function POST(request: Request) {
 
     // Read existing testimonials
     const testimonials = readTestimonials();
-    console.log(`Local Delete API: Found ${testimonials.length} testimonials before deletion`);
-    
+
+
     // Find the testimonial to delete
     const testimonialIndex = testimonials.findIndex((t: any) => t.id === testimonialId);
-    
+
     if (testimonialIndex === -1) {
-      console.log(`Local Delete API: Testimonial with ID ${testimonialId} not found`);
+
       return NextResponse.json(
         { error: "Testimonial not found" },
         { status: 404 }
@@ -75,22 +75,22 @@ export async function POST(request: Request) {
     }
 
     const testimonialToDelete = testimonials[testimonialIndex];
-    console.log(`Local Delete API: Found testimonial to delete:`, testimonialToDelete);
+
 
     // Remove the testimonial from the array
     testimonials.splice(testimonialIndex, 1);
-    
+
     // Save updated testimonials back to file
     writeTestimonials(testimonials);
 
-    console.log(`Local Delete API: Testimonial deleted successfully. Remaining: ${testimonials.length}`);
+
 
     // Return success response in the same format as external API
     return NextResponse.json([{ success: true }], { status: 200 });
 
   } catch (error: any) {
     console.error("Local Delete API: Error deleting testimonial:", error);
-    
+
     return NextResponse.json(
       { error: error.message || "Failed to delete testimonial from local storage" },
       { status: 500 }

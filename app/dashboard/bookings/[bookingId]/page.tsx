@@ -45,44 +45,47 @@ export default function BookingDetailPage({ params }: Props) {
   // Find the booking from user profile
   const booking = useMemo(() => {
     if (!userProfile?.bookings) return null
-    
+
     const found = userProfile.bookings.find(b => b.booking_ref === bookingRef)
     if (!found) return null
 
     // Get child information
-    const child = userProfile.children?.find(c => c.child_id === found.child_id)
-    
+    const child = found.children?.[0]
+
     // Get parent information
-    const parent = userProfile.parents?.[0]
-    
+    const parent = found.parent
+
     // Get payment information
     const payment = found.payments?.[0]
+
+    // Get games info
+    const games = child?.booking_games || []
 
     return {
       booking_id: found.booking_id,
       booking_ref: found.booking_ref,
-      booking_status: found.booking_status,
+      booking_status: found.status,
       total_amount: found.total_amount.toString(),
       payment_method: payment?.payment_method || 'N/A',
       payment_status: payment?.payment_status || 'Pending',
       booking_created_at: found.created_at,
-      parent_name: parent?.parent_name || userProfile.user?.name || 'N/A',
+      parent_name: parent?.parent_name || userProfile.user?.full_name || 'N/A',
       parent_email: parent?.email || userProfile.user?.email || 'N/A',
       additional_phone: parent?.phone || 'N/A',
-      child_name: child?.child_name || 'N/A',
+      child_name: child?.full_name || 'N/A',
       date_of_birth: child?.date_of_birth || 'N/A',
       school_name: child?.school_name || '',
       gender: child?.gender || 'N/A',
       event_title: found.event?.event_name || 'Unknown Event',
       event_date: found.event?.event_date || '',
       event_description: found.event?.event_description || '',
-      venue_name: found.event?.venue_name || 'N/A',
-      city_name: found.event?.city_name || 'N/A',
-      game_price: found.booking_games?.[0]?.game_price?.toString() || '',
+      venue_name: found.event?.venue?.venue_name || 'N/A',
+      city_name: found.event?.venue?.city || 'N/A',
+      game_price: games?.[0]?.game_price?.toString() || '',
       start_time: found.event?.start_time || '',
       end_time: found.event?.end_time || '',
-      slot_price: found.event?.slot_price?.toString() || '',
-      games: found.booking_games || [],
+      slot_price: games?.[0]?.game_price?.toString() || '',
+      games: games,
       payments: found.payments || []
     }
   }, [userProfile, bookingRef])
@@ -94,9 +97,7 @@ export default function BookingDetailPage({ params }: Props) {
   }
 
   // Loading state
-  if (authLoading || isLoading) {
-    return (
-      <div className=profileLoading) {
+  if (authLoading || profileLoading) {
     return (
       <div className="container py-8">
         <div className="flex h-[400px] items-center justify-center">
@@ -118,8 +119,10 @@ export default function BookingDetailPage({ params }: Props) {
           <div className="text-center space-y-4">
             <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto" />
             <h2 className="text-2xl font-bold">Booking Not Found</h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-4">
               The booking you're looking for doesn't exist or has been removed.
+            </p>
+            <Button asChild variant="outline">
               <Link href="/dashboard/bookings">Back to Bookings</Link>
             </Button>
           </div>

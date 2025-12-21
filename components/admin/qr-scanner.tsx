@@ -24,12 +24,12 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
   const [muted, setMuted] = useState(false)
   const [lastScanned, setLastScanned] = useState<string | null>(null)
   const [scanHistory, setScanHistory] = useState<Array<{ code: string; time: Date; success: boolean }>>([])
-  
+
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const scannerContainerRef = useRef<HTMLDivElement>(null)
   const successAudioRef = useRef<HTMLAudioElement>(null)
   const errorAudioRef = useRef<HTMLAudioElement>(null)
-  
+
   // Initialize scanner and get available cameras
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -44,25 +44,25 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
           setError("Unable to access camera: " + err)
         })
     }
-    
+
     return () => {
       if (scannerRef.current && scannerRef.current.isScanning) {
-        scannerRef.current.stop().catch(console.error)
+        scannerRef.current.stop().catch(() => { })
       }
     }
   }, [])
-  
+
   const startScanner = async () => {
     if (!cameraId || !scannerContainerRef.current) return
-    
+
     setError(null)
     setSuccess(null)
-    
+
     try {
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("qr-scanner-container")
       }
-      
+
       await scannerRef.current.start(
         cameraId,
         {
@@ -76,40 +76,40 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
         (errorMessage) => {
           // QR code scan error (not found in frame)
           // We don't need to show this to the user
-          console.log(errorMessage)
+          // console.log(errorMessage)
         }
       )
-      
+
       setScanning(true)
     } catch (err) {
       setError("Failed to start scanner: " + err)
       setScanning(false)
     }
   }
-  
+
   const stopScanner = async () => {
     if (scannerRef.current && scannerRef.current.isScanning) {
       try {
         await scannerRef.current.stop()
         setScanning(false)
       } catch (err) {
-        console.error("Failed to stop scanner:", err)
+
       }
     }
   }
-  
+
   const handleScan = (decodedText: string, decodedResult: any) => {
     // Prevent duplicate scans
     if (lastScanned === decodedText) return
-    
+
     setLastScanned(decodedText)
-    
+
     // Validate QR code format
     let isValid = false
     try {
       // Check if it's a valid JSON
       const data = JSON.parse(decodedText)
-      
+
       // Validate based on scan type
       if (scanType === "event" && data.type === "event-ticket") {
         isValid = true
@@ -123,25 +123,25 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
     } catch (e) {
       setError("Invalid QR code format")
     }
-    
+
     // Play sound
     if (!muted) {
       if (isValid && successAudioRef.current) {
-        successAudioRef.current.play().catch(console.error)
+        successAudioRef.current.play().catch(() => { })
       } else if (!isValid && errorAudioRef.current) {
-        errorAudioRef.current.play().catch(console.error)
+        errorAudioRef.current.play().catch(() => { })
       }
     }
-    
+
     // Add to scan history
     setScanHistory(prev => [
       { code: decodedText, time: new Date(), success: isValid },
       ...prev.slice(0, 9) // Keep only the last 10 scans
     ])
-    
+
     // Call the onScan callback
     onScan(decodedText, decodedResult)
-    
+
     // Reset after 3 seconds
     setTimeout(() => {
       setSuccess(null)
@@ -149,16 +149,16 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
       setLastScanned(null)
     }, 3000)
   }
-  
+
   const toggleMute = () => {
     setMuted(!muted)
   }
-  
+
   const switchCamera = async () => {
     if (scanning) {
       await stopScanner()
     }
-    
+
     // Cycle to the next camera
     if (cameras.length > 1) {
       const currentIndex = cameras.findIndex(cam => cam.id === cameraId)
@@ -166,13 +166,13 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
       setCameraId(cameras[nextIndex].id)
     }
   }
-  
+
   useEffect(() => {
     if (scanning && cameraId) {
       stopScanner().then(startScanner)
     }
   }, [cameraId])
-  
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -184,18 +184,18 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
+            <Button
+              variant="outline"
+              size="icon"
               onClick={toggleMute}
               title={muted ? "Unmute" : "Mute"}
             >
               {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </Button>
             {cameras.length > 1 && (
-              <Button 
-                variant="outline" 
-                size="icon" 
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={switchCamera}
                 title="Switch Camera"
               >
@@ -207,15 +207,15 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div 
+          <div
             className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-lg border bg-black"
           >
-            <div 
-              id="qr-scanner-container" 
-              ref={scannerContainerRef} 
+            <div
+              id="qr-scanner-container"
+              ref={scannerContainerRef}
               className="h-full w-full"
             />
-            
+
             {/* Scanner overlay with animation */}
             {scanning && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -225,26 +225,26 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
                   <div className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-green-500"></div>
                   <div className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-green-500"></div>
                   <div className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-green-500"></div>
-                  
+
                   {/* Scanning line animation */}
-                  <motion.div 
+                  <motion.div
                     className="absolute left-0 h-0.5 w-full bg-green-500"
                     initial={{ top: 0 }}
                     animate={{ top: "100%" }}
-                    transition={{ 
-                      duration: 2, 
-                      repeat: Infinity, 
-                      ease: "linear" 
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "linear"
                     }}
                   />
                 </div>
               </div>
             )}
-            
+
             {/* Status overlays */}
             <AnimatePresence>
               {!scanning && (
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 flex flex-col items-center justify-center bg-black/80"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -256,9 +256,9 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
                   </p>
                 </motion.div>
               )}
-              
+
               {success && (
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 flex flex-col items-center justify-center bg-green-500/80"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -268,9 +268,9 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
                   <p className="text-center text-white font-medium">{success}</p>
                 </motion.div>
               )}
-              
+
               {error && (
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 flex flex-col items-center justify-center bg-red-500/80"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -282,7 +282,7 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
               )}
             </AnimatePresence>
           </div>
-          
+
           <div className="flex justify-center">
             {!scanning ? (
               <Button onClick={startScanner} disabled={!cameraId}>
@@ -297,7 +297,7 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
             )}
           </div>
         </div>
-        
+
         {/* Hidden audio elements */}
         <audio ref={successAudioRef} src="/sounds/success-scan.mp3" preload="auto" />
         <audio ref={errorAudioRef} src="/sounds/error-scan.mp3" preload="auto" />
@@ -317,8 +317,8 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
               ) : (
                 <div className="space-y-2 p-2">
                   {scanHistory.map((scan, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className={cn(
                         "flex items-center justify-between rounded-md border p-2",
                         scan.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"

@@ -82,7 +82,6 @@ const verifySuperadmin = async (token: string | undefined): Promise<SuperadminUs
     }
     return null;
   } catch (error) {
-    console.error('Session verification error:', error);
     return null;
   }
 };
@@ -95,12 +94,7 @@ export async function middleware(request: NextRequest) {
 
   // Debug logging for protected paths
   if (pathname.startsWith('/register-event') || pathname.startsWith('/dashboard') || pathname.startsWith('/checkout')) {
-    console.log(`\n[Middleware Debug] ==================`);
-    console.log(`[Middleware] Pathname: ${pathname}`);
-    console.log(`[Middleware] All cookies:`, request.cookies.getAll().map(c => `${c.name}=${c.value.substring(0, 20)}...`));
-    console.log(`[Middleware] nibog-session exists:`, !!userSession);
-    console.log(`[Middleware] superadmin-token exists:`, !!superadminToken);
-    console.log(`[Middleware Debug] ==================\n`);
+   
   }
 
   // Create response with no-cache headers by default
@@ -237,13 +231,8 @@ export async function middleware(request: NextRequest) {
 
   // Handle user protected routes (dashboard, checkout, register-event, etc.)
   if (isUserProtectedPath) {
-    console.log(`[Middleware] Protected path accessed: ${pathname}`);
-    console.log(`[Middleware] userSession exists:`, !!userSession);
-    console.log(`[Middleware] userSession value (first 20 chars):`, userSession?.substring(0, 20));
-    
     // If user is not authenticated, redirect to login
     if (!userSession) {
-      console.log(`[Middleware] No user session found, redirecting to login`);
       const loginUrl = new URL('/login', request.url);
       // Preserve the original intended URL for redirect after login
       loginUrl.searchParams.set('callbackUrl', pathname);
@@ -253,8 +242,6 @@ export async function middleware(request: NextRequest) {
       redirect.headers.set('Expires', '0');
       return redirect;
     }
-    console.log(`[Middleware] User authenticated, allowing access to ${pathname}`);
-    // User is authenticated, allow access
     return response;
   }
 

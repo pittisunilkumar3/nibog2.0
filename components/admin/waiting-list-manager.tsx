@@ -88,20 +88,20 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
   const [isNotifying, setIsNotifying] = useState(false)
   const [notificationMessage, setNotificationMessage] = useState("")
   const [notificationMethod, setNotificationMethod] = useState("email")
-  
+
   // Filter waiting list entries based on search query
-  const filteredEntries = waitingListEntries.filter(entry => 
+  const filteredEntries = waitingListEntries.filter(entry =>
     entry.parentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     entry.childName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     entry.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     entry.phone.includes(searchQuery)
   )
-  
+
   const handleNotifyUser = async () => {
     if (!selectedEntry) return
-    
+
     setIsNotifying(true)
-    
+
     try {
       // In a real app, this would be an API call
       // await fetch(`/api/admin/bookings/${selectedEntry.bookingId}/waiting-list/notify`, {
@@ -111,20 +111,20 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
       //     message: notificationMessage,
       //   }),
       // })
-      
-      console.log(`Notifying user ${selectedEntry.parentName} via ${notificationMethod}`)
-      
+
+
+
       // Simulate API delay
       setTimeout(() => {
         setIsNotifying(false)
         setSelectedEntry(null)
       }, 1500)
     } catch (error) {
-      console.error("Error notifying user:", error)
+
       setIsNotifying(false)
     }
   }
-  
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "waiting":
@@ -139,7 +139,7 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
         return <Badge variant="outline">{status}</Badge>
     }
   }
-  
+
   return (
     <Card>
       <CardHeader>
@@ -158,7 +158,7 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -195,8 +195,8 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
                     {entry.status === "waiting" && (
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setSelectedEntry(entry)}
                           >
@@ -211,12 +211,12 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
                               Send a notification to {entry.parentName} about an available spot for {entry.childName}.
                             </DialogDescription>
                           </DialogHeader>
-                          
+
                           <div className="grid gap-4 py-4">
                             <div className="space-y-2">
                               <Label htmlFor="notification-method">Notification Method</Label>
-                              <Select 
-                                value={notificationMethod} 
+                              <Select
+                                value={notificationMethod}
                                 onValueChange={setNotificationMethod}
                               >
                                 <SelectTrigger id="notification-method">
@@ -229,7 +229,7 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
                                 </SelectContent>
                               </Select>
                             </div>
-                            
+
                             <div className="space-y-2">
                               <Label htmlFor="notification-message">Message</Label>
                               <Textarea
@@ -240,7 +240,7 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
                               />
                             </div>
                           </div>
-                          
+
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setSelectedEntry(null)}>
                               Cancel
@@ -252,7 +252,7 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
                         </DialogContent>
                       </Dialog>
                     )}
-                    
+
                     {entry.status === "notified" && (
                       <>
                         <Button variant="outline" size="sm">
@@ -265,7 +265,7 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
                         </Button>
                       </>
                     )}
-                    
+
                     <Button variant="outline" size="sm">
                       View Details
                     </Button>
@@ -273,7 +273,7 @@ export default function WaitingListManager({ eventId, eventTitle }: WaitingListM
                 </TableCell>
               </TableRow>
             ))}
-            
+
             {filteredEntries.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">

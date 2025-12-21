@@ -82,6 +82,44 @@ interface EnhancedBooking extends Booking {
     payment_method?: string;
   };
   booking_addons?: BookingAddonsResponse[];
+  children?: Array<{
+    child_id: number;
+    full_name: string;
+    date_of_birth: string;
+    gender: string;
+    school_name?: string;
+    created_at?: string;
+    updated_at?: string;
+    booking_games?: Array<{
+      booking_game_id: number;
+      game_id: number;
+      game_name: string;
+      game_price: string;
+      game_description?: string;
+      min_age?: number;
+      max_age?: number;
+      duration_minutes?: number;
+      game_image_url?: string;
+      slot_id?: number;
+      slot_start_time?: string;
+      slot_end_time?: string;
+      slot_custom_title?: string;
+      slot_custom_description?: string;
+      slot_custom_price?: string;
+      slot_max_participants?: number;
+      booked_at?: string;
+    }>;
+  }>;
+  payments?: Array<{
+    payment_id: number;
+    transaction_id?: string;
+    amount: string;
+    payment_method: string;
+    payment_status: string;
+    payment_date: string;
+    payment_updated_at?: string;
+  }>;
+  _original?: any;
 }
 
 
@@ -158,115 +196,107 @@ export default function BookingDetailPage({ params }: Props) {
         setIsLoading(true)
         setError(null)
 
-        const data = await getBookingById(bookingId)
-
-        // Enhance booking data with slot details and payment info
-        const enhancedBooking: EnhancedBooking = { ...data } as EnhancedBooking;
-
-        // Set basic booking data first
-        setBooking(enhancedBooking);
-        setIsLoading(false);
-
-        // Then fetch enhanced details in the background
-        setIsLoadingEnhanced(true);
-
-        // Fetch slot details using slot_id if available, otherwise fallback to event_id + game_id
-        try {
-          console.log('Fetching slot details for booking:', {
-            booking_id: data.booking_id,
-            event_title: data.event_title,
-            game_name: data.game_name,
-            booking_games: enhancedBooking.booking_games
-          });
-
-          // Check if booking_games contains slot_id (new approach)
-          let slotId = null;
-          if (enhancedBooking.booking_games && Array.isArray(enhancedBooking.booking_games)) {
-            const firstGame = enhancedBooking.booking_games[0];
-            if (firstGame && firstGame.slot_id) {
-              slotId = firstGame.slot_id;
-              console.log('Found slot_id from booking_games:', slotId);
-            }
+        // Use the new API endpoint
+        const response = await fetch(`/api/bookings/${bookingId}`)
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Booking not found')
           }
-
-          // Since booking API doesn't return booking_games with slot_id,
-          // we need to find the slot_id automatically for all bookings
-          if (!slotId) {
-            console.log('No slot_id in booking_games, will use smart matching for all bookings...');
-          }
-
-          // If we have slot_id, use the direct API call
-          if (slotId) {
-            console.log('Using slot_id to fetch game details:', slotId);
-
-            const slotDetails = await getEventGameSlotDetailsBySlotId(slotId);
-            if (slotDetails) {
-              enhancedBooking.slot_details = slotDetails;
-              console.log('Slot details fetched using slot_id:', enhancedBooking.slot_details);
-            } else {
-              console.error('Failed to fetch slot details using slot_id:', slotId);
-            }
-          } else {
-            // Fallback: Try to find the most likely slot based on booking details
-            console.log('No slot_id found, trying to find most likely slot...');
-
-            const slotDetails = await findMostLikelySlotForBooking(data);
-            if (slotDetails) {
-              enhancedBooking.slot_details = slotDetails;
-              console.log('Slot details found using smart matching:', slotDetails);
-            } else {
-              console.log('Could not find matching slot using smart matching');
-
-              // Final fallback to the old method using event_id + game_id
-              console.log('Trying final fallback method...');
-
-              let eventId = enhancedBooking.event_id;
-              let gameId = null;
-
-              // Try to get game_id from booking_games
-              if (enhancedBooking.booking_games && Array.isArray(enhancedBooking.booking_games)) {
-                const firstGame = enhancedBooking.booking_games[0];
-                if (firstGame && firstGame.game_id) {
-                  gameId = firstGame.game_id;
-                  console.log('Found game_id from booking_games:', gameId);
-                }
-              }
-
-              // If we have both IDs, fetch slot details
-              if (eventId && gameId) {
-                console.log('Fetching slot with event_id:', eventId, 'and game_id:', gameId);
-
-                const fallbackSlotDetails = await getEventGameSlotDetails(eventId, gameId);
-                if (fallbackSlotDetails) {
-                  enhancedBooking.slot_details = fallbackSlotDetails;
-                  console.log('Slot details found using final fallback method:', fallbackSlotDetails);
-                } else {
-                  console.log('No slot found for event_id:', eventId, 'game_id:', gameId);
-                }
-              } else {
-                console.log('Could not determine event_id or game_id for slot lookup');
-              }
-            }
-          }
-        } catch (slotError) {
-          console.error('Error fetching slot details:', slotError);
+          throw new Error('Failed to fetch booking')
         }
-
-        // Fetch payment details
-        const paymentDetails = await getBookingPaymentDetails(data.booking_id);
-        if (paymentDetails) {
-          enhancedBooking.payment_details = paymentDetails;
+        
+        const result = await response.json()
+        
+        if (!result.success || !result.data) {
+          throw new Error('Invalid response format')
         }
+        
+        const bookingData = result.data
+        
+        // Transform the new API response to match the expected format
+        const transformedBooking = {
+          booking_id: bookingData.id,
+          booking_ref: bookingData.booking_ref,
+          booking_status: bookingData.status,
+          total_amount: bookingData.total_amount,
+          payment_method: bookingData.payment_method,
+          payment_status: bookingData.payment_status,
+          booking_date: bookingData.booking_date,
+          booking_created_at: bookingData.booking_date,
+          booking_updated_at: bookingData.updated_at,
+          
+          // Parent info
+          parent_name: bookingData.parent?.name || '',
+          parent_email: bookingData.parent?.email || '',
+          parent_phone: bookingData.parent?.phone || '',
+          parent_additional_phone: bookingData.parent?.phone || '',
+          parent_id: bookingData.parent?.id,
+          
+          // Event info
+          event_id: bookingData.event?.id,
+          event_title: bookingData.event?.name || '',
+          event_date: bookingData.event?.date,
+          event_description: bookingData.event?.description,
+          event_image_url: bookingData.event?.image_url,
+          venue_name: bookingData.event?.venue?.name || '',
+          venue_address: bookingData.event?.venue?.address || '',
+          venue_contact: bookingData.event?.venue?.contact || '',
+          city_name: bookingData.event?.venue?.city || '',
+          state: bookingData.event?.venue?.state || '',
+          
+          // Child info (first child)
+          child_full_name: bookingData.children?.[0]?.full_name || '',
+          child_gender: bookingData.children?.[0]?.gender || '',
+          child_school_name: bookingData.children?.[0]?.school_name || '',
+          child_date_of_birth: bookingData.children?.[0]?.date_of_birth,
+          child_age: bookingData.children?.[0]?.date_of_birth ? 
+            Math.floor((new Date().getTime() - new Date(bookingData.children[0].date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 365)) : null,
+          
+          // Game info (first game of first child)
+          game_name: bookingData.children?.[0]?.booking_games?.[0]?.game_name || '',
+          game_id: bookingData.children?.[0]?.booking_games?.[0]?.game_id,
+          
+          // Slot details from first game
+          slot_details: bookingData.children?.[0]?.booking_games?.[0]?.slot_id ? {
+            slot_id: bookingData.children[0].booking_games[0].slot_id,
+            custom_title: bookingData.children[0].booking_games[0].slot_custom_title,
+            custom_description: bookingData.children[0].booking_games[0].slot_custom_description,
+            custom_price: bookingData.children[0].booking_games[0].slot_custom_price,
+            slot_price: bookingData.children[0].booking_games[0].game_price,
+            start_time: bookingData.children[0].booking_games[0].slot_start_time,
+            end_time: bookingData.children[0].booking_games[0].slot_end_time,
+            max_participants: bookingData.children[0].booking_games[0].slot_max_participants,
+          } : undefined,
+          
+          // Payment details from first payment
+          payment_details: bookingData.payments?.[0] ? {
+            payment_id: bookingData.payments[0].payment_id,
+            actual_payment_status: bookingData.payments[0].payment_status,
+            transaction_id: bookingData.payments[0].transaction_id,
+            payment_date: bookingData.payments[0].payment_date,
+            payment_method: bookingData.payments[0].payment_method,
+          } : undefined,
+          
+          // Keep all children data
+          children: bookingData.children,
+          
+          // Keep all payments data
+          payments: bookingData.payments,
+          
+          // Booking games
+          booking_games: bookingData.children?.flatMap((child: any) => 
+            (child.booking_games || []).map((game: any) => ({
+              game_id: game.game_id,
+              game_price: game.game_price,
+              slot_id: game.slot_id,
+            }))
+          ),
+          
+          // Keep the original data
+          _original: bookingData
+        } as any as EnhancedBooking;
 
-        // Fetch booking add-ons
-        const bookingAddons = await getBookingAddons(data.booking_id);
-        if (bookingAddons && Array.isArray(bookingAddons)) {
-          enhancedBooking.booking_addons = bookingAddons;
-        }
-
-        // Update booking with enhanced details
-        setBooking(enhancedBooking);
-        setIsLoadingEnhanced(false);
+        setBooking(transformedBooking);
       } catch (error: any) {
         let errorMessage = "Failed to load booking details"
 
@@ -609,23 +639,79 @@ export default function BookingDetailPage({ params }: Props) {
             <div>
               <h3 className="mb-3 font-medium text-base">Child Information</h3>
               <div className="space-y-3">
-                <div className="rounded-lg border p-3 sm:p-4">
-                  <div className="flex items-start gap-3">
-                    <Users className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium break-words">{booking.child_full_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Born: {new Date(booking.child_date_of_birth).toLocaleDateString()}, {booking.child_gender}
-                      </p>
-                      {booking.child_age && (
-                        <p className="text-sm text-muted-foreground">Age: {booking.child_age}</p>
-                      )}
-                      {booking.child_school_name && (
-                        <p className="text-sm text-muted-foreground break-words">School: {booking.child_school_name}</p>
-                      )}
+                {/* Display all children from the booking */}
+                {booking.children && Array.isArray(booking.children) && booking.children.length > 0 ? (
+                  booking.children.map((child: any, index: number) => (
+                    <div key={child.child_id || index} className="rounded-lg border p-3 sm:p-4">
+                      <div className="flex items-start gap-3">
+                        <Users className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0 w-full">
+                          <p className="font-medium break-words">{child.full_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Born: {new Date(child.date_of_birth).toLocaleDateString()}, {child.gender}
+                          </p>
+                          {child.date_of_birth && (
+                            <p className="text-sm text-muted-foreground">
+                              Age: {Math.floor((new Date().getTime() - new Date(child.date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 365))} years
+                            </p>
+                          )}
+                          {child.school_name && (
+                            <p className="text-sm text-muted-foreground break-words">School: {child.school_name}</p>
+                          )}
+                          
+                          {/* Display games for this child */}
+                          {child.booking_games && Array.isArray(child.booking_games) && child.booking_games.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase">Booked Games:</p>
+                              {child.booking_games.map((game: any, gameIndex: number) => (
+                                <div key={game.booking_game_id || gameIndex} className="pl-3 border-l-2 border-primary/20">
+                                  <p className="text-sm font-medium">{game.game_name}</p>
+                                  {game.slot_start_time && game.slot_end_time && (
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                      <p className="text-xs text-muted-foreground">
+                                        {game.slot_start_time} - {game.slot_end_time}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {game.game_price && (
+                                    <p className="text-xs text-green-600 mt-1">
+                                      Price: ₹{game.game_price}
+                                    </p>
+                                  )}
+                                  {game.slot_custom_title && game.slot_custom_title !== game.game_name && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Slot: {game.slot_custom_title}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  // Fallback to old format for backward compatibility
+                  <div className="rounded-lg border p-3 sm:p-4">
+                    <div className="flex items-start gap-3">
+                      <Users className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium break-words">{booking.child_full_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Born: {new Date(booking.child_date_of_birth).toLocaleDateString()}, {booking.child_gender}
+                        </p>
+                        {booking.child_age && (
+                          <p className="text-sm text-muted-foreground">Age: {booking.child_age}</p>
+                        )}
+                        {booking.child_school_name && (
+                          <p className="text-sm text-muted-foreground break-words">School: {booking.child_school_name}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -704,53 +790,97 @@ export default function BookingDetailPage({ params }: Props) {
               <div>
                 <h3 className="mb-3 font-medium text-base">Payment Information</h3>
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium break-words">{booking.payment_details?.payment_method || booking.payment_method || 'Not specified'}</p>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-                        <span className="text-sm text-muted-foreground">Status:</span>
-                        {booking.payment_details?.actual_payment_status ? (
-                          <Badge
-                            className={
-                              booking.payment_details.actual_payment_status === 'successful'
-                                ? 'bg-green-500 hover:bg-green-600'
-                                : booking.payment_details.actual_payment_status === 'pending'
-                                ? 'bg-yellow-500 hover:bg-yellow-600'
-                                : 'bg-red-500 hover:bg-red-600'
-                            }
-                          >
-                            {booking.payment_details.actual_payment_status}
-                          </Badge>
-                        ) : (
-                          <Badge
-                            className={
-                              booking.payment_status === 'Paid' || booking.payment_status === 'successful'
-                                ? 'bg-green-500 hover:bg-green-600'
-                                : booking.payment_status === 'Pending' || booking.payment_status === 'pending'
-                                ? 'bg-yellow-500 hover:bg-yellow-600'
-                                : 'bg-red-500 hover:bg-red-600'
-                            }
-                          >
-                            {booking.payment_status}
-                          </Badge>
-                        )}
+                  {/* Display all payments from the booking */}
+                  {booking.payments && Array.isArray(booking.payments) && booking.payments.length > 0 ? (
+                    booking.payments.map((payment: any, index: number) => (
+                      <div key={payment.payment_id || index} className="rounded-lg border p-3">
+                        <div className="flex items-start gap-3">
+                          <CreditCard className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <div className="min-w-0 w-full">
+                            <p className="font-medium break-words">{payment.payment_method || 'Not specified'}</p>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+                              <span className="text-sm text-muted-foreground">Status:</span>
+                              <Badge
+                                className={
+                                  payment.payment_status === 'Paid' || payment.payment_status === 'successful'
+                                    ? 'bg-green-500 hover:bg-green-600'
+                                    : payment.payment_status === 'Pending' || payment.payment_status === 'pending'
+                                    ? 'bg-yellow-500 hover:bg-yellow-600'
+                                    : 'bg-red-500 hover:bg-red-600'
+                                }
+                              >
+                                {payment.payment_status}
+                              </Badge>
+                            </div>
+                            {payment.transaction_id && (
+                              <p className="text-sm text-muted-foreground mt-2 break-all">
+                                Transaction ID: {payment.transaction_id}
+                              </p>
+                            )}
+                            {payment.payment_date && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Payment Date: {new Date(payment.payment_date).toLocaleDateString()}
+                              </p>
+                            )}
+                            {payment.amount && (
+                              <p className="text-sm font-semibold text-green-600 mt-1">
+                                Amount: ₹{payment.amount}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      {booking.payment_details?.transaction_id && (
-                        <p className="text-sm text-muted-foreground mt-2 break-all">
-                          Transaction ID: {booking.payment_details.transaction_id}
-                        </p>
-                      )}
-                      {booking.payment_details?.payment_date && (
+                    ))
+                  ) : (
+                    // Fallback to old format for backward compatibility
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium break-words">{booking.payment_details?.payment_method || booking.payment_method || 'Not specified'}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+                          <span className="text-sm text-muted-foreground">Status:</span>
+                          {booking.payment_details?.actual_payment_status ? (
+                            <Badge
+                              className={
+                                booking.payment_details.actual_payment_status === 'successful'
+                                  ? 'bg-green-500 hover:bg-green-600'
+                                  : booking.payment_details.actual_payment_status === 'pending'
+                                  ? 'bg-yellow-500 hover:bg-yellow-600'
+                                  : 'bg-red-500 hover:bg-red-600'
+                              }
+                            >
+                              {booking.payment_details.actual_payment_status}
+                            </Badge>
+                          ) : (
+                            <Badge
+                              className={
+                                booking.payment_status === 'Paid' || booking.payment_status === 'successful'
+                                  ? 'bg-green-500 hover:bg-green-600'
+                                  : booking.payment_status === 'Pending' || booking.payment_status === 'pending'
+                                  ? 'bg-yellow-500 hover:bg-yellow-600'
+                                  : 'bg-red-500 hover:bg-red-600'
+                              }
+                            >
+                              {booking.payment_status}
+                            </Badge>
+                          )}
+                        </div>
+                        {booking.payment_details?.transaction_id && (
+                          <p className="text-sm text-muted-foreground mt-2 break-all">
+                            Transaction ID: {booking.payment_details.transaction_id}
+                          </p>
+                        )}
+                        {booking.payment_details?.payment_date && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Payment Date: {new Date(booking.payment_details.payment_date).toLocaleDateString()}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground mt-1">
-                          Payment Date: {new Date(booking.payment_details.payment_date).toLocaleDateString()}
+                          Terms Accepted: {booking.terms_accepted ? 'Yes' : 'No'}
                         </p>
-                      )}
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Terms Accepted: {booking.terms_accepted ? 'Yes' : 'No'}
-                      </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
               <div>

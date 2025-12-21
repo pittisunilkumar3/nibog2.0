@@ -127,44 +127,44 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterAddon, setFilterAddon] = useState("all")
-  
+
   // Get unique add-on names for filter
   const uniqueAddons = Array.from(new Set(addonCollections.map(item => item.addonName)))
-  
+
   // Filter add-on collections based on search query and filters
   const filteredCollections = addonCollections.filter(item => {
     // Apply search filter
-    const matchesSearch = 
+    const matchesSearch =
       item.parentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.childName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.bookingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.addonName.toLowerCase().includes(searchQuery.toLowerCase())
-    
+
     // Apply status filter
-    const matchesStatus = 
-      filterStatus === "all" || 
+    const matchesStatus =
+      filterStatus === "all" ||
       (filterStatus === "collected" && item.status === "collected") ||
       (filterStatus === "pending" && item.status === "pending")
-    
+
     // Apply add-on filter
-    const matchesAddon = 
-      filterAddon === "all" || 
+    const matchesAddon =
+      filterAddon === "all" ||
       item.addonName === filterAddon
-    
+
     return matchesSearch && matchesStatus && matchesAddon
   })
-  
+
   const handleMarkAsCollected = (id: string) => {
     // In a real app, this would be an API call
     // await fetch(`/api/admin/events/${eventId}/scan-addon/${bookingId}/${addonId}`, { method: "POST" })
-    
-    console.log(`Marking add-on ${id} as collected`)
+
+
   }
-  
+
   const formatPrice = (price: number) => {
     return `₹${price.toLocaleString('en-IN')}`
   }
-  
+
   return (
     <Tabs defaultValue="collections">
       <TabsList className="grid w-full grid-cols-2">
@@ -177,7 +177,7 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
           Summary
         </TabsTrigger>
       </TabsList>
-      
+
       <TabsContent value="collections">
         <Card>
           <CardHeader>
@@ -197,7 +197,7 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              
+
               <div className="flex flex-wrap gap-2">
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger className="w-[130px]">
@@ -209,7 +209,7 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
                     <SelectItem value="pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
-                
+
                 <Select value={filterAddon} onValueChange={setFilterAddon}>
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Add-on Type" />
@@ -225,7 +225,7 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
                 </Select>
               </div>
             </div>
-            
+
             <Table>
               <TableHeader>
                 <TableRow>
@@ -265,8 +265,8 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
                     </TableCell>
                     <TableCell className="text-right">
                       {item.status === "pending" ? (
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={() => handleMarkAsCollected(item.id)}
                         >
                           <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -282,7 +282,7 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
                     </TableCell>
                   </TableRow>
                 ))}
-                
+
                 {filteredCollections.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
@@ -295,7 +295,7 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       <TabsContent value="summary">
         <Card>
           <CardHeader>
@@ -341,7 +341,7 @@ export default function AddonCollectionTracker({ eventId, eventTitle }: AddonCol
                     </TableCell>
                   </TableRow>
                 ))}
-                
+
                 <TableRow className="bg-muted/50">
                   <TableCell className="font-bold">Total</TableCell>
                   <TableCell className="font-bold">

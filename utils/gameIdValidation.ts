@@ -23,7 +23,7 @@ export function isValidGameId(gameId: any): boolean {
   if (gameId === null || gameId === undefined) {
     return false;
   }
-  
+
   const numericId = Number(gameId);
   return !isNaN(numericId) && numericId > 0 && Number.isInteger(numericId);
 }
@@ -37,7 +37,7 @@ export function isValidGamePrice(price: any): boolean {
   if (price === null || price === undefined) {
     return false;
   }
-  
+
   const numericPrice = Number(price);
   return !isNaN(numericPrice) && numericPrice >= 0;
 }
@@ -49,13 +49,13 @@ export function isValidGamePrice(price: any): boolean {
  */
 export function validateGameIds(gameIds: any[]): number[] {
   if (!Array.isArray(gameIds)) {
-    console.error('validateGameIds: Input is not an array:', gameIds);
+
     return [];
   }
-  
+
   const validIds: number[] = [];
   const errors: string[] = [];
-  
+
   gameIds.forEach((id, index) => {
     if (isValidGameId(id)) {
       validIds.push(Number(id));
@@ -63,12 +63,12 @@ export function validateGameIds(gameIds: any[]): number[] {
       errors.push(`Invalid game ID at index ${index}: ${id}`);
     }
   });
-  
+
   if (errors.length > 0) {
-    console.warn('Game ID validation errors:', errors);
+
   }
-  
-  console.log(`Validated ${validIds.length} out of ${gameIds.length} game IDs:`, validIds);
+
+
   return validIds;
 }
 
@@ -79,13 +79,13 @@ export function validateGameIds(gameIds: any[]): number[] {
  */
 export function validateGamePrices(prices: any[]): number[] {
   if (!Array.isArray(prices)) {
-    console.error('validateGamePrices: Input is not an array:', prices);
+
     return [];
   }
-  
+
   const validPrices: number[] = [];
   const errors: string[] = [];
-  
+
   prices.forEach((price, index) => {
     if (isValidGamePrice(price)) {
       validPrices.push(Number(price));
@@ -93,12 +93,12 @@ export function validateGamePrices(prices: any[]): number[] {
       errors.push(`Invalid game price at index ${index}: ${price}`);
     }
   });
-  
+
   if (errors.length > 0) {
-    console.warn('Game price validation errors:', errors);
+
   }
-  
-  console.log(`Validated ${validPrices.length} out of ${prices.length} game prices:`, validPrices);
+
+
   return validPrices;
 }
 
@@ -116,42 +116,38 @@ export function validateGameData(
   totalAmount: number = 0,
   slotIds?: any[]
 ): GameValidationResult {
-  console.log('=== VALIDATING GAME DATA ===');
-  console.log('Input game IDs:', gameIds);
-  console.log('Input game prices:', gamePrices);
-  console.log('Input slot IDs:', slotIds);
-  console.log('Total amount:', totalAmount);
-  
+
+
   const errors: string[] = [];
-  
+
   // Validate inputs
   if (!Array.isArray(gameIds)) {
     errors.push('Game IDs must be an array');
     return { isValid: false, validGames: [], errors };
   }
-  
+
   if (!Array.isArray(gamePrices)) {
     errors.push('Game prices must be an array');
     return { isValid: false, validGames: [], errors };
   }
-  
+
   if (gameIds.length === 0) {
     errors.push('At least one game ID is required');
     return { isValid: false, validGames: [], errors };
   }
-  
+
   // Validate each game ID and pair with price
   const validGames: ValidatedGameData[] = [];
-  
+
   gameIds.forEach((gameId, index) => {
     if (!isValidGameId(gameId)) {
       errors.push(`Invalid game ID at index ${index}: ${gameId}`);
       return;
     }
-    
+
     const numericGameId = Number(gameId);
     let gamePrice = 0;
-    
+
     // Try to get corresponding price
     if (gamePrices[index] !== undefined && isValidGamePrice(gamePrices[index])) {
       gamePrice = Number(gamePrices[index]);
@@ -164,7 +160,7 @@ export function validateGameData(
         return;
       }
     }
-    
+
     // Get corresponding slot ID if available
     let slotId: number | undefined;
     if (slotIds && slotIds[index] !== undefined && !isNaN(Number(slotIds[index]))) {
@@ -177,17 +173,15 @@ export function validateGameData(
       ...(slotId && { slotId })
     });
   });
-  
+
   const isValid = validGames.length > 0 && errors.length === 0;
-  
-  console.log(`Validation result: ${isValid ? 'VALID' : 'INVALID'}`);
-  console.log(`Valid games: ${validGames.length}`);
-  console.log(`Errors: ${errors.length}`);
-  
+
+
+
   if (errors.length > 0) {
-    console.error('Validation errors:', errors);
+
   }
-  
+
   return {
     isValid,
     validGames,
@@ -200,7 +194,7 @@ export function validateGameData(
  * @param validatedGames Array of validated game data
  * @returns Array formatted for API
  */
-export function formatGamesForAPI(validatedGames: ValidatedGameData[]): Array<{slot_id: number, game_id: number, game_price: number}> {
+export function formatGamesForAPI(validatedGames: ValidatedGameData[]): Array<{ slot_id: number, game_id: number, game_price: number }> {
   return validatedGames.map(game => ({
     slot_id: game.slotId || 0, // Include slot_id as required field, default to 0 if not available
     game_id: game.gameId,
@@ -213,8 +207,8 @@ export function formatGamesForAPI(validatedGames: ValidatedGameData[]): Array<{s
  * @param totalAmount Total amount to use as price
  * @returns Single fallback game entry
  */
-export function createFallbackGame(totalAmount: number = 0): {slot_id: number, game_id: number, game_price: number} {
-  console.warn('Creating fallback game entry');
+export function createFallbackGame(totalAmount: number = 0): { slot_id: number, game_id: number, game_price: number } {
+
   return {
     slot_id: 0, // Default slot_id for fallback
     game_id: 1, // Assuming game ID 1 exists in the system

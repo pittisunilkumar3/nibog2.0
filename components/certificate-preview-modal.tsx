@@ -155,7 +155,7 @@ export function CertificatePreviewModal({
         try {
           template = await getCertificateTemplateById(certificate.template_id)
         } catch (templateError) {
-          console.error('Error fetching template:', templateError)
+
           throw new Error(`Failed to load certificate template: ${templateError instanceof Error ? templateError.message : 'Unknown error'}`)
         }
 
@@ -166,11 +166,11 @@ export function CertificatePreviewModal({
 
         // Background is optional - can be image, solid color, gradient, or none
         if (!template.background_style && !template.background_image) {
-          console.warn('Certificate template has no background style or image defined')
+
         }
 
         if (!template.fields || template.fields.length === 0) {
-          console.warn('Certificate template has no fields defined')
+
         }
 
         // Generate HTML preview using the proven approach from certificatePdfService
@@ -178,12 +178,12 @@ export function CertificatePreviewModal({
           const previewHtml = generateCertificateHTML(template, certificate)
           setHtml(previewHtml)
         } catch (htmlError) {
-          console.error('Error generating HTML:', htmlError)
+
           throw new Error(`Failed to generate certificate preview: ${htmlError instanceof Error ? htmlError.message : 'Unknown error'}`)
         }
 
       } catch (error) {
-        console.error('Error loading certificate preview:', error)
+
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
         setError(errorMessage)
       } finally {
@@ -264,7 +264,7 @@ function generateCertificateHTML(
 
     // Check if we have new background_style or need to use legacy background_image
     if (template.background_style && template.background_style.type) {
-      console.log('Using new background style:', template.background_style);
+
 
       if (template.background_style.type === 'image') {
         const imageUrl = template.background_style.image_url || template.background_image;
@@ -280,7 +280,7 @@ function generateCertificateHTML(
         backgroundStyle = `background: linear-gradient(135deg, ${template.background_style.gradient_colors[0]}, ${template.background_style.gradient_colors[1]});`;
       }
     } else if (template.background_image && template.background_image !== 'null' && template.background_image !== null) {
-      console.log('Using legacy background image:', template.background_image);
+
       // Legacy background image support
       const backgroundImageUrl = template.background_image.startsWith('http')
         ? template.background_image
@@ -288,7 +288,7 @@ function generateCertificateHTML(
       backgroundStyle = `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
     }
 
-    console.log('Final background style:', backgroundStyle);
+
 
     // Generate fields HTML
     let fieldsHTML = '';
@@ -299,8 +299,8 @@ function generateCertificateHTML(
           // Skip fields that are handled separately
           const fieldName = field.name.toLowerCase();
           if (fieldName.includes('certificate') && fieldName.includes('title') ||
-              (fieldName.includes('event') && fieldName.includes('name')) ||
-              fieldName.includes('participant') || (fieldName.includes('name') && !fieldName.includes('event') && !fieldName.includes('venue') && !fieldName.includes('city'))) {
+            (fieldName.includes('event') && fieldName.includes('name')) ||
+            fieldName.includes('participant') || (fieldName.includes('name') && !fieldName.includes('event') && !fieldName.includes('venue') && !fieldName.includes('city'))) {
             return; // Skip these fields as they're handled separately
           }
 
@@ -352,7 +352,7 @@ function generateCertificateHTML(
             `;
           }
         } catch (fieldError) {
-          console.warn(`Error processing field ${index}:`, fieldError)
+
           // Continue with other fields
         }
       });
@@ -550,7 +550,7 @@ function generateCertificateHTML(
 </html>
     `;
   } catch (error) {
-    console.error('Error generating certificate HTML:', error)
+
     throw new Error(`Failed to generate certificate HTML: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }

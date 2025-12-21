@@ -67,7 +67,7 @@ export default function FavoritesPage() {
   // Handle remove from favorites
   const handleRemoveFavorite = (favoriteId: string) => {
     // In a real app, this would be an API call to remove the favorite
-    console.log("Remove favorite:", favoriteId, "for user:", user?.user_id)
+
     setFavorites(favorites.filter((fav) => fav.id !== favoriteId))
   }
 

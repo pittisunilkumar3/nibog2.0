@@ -124,7 +124,7 @@ export default function DashboardPage() {
   // Get total payments count
   const totalPaymentsCount = useMemo(() => {
     if (!userProfile?.bookings) return 0
-    
+
     return userProfile.bookings
       .filter(booking => booking.payments && booking.payments.length > 0)
       .reduce((count, booking) => count + booking.payments.length, 0)
@@ -146,13 +146,7 @@ export default function DashboardPage() {
     e.preventDefault()
 
     // In a real app, this would be an API call to update the profile
-    console.log({
-      user_id: userProfile?.user.user_id,
-      name,
-      email,
-      phone,
-      defaultCity,
-    })
+
 
     setIsEditing(false)
   }
@@ -413,13 +407,13 @@ export default function DashboardPage() {
                       <Calendar className="h-12 w-12 text-muted-foreground" />
                       <h3 className="mt-4 text-lg font-semibold">No Upcoming Bookings</h3>
                       <p className="mt-2 text-sm text-muted-foreground">
-                      {userProfile?.bookings && userProfile.bookings.length > 0
+                        {userProfile?.bookings && userProfile.bookings.length > 0
                           ? "All your bookings are in the past or cancelled."
                           : "You don't have any upcoming events booked."}
-                    </p>
-                    {userProfile?.bookings && userProfile.bookings.length > 0 && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Total bookings: {userProfile.bookings.length}
+                      </p>
+                      {userProfile?.bookings && userProfile.bookings.length > 0 && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Total bookings: {userProfile.bookings.length}
                         </p>
                       )}
                       <Button className="mt-4" asChild>
@@ -597,52 +591,53 @@ export default function DashboardPage() {
                   {recentPayments.map((payment) => {
                     const paymentStatus = payment.payment_status?.toLowerCase() || ''
                     const isPaid = paymentStatus === 'paid' || paymentStatus === 'successful'
-                    
+
                     return (
-                    <div key={payment.payment_id} className="rounded-lg border p-4">
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-sm">{payment.event_name}</h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Booking: {payment.booking_ref}
-                            </p>
+                      <div key={payment.payment_id} className="rounded-lg border p-4">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-sm">{payment.event_name}</h4>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Booking: {payment.booking_ref}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={isPaid ? "default" : "secondary"}
+                              className={isPaid ? "bg-green-500 hover:bg-green-600" : ""}
+                            >
+                              {isPaid ? "Paid" : payment.payment_status}
+                            </Badge>
                           </div>
-                          <Badge
-                            variant={isPaid ? "default" : "secondary"}
-                            className={isPaid ? "bg-green-500 hover:bg-green-600" : ""}
-                          >
-                            {isPaid ? "Paid" : payment.payment_status}
-                          </Badge>
-                        </div>
 
-                        <Separator />
+                          <Separator />
 
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Payment Method</p>
-                            <p className="font-medium">{payment.payment_method}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Amount</p>
-                            <p className="font-semibold text-base">₹{payment.amount}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Transaction ID</p>
-                            <p className="font-mono text-xs truncate" title={payment.transaction_id}>
-                              {payment.transaction_id}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Payment Date</p>
-                            <p className="text-xs">
-                              {formatDateShort(payment.payment_date)}
-                            </p>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Payment Method</p>
+                              <p className="font-medium">{payment.payment_method}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Amount</p>
+                              <p className="font-semibold text-base">₹{payment.amount}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Transaction ID</p>
+                              <p className="font-mono text-xs truncate" title={payment.transaction_id}>
+                                {payment.transaction_id}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Payment Date</p>
+                              <p className="text-xs">
+                                {formatDateShort(payment.payment_date)}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )})}
+                    )
+                  })}
                   {totalPaymentsCount > 5 && (
                     <div className="text-center py-2">
                       <p className="text-sm text-muted-foreground">

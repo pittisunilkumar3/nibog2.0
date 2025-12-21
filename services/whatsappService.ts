@@ -167,13 +167,13 @@ async function sendWhatsAppMessageSafe(
   settings: ReturnType<typeof getWhatsAppSettings>
 ): Promise<WhatsAppResponse> {
   try {
-    console.log(`📱 Sending WhatsApp message to: ${phone}`);
+
 
     // Determine if using template or text message
     const isTemplate = typeof messageData === 'object';
     const endpoint = isTemplate ? '/sendtemplatemessage' : '/sendmessage';
 
-    console.log(`📱 Using Zaptra API: ${settings.apiUrl}${endpoint}`);
+
 
     // Use AbortController for timeout
     const controller = new AbortController();
@@ -202,20 +202,12 @@ async function sendWhatsAppMessageSafe(
           message: messageData
         };
 
-    console.log(`📱 Sending request to: ${settings.apiUrl}${endpoint}`);
-    console.log(`📱 Request body:`, JSON.stringify(requestBody, null, 2));
+
+
 
     // Additional debugging for template requests
     if (isTemplate && 'components' in requestBody && requestBody.components) {
-      console.log('📱 Template debugging:');
-      console.log(`  Template name: ${requestBody.template_name}`);
-      console.log(`  Template language: ${requestBody.template_language}`);
       const templateParams = requestBody.components[0].parameters;
-      console.log(`  Template parameters count: ${templateParams.length}`);
-      console.log('  Template parameters contents:');
-      templateParams.forEach((param: any, index: number) => {
-        console.log(`    [${index}]: "${param.text}" (${typeof param.text})`);
-      });
 
       if (templateParams.length !== 8) {
         console.error('🚨 CRITICAL: Template parameters count is not 8!');
@@ -235,24 +227,19 @@ async function sendWhatsAppMessageSafe(
 
     clearTimeout(timeoutId);
 
-    console.log(`📱 Response status: ${response.status}`);
+
     const responseData = await response.json();
-    console.log(`📱 Zaptra API response:`, JSON.stringify(responseData, null, 2));
+
 
     // Enhanced response handling with message_wamid analysis
     if (response.ok && responseData.status === 'success') {
-      console.log(`✅ WhatsApp message sent successfully - Message ID: ${responseData.message_id}`);
+
 
       // Analyze message_wamid for delivery insights
       if (responseData.message_wamid) {
-        console.log(`📱 WhatsApp Message WAMID: ${responseData.message_wamid} (Message delivered to WhatsApp servers)`);
+         // message delivered
       } else {
-        console.log(`⚠️ WhatsApp Message WAMID is null - Message queued but may not be delivered yet`);
-        console.log(`📋 This can happen when:`);
-        console.log(`   - Phone number is not opted-in to WhatsApp Business`);
-        console.log(`   - Template message has issues`);
-        console.log(`   - Message is still being processed by WhatsApp servers`);
-        console.log(`   - Phone number format is incorrect`);
+        // message queued
       }
 
       return {
@@ -338,10 +325,7 @@ export async function sendBookingConfirmationWhatsApp(
       phone: bookingData.parentPhone
     });
 
-    console.log('📱 Starting WhatsApp booking confirmation...');
-    console.log(`📱 Booking ID: ${bookingData.bookingId}`);
-    console.log(`📱 Customer: ${bookingData.parentName}`);
-    console.log(`📱 Phone: ${bookingData.parentPhone}`);
+
 
     // Validate booking data to prevent parameter mismatch errors
     const validation = validateWhatsAppBookingData(bookingData);
@@ -369,7 +353,7 @@ export async function sendBookingConfirmationWhatsApp(
     // Check if WhatsApp notifications are enabled
     if (!settings.enabled) {
       logWhatsAppEvent('disabled', { bookingId: bookingData.bookingId });
-      console.log('📱 WhatsApp notifications are disabled');
+
       return {
         success: false,
         error: 'WhatsApp notifications are disabled'
@@ -390,9 +374,7 @@ export async function sendBookingConfirmationWhatsApp(
     }
 
     // Enhanced phone number formatting and validation
-    console.log(`📱 Original phone number: ${bookingData.parentPhone}`);
     const formattedPhone = formatPhoneNumber(bookingData.parentPhone);
-    console.log(`📱 Formatted phone number: ${formattedPhone}`);
 
     // Enhanced phone number validation with detailed feedback
     if (!formattedPhone) {
@@ -431,11 +413,7 @@ export async function sendBookingConfirmationWhatsApp(
       };
     }
 
-    console.log('✅ Phone number validation passed:', {
-      original: bookingData.parentPhone,
-      formatted: formattedPhone,
-      digitCount: phoneDigits.length
-    });
+
 
     // Try to use template first, fallback to text message
     let messageData: string | { templateName: string; templateData: any };
@@ -465,18 +443,7 @@ export async function sendBookingConfirmationWhatsApp(
         param !== null && param !== undefined ? String(param) : 'N/A'
       );
 
-      console.log('📱 Template data validation:', {
-        originalCount: templateData.length,
-        sanitizedCount: sanitizedTemplateData.length,
-        hasNullUndefined: templateData.some(param => param === null || param === undefined),
-        sanitizedData: sanitizedTemplateData
-      });
 
-      // Additional debugging for parameter mismatch issues
-      console.log('📱 Detailed parameter mapping:');
-      sanitizedTemplateData.forEach((param, index) => {
-        console.log(`  {{${index + 1}}}: "${param}" (type: ${typeof param}, length: ${param.length})`);
-      });
 
       // Validate parameter count matches template expectation
       if (sanitizedTemplateData.length !== 8) {
@@ -490,20 +457,14 @@ export async function sendBookingConfirmationWhatsApp(
         templateData: sanitizedTemplateData
       };
 
-      if (settings.debugMode) {
-        console.log('📱 Using template:', messageData);
-      }
+
     } else {
       // Generate text message as fallback
       messageData = generateWhatsAppMessage(bookingData);
-      if (settings.debugMode) {
-        console.log('📱 Generated text message:', messageData);
-      }
+
     }
 
     // Send WhatsApp message with circuit breaker protection and template fallback
-    console.log(`📱 Sending WhatsApp message to: ${formattedPhone}`);
-    console.log(`📱 Message type: ${typeof messageData === 'string' ? 'text' : 'template'}`);
 
     let result = await safeWhatsAppCall(
       () => sendWhatsAppMessageSafe(formattedPhone, messageData, settings),
@@ -515,11 +476,9 @@ export async function sendBookingConfirmationWhatsApp(
 
     // If template message failed with #132000 error, fallback to text message
     if (!result.success && typeof messageData === 'object' && result.error && result.error.includes('132000')) {
-      console.log('🔄 Template failed with #132000 error, falling back to text message...');
 
       try {
         const textMessage = generateWhatsAppMessage(bookingData);
-        console.log('📱 Generated fallback text message (first 100 chars):', textMessage.substring(0, 100) + '...');
 
         result = await safeWhatsAppCall(
           () => sendWhatsAppMessageSafe(formattedPhone, textMessage, settings),
@@ -530,14 +489,13 @@ export async function sendBookingConfirmationWhatsApp(
         );
 
         if (result.success) {
-          console.log('✅ Text message fallback successful after template failure');
         }
       } catch (fallbackError) {
         console.error('❌ Text message fallback also failed:', fallbackError);
       }
     }
 
-    console.log(`📱 WhatsApp send result:`, result);
+
 
     const duration = Date.now() - startTime;
 
@@ -548,7 +506,12 @@ export async function sendBookingConfirmationWhatsApp(
         messageId: result.messageId,
         duration
       });
-      console.log(`✅ WhatsApp message sent successfully! Message ID: ${result.messageId}`);
+      logWhatsAppEvent('success', {
+        bookingId: bookingData.bookingId,
+        phone: formattedPhone,
+        messageId: result.messageId,
+        duration
+      });
     } else {
       logWhatsAppEvent('failure', {
         bookingId: bookingData.bookingId,

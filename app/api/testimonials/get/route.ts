@@ -9,12 +9,12 @@ const MAX_RETRIES = 3;
 export async function POST(request: Request) {
   let retries = 0;
   let requestBody;
-  
+
   try {
     // Parse the request body (outside the retry loop to avoid parsing multiple times)
     requestBody = await request.json();
     const { id } = requestBody;
-    console.log(`Server API route: Getting testimonial with ID: ${id}`);
+
 
     if (!id || isNaN(Number(id)) || Number(id) <= 0) {
       return NextResponse.json(
@@ -26,20 +26,20 @@ export async function POST(request: Request) {
     // Start retry loop
     while (retries < MAX_RETRIES) {
       try {
-        console.log(`Server API route: Getting testimonial (attempt ${retries + 1}/${MAX_RETRIES})`);
+
         // Try GET by ID on configured BACKEND_URL first
         const base = (process.env.BACKEND_URL || '').replace(/\/$/, '') || null;
         if (base) {
           try {
             const getByIdUrl = `${base}/api/testimonials/${id}`;
-            console.log('Server API route: Trying backend GET by ID:', getByIdUrl);
+
             const getResp = await fetch(getByIdUrl, { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' });
             if (getResp.ok) {
               const payload = await getResp.json();
               const candidate = payload.data || payload;
               if (candidate && ((Array.isArray(candidate) && candidate.length > 0) || (!Array.isArray(candidate)))) {
                 const out = Array.isArray(candidate) ? candidate : [candidate];
-                console.log('Server API route: Found testimonial via backend GET by ID');
+
                 return NextResponse.json(out, { status: 200 });
               }
             }
@@ -47,10 +47,10 @@ export async function POST(request: Request) {
             console.warn('Server API route: backend GET by ID failed:', err);
           }
         }
-        
+
         // Forward the request to the external API
         const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/testimonials/get";
-        console.log("Server API route: Calling API URL:", apiUrl);
+
 
         // Create an AbortController for timeout
         const controller = new AbortController();
@@ -70,19 +70,19 @@ export async function POST(request: Request) {
 
         clearTimeout(timeoutId);
 
-        console.log(`Server API route: Get testimonial response status: ${response.status}`);
+
 
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Server API route: Error response: ${errorText}`);
-          
+
           // If we get a server error (5xx), retry
           if (response.status >= 500 && retries < MAX_RETRIES - 1) {
             retries++;
             await delay(1000 * retries); // Exponential backoff
             continue;
           }
-          
+
           let errorMessage = `Error getting testimonial: ${response.status}`;
           try {
             const errorData = JSON.parse(errorText);
@@ -101,56 +101,56 @@ export async function POST(request: Request) {
 
         // Get the response data
         const responseText = await response.text();
-        
+
         // Handle empty response case
         if (!responseText || responseText.trim() === '') {
-          console.log("Server API route: Empty response received for testimonial");
+
           return NextResponse.json(
             { error: "No testimonial data found" },
             { status: 404 }
           );
         }
-        
-        console.log(`Server API route: Raw response size: ${responseText.length} characters`);
-        
+
+
+
         let data;
         try {
           // Try to parse the response as JSON
           data = JSON.parse(responseText);
-          console.log("Server API route: Parsed response data:", data);
+
         } catch (error) {
           // TypeScript-safe error handling
           const parseError = error instanceof Error ? error : new Error(String(error));
           console.error("Server API route: Error parsing response:", parseError);
-          
+
           // If we can't parse JSON and haven't exceeded retries, try again
           if (retries < MAX_RETRIES - 1) {
             retries++;
             await delay(1000 * retries); // Exponential backoff
             continue;
           }
-          
+
           return NextResponse.json(
-            { 
-              error: "Failed to parse API response", 
+            {
+              error: "Failed to parse API response",
               details: parseError.message,
               rawResponseSample: responseText.substring(0, 200) // Just include a sample for debug
             },
             { status: 500 }
           );
         }
-        
+
         // If data is empty, try fallback: search backend list
         const isEmpty = (!data) || (Array.isArray(data) && data.length === 0);
         if (isEmpty && base) {
           try {
-            console.log('Server API route: webhook returned empty, trying backend list fallback');
+
             const listUrl = `${base}/api/testimonials?limit=1000&offset=0`;
             const listResp = await fetch(listUrl, { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' });
             if (listResp.ok) {
               const listData = await listResp.json();
               const items = listData.data || listData || [];
-              const found = Array.isArray(items) ? items.find((it:any) => Number(it.id) === Number(id)) : null;
+              const found = Array.isArray(items) ? items.find((it: any) => Number(it.id) === Number(id)) : null;
               if (found) {
                 return NextResponse.json([found], { status: 200 });
               }
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
             { status: 404 }
           );
         }
-        
+
         // Enrich testimonial(s) with city/event names when possible
         try {
           const base = (process.env.BACKEND_URL || '').replace(/\/$/, '');
@@ -186,14 +186,14 @@ export async function POST(request: Request) {
             events = Array.isArray(eventData) ? eventData : (eventData.data || eventData);
           }
 
-          const cityMap = new Map<number,string>();
+          const cityMap = new Map<number, string>();
           cities.forEach((c: any) => {
             const id = c.id || c.city_id;
             const name = c.city_name || c.name || c.city || '';
             if (id) cityMap.set(Number(id), name);
           });
 
-          const eventMap = new Map<number,string>();
+          const eventMap = new Map<number, string>();
           events.forEach((e: any) => {
             const id = e.id || e.event_id;
             const title = e.title || e.event_title || e.name || '';
@@ -232,29 +232,29 @@ export async function POST(request: Request) {
 
       } catch (error: any) {
         console.error(`Server API route: Error getting testimonial (attempt ${retries + 1}/${MAX_RETRIES}):`, error);
-        
+
         // Retry on network errors
-        if (retries < MAX_RETRIES - 1 && 
-            (error.name === 'AbortError' || error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND')) {
+        if (retries < MAX_RETRIES - 1 &&
+          (error.name === 'AbortError' || error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND')) {
           retries++;
           await delay(1000 * retries); // Exponential backoff
           continue;
         }
-        
+
         // If we've exhausted retries or it's not a retriable error, throw to be caught by outer try/catch
         throw error;
       }
     }
-    
+
     // If we've exhausted all retries and haven't returned or thrown
     return NextResponse.json(
       { error: "Failed to get testimonial after multiple attempts" },
       { status: 503 }
     );
-    
+
   } catch (error: any) {
     console.error("Server API route: Error getting testimonial:", error);
-    
+
     // Handle specific error types
     if (error.name === 'AbortError') {
       return NextResponse.json(
@@ -262,14 +262,14 @@ export async function POST(request: Request) {
         { status: 504 }
       );
     }
-    
+
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
       return NextResponse.json(
         { error: "Unable to connect to testimonials service" },
         { status: 503 }
       );
     }
-    
+
     return NextResponse.json(
       { error: error.message || "Failed to get testimonial" },
       { status: 500 }

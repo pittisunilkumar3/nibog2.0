@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
 
     // Return the file path relative to the upload directory
     const relativePath = `/upload/testmonialimage/${filename}`;
-    
-    console.log(`Testimonial image uploaded successfully: ${relativePath}`);
+
+
 
     return NextResponse.json({
       success: true,

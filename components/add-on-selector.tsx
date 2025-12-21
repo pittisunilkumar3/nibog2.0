@@ -74,8 +74,7 @@ export default function AddOnSelector({
         if (addon.hasVariants && addon.variants) {
           const variant = addon.variants.find(v => v.id === variantId);
           if (variant) {
-            console.log('Selected variant:', variant.name, 'for addon:', addon.name);
-            console.log('Price modifier:', variant.price_modifier || 0);
+
           }
         }
         return { ...item, variantId }
@@ -137,7 +136,7 @@ export default function AddOnSelector({
     if (!addOn.hasVariants || !addOn.variants) return null
     return addOn.variants.find(v => v.id === variantId) || null
   }
-  
+
   // Helper function to safely get price modifier from variant
   // This handles both API response format (price_modifier) and type definition format (price)
   const getVariantPriceModifier = (variant: any): number => {
@@ -157,7 +156,7 @@ export default function AddOnSelector({
   const getAddonFinalPrice = (addOn: any, variantId?: string): number => {
     // Ensure price is a number
     let price = parseFloat(addOn.price) || 0;
-    
+
     // If there's a selected variant, add its price modifier
     if (variantId && addOn.hasVariants && addOn.variants) {
       const variant = addOn.variants.find((v: any) => v.id === variantId);
@@ -169,16 +168,16 @@ export default function AddOnSelector({
         }
       }
     }
-    
+
     return price;
   }
-  
+
   // Debug function to log price calculations
   const logPriceCalculation = (addOn: any, variantId?: string) => {
     const basePrice = parseFloat(addOn.price) || 0;
     let finalPrice = basePrice;
     let modifier = 0;
-    
+
     if (variantId && addOn.hasVariants && addOn.variants) {
       const variant = addOn.variants.find((v: any) => v.id === variantId);
       if (variant) {
@@ -191,14 +190,9 @@ export default function AddOnSelector({
         }
       }
     }
-    
-    console.log(`Price calculation for ${addOn.name}:`, {
-      basePrice,
-      modifier,
-      finalPrice,
-      variantId
-    });
-    
+
+
+
     return finalPrice;
   }
 
@@ -254,9 +248,9 @@ export default function AddOnSelector({
           const isOutOfStock = stockStatus.status === "out-of-stock"
           const isLowStock = stockStatus.status === "low-stock"
           const quantity = getQuantity(addOn.id)
-          const hasDiscount = addOn.bundleDiscount && 
-                           addOn.bundleDiscount.discountPercentage > 0 && 
-                           quantity >= addOn.bundleDiscount.minQuantity
+          const hasDiscount = addOn.bundleDiscount &&
+            addOn.bundleDiscount.discountPercentage > 0 &&
+            quantity >= addOn.bundleDiscount.minQuantity
           const discountedPrice = hasDiscount ? getDiscountedPrice(addOn, quantity) : addOn.price
 
           return (
@@ -270,12 +264,11 @@ export default function AddOnSelector({
                     <div className="flex items-center gap-2">
                       <CardTitle className="text-base">{addOn.name}</CardTitle>
                     </div>
-                    <CardDescription 
-                      className={`text-xs text-left cursor-pointer transition-all duration-200 ${
-                        expandedDescriptions[addOn.id] 
-                          ? 'line-clamp-none' 
-                          : 'line-clamp-2 text-ellipsis overflow-hidden'
-                      }`}
+                    <CardDescription
+                      className={`text-xs text-left cursor-pointer transition-all duration-200 ${expandedDescriptions[addOn.id]
+                        ? 'line-clamp-none'
+                        : 'line-clamp-2 text-ellipsis overflow-hidden'
+                        }`}
                       onClick={() => setExpandedDescriptions(prev => ({
                         ...prev,
                         [addOn.id]: !prev[addOn.id]
@@ -290,15 +283,15 @@ export default function AddOnSelector({
                       const selectedVariant = addOn.hasVariants && addOn.variants && selectedVariants[addOn.id]
                         ? addOn.variants.find(v => v.id === selectedVariants[addOn.id])
                         : null;
-                      
+
                       // Calculate the final price using our helper function
                       const variantPrice = getAddonFinalPrice(addOn, selectedVariants[addOn.id]);
-                      
+
                       // Apply discount if applicable
-                      const finalPrice = hasDiscount 
+                      const finalPrice = hasDiscount
                         ? getDiscountedPrice({ ...addOn, price: variantPrice }, quantity)
                         : variantPrice;
-                      
+
                       if (hasDiscount && (addOn.bundleDiscount?.discountPercentage ?? 0) > 0) {
                         return (
                           <>
@@ -314,7 +307,7 @@ export default function AddOnSelector({
                           </>
                         );
                       }
-                      
+
                       return (
                         <Badge>{formatPrice(finalPrice)}</Badge>
                       );
@@ -333,17 +326,17 @@ export default function AddOnSelector({
                     />
                   ) : (
                     <div className="flex flex-col items-center text-gray-400">
-                      <svg 
+                      <svg
                         className="w-12 h-12 mb-2"
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24" 
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg"
                       >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="1.5" 
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
                           d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                         />
                       </svg>
@@ -389,8 +382,8 @@ export default function AddOnSelector({
                           {isOutOfStock
                             ? "This item is currently out of stock"
                             : isLowStock
-                            ? `Only ${stockStatus.quantity} units left in stock`
-                            : `${stockStatus.quantity} units available`}
+                              ? `Only ${stockStatus.quantity} units left in stock`
+                              : `${stockStatus.quantity} units available`}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -417,24 +410,24 @@ export default function AddOnSelector({
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2 space-y-2">
                         {addOn.variants.map((variant) => {
-                          const variantStockStatus = variant.stockQuantity <= 0 ? "out-of-stock" : 
-                                                    variant.stockQuantity <= 5 ? "low-stock" : "in-stock";
+                          const variantStockStatus = variant.stockQuantity <= 0 ? "out-of-stock" :
+                            variant.stockQuantity <= 5 ? "low-stock" : "in-stock";
                           return (
-                            <div 
+                            <div
                               key={variant.id}
                               className="flex justify-between items-center bg-white border rounded p-2 text-sm"
                             >
                               <div className="font-medium">{variant.name}</div>
                               <div className="flex gap-1 items-center">
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs ${variantStockStatus === "out-of-stock" ? "bg-red-50 text-red-500" : 
-                                          variantStockStatus === "low-stock" ? "bg-amber-50 text-amber-500" : 
-                                          "bg-green-50 text-green-500"}`}
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs ${variantStockStatus === "out-of-stock" ? "bg-red-50 text-red-500" :
+                                    variantStockStatus === "low-stock" ? "bg-amber-50 text-amber-500" :
+                                      "bg-green-50 text-green-500"}`}
                                 >
-                                  {variantStockStatus === "out-of-stock" ? "Out of stock" : 
-                                  variantStockStatus === "low-stock" ? `${variant.stockQuantity} left` : 
-                                  "In stock"}
+                                  {variantStockStatus === "out-of-stock" ? "Out of stock" :
+                                    variantStockStatus === "low-stock" ? `${variant.stockQuantity} left` :
+                                      "In stock"}
                                 </Badge>
                                 {getVariantPriceModifier(variant) !== 0 && (
                                   <Badge className="ml-1">
@@ -449,7 +442,7 @@ export default function AddOnSelector({
                     </Collapsible>
                   </div>
                 )}
-                
+
                 {/* Enhanced variant selector when add-on is selected */}
                 {isSelected(addOn.id) && addOn.hasVariants && addOn.variants && (
                   <div className="mt-2">
@@ -465,11 +458,11 @@ export default function AddOnSelector({
                       </SelectTrigger>
                       <SelectContent>
                         {addOn.variants.map((variant) => {
-                          const variantStockStatus = variant.stockQuantity <= 0 ? "out-of-stock" : 
-                                                    variant.stockQuantity <= 5 ? "low-stock" : "in-stock";
-                          const stockLabel = variantStockStatus === "out-of-stock" ? "Out of Stock" : 
-                                         variantStockStatus === "low-stock" ? `${variant.stockQuantity} left` : 
-                                         "In Stock";
+                          const variantStockStatus = variant.stockQuantity <= 0 ? "out-of-stock" :
+                            variant.stockQuantity <= 5 ? "low-stock" : "in-stock";
+                          const stockLabel = variantStockStatus === "out-of-stock" ? "Out of Stock" :
+                            variantStockStatus === "low-stock" ? `${variant.stockQuantity} left` :
+                              "In Stock";
                           return (
                             <SelectItem
                               key={variant.id}
@@ -479,9 +472,9 @@ export default function AddOnSelector({
                               <div className="flex items-center justify-between w-full">
                                 <span className="font-medium">{variant.name}</span>
                                 <div className="flex items-center gap-1">
-                                  <span className={`text-xs ${variantStockStatus === "out-of-stock" ? "text-red-500" : 
-                                                variantStockStatus === "low-stock" ? "text-amber-500" : 
-                                                "text-green-500"}`}>
+                                  <span className={`text-xs ${variantStockStatus === "out-of-stock" ? "text-red-500" :
+                                    variantStockStatus === "low-stock" ? "text-amber-500" :
+                                      "text-green-500"}`}>
                                     {stockLabel}
                                   </span>
                                   {getVariantPriceModifier(variant) !== 0 && (
@@ -496,7 +489,7 @@ export default function AddOnSelector({
                         })}
                       </SelectContent>
                     </Select>
-                    
+
                     {/* Variant details section - enhanced */}
                     {addOn.variants.map(variant => {
                       if (variant.id === getSelectedVariant(addOn.id)) {
@@ -514,7 +507,7 @@ export default function AddOnSelector({
                                 </div>
                               </div>
                               <div className="flex flex-col items-end">
-                                
+
                                 {getVariantPriceModifier(variant) !== 0 && (
                                   <span className="text-xs text-muted-foreground mt-1">
                                     Base {formatPrice(addOn.price)} {getVariantPriceModifier(variant) > 0 ? '+' : ''}{formatPrice(getVariantPriceModifier(variant))}
@@ -524,12 +517,12 @@ export default function AddOnSelector({
                             </div>
                             <div className="mt-2 flex justify-between items-center border-t pt-2">
                               <span className="font-medium">Availability:</span>
-                              <span className={`text-xs ${variant.stockQuantity <= 0 ? "text-red-500" : 
-                                              variant.stockQuantity <= 5 ? "text-amber-500" : 
-                                              "text-green-500"}`}>
-                                {variant.stockQuantity <= 0 ? "Out of Stock" : 
-                                 variant.stockQuantity <= 5 ? `Only ${variant.stockQuantity} left in stock!` : 
-                                 `${variant.stockQuantity} in stock`}
+                              <span className={`text-xs ${variant.stockQuantity <= 0 ? "text-red-500" :
+                                variant.stockQuantity <= 5 ? "text-amber-500" :
+                                  "text-green-500"}`}>
+                                {variant.stockQuantity <= 0 ? "Out of Stock" :
+                                  variant.stockQuantity <= 5 ? `Only ${variant.stockQuantity} left in stock!` :
+                                    `${variant.stockQuantity} in stock`}
                               </span>
                             </div>
                           </div>
@@ -575,30 +568,30 @@ export default function AddOnSelector({
                     {(() => {
                       // Calculate base price with variant modifier if applicable
                       const variantId = getSelectedVariant(addOn.id);
-                      
+
                       // Get the selected variant if any
                       const selectedVariant = addOn.hasVariants && addOn.variants && variantId
                         ? addOn.variants.find(v => v.id === variantId)
                         : null;
-                      
+
                       // Calculate the base price (including variant modifier if any)
-                      let basePrice = parseFloat(addOn.price) || 0;
+                      let basePrice = Number(addOn.price) || 0;
                       let variantPriceModifier = 0;
-                      
+
                       if (selectedVariant) {
                         if (typeof selectedVariant.price === 'number') {
-                          basePrice = parseFloat(selectedVariant.price);
-                          variantPriceModifier = basePrice - parseFloat(addOn.price);
+                          basePrice = Number(selectedVariant.price);
+                          variantPriceModifier = basePrice - Number(addOn.price);
                         } else if (typeof selectedVariant.price_modifier === 'number') {
-                          variantPriceModifier = parseFloat(selectedVariant.price_modifier);
-                          basePrice = parseFloat(addOn.price) + variantPriceModifier;
+                          variantPriceModifier = Number(selectedVariant.price_modifier);
+                          basePrice = Number(addOn.price) + variantPriceModifier;
                         }
                       }
                       // Apply discount if applicable
                       const finalUnitPrice = hasDiscount ? basePrice * (1 - (addOn.bundleDiscount?.discountPercentage || 0) / 100) : basePrice;
                       const totalPrice = finalUnitPrice * getQuantity(addOn.id);
                       const originalTotalPrice = basePrice * getQuantity(addOn.id);
-                      
+
                       return hasDiscount ? (
                         <>
                           <span className="text-muted-foreground line-through mr-2">

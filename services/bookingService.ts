@@ -38,6 +38,8 @@ export interface Booking {
   game_is_active: boolean;
   game_created_at: string;
   game_updated_at: string;
+  event_id?: number;
+  event?: any;
   event_title: string;
   event_description: string;
   event_event_date: string;
@@ -456,7 +458,7 @@ export async function getEventWithVenueDetails(eventId: number) {
  */
 export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' = 'PPT'): string {
   if (!ref) return '';
-  
+
   // Remove quotes if it's a JSON string
   let cleanRef = ref;
   if (cleanRef.startsWith('"') && cleanRef.endsWith('"')) {
@@ -469,11 +471,11 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
   const year = currentDate.getFullYear().toString().slice(-2);
   const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
   const day = currentDate.getDate().toString().padStart(2, '0');
-  
+
   if (cleanRef.startsWith('B')) {
     // Extract from B format (B0000123)
     numericPart = cleanRef.replace(/^B(\d+)$/, '$1');
-    
+
     if (targetFormat === 'B') {
       // Already in B format, just normalize
       return `B${numericPart.padStart(7, '0')}`;
@@ -586,7 +588,7 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
 export async function getTicketDetails(bookingRef: string): Promise<TicketDetails[]> {
   try {
     console.log('Fetching ticket details with booking reference:', bookingRef);
-    
+
     // Use booking reference as-is - DO NOT convert MAN references
     // The API should handle different reference formats directly
     let formattedRef = bookingRef;
@@ -602,15 +604,15 @@ export async function getTicketDetails(bookingRef: string): Promise<TicketDetail
       formattedRef = convertBookingRefFormat(bookingRef, 'PPT');
       console.log(`Converted B format booking reference: ${bookingRef} -> ${formattedRef}`);
     }
-    
+
     // Strip any JSON formatting if it was stored as JSON string
     if (formattedRef.startsWith('"') && formattedRef.endsWith('"')) {
       formattedRef = formattedRef.slice(1, -1);
       console.log('Stripped JSON quotes from booking reference:', formattedRef);
     }
-    
+
     console.log('Making API call with formatted booking reference:', formattedRef);
-    
+
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/tickect/booking_ref/details', {
       method: 'POST',
       headers: {
@@ -1075,7 +1077,7 @@ export async function deleteBooking(bookingId: number): Promise<{ success: boole
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `Failed to delete booking: ${response.status}`;
-      
+
       try {
         const errorData = JSON.parse(errorText);
         if (errorData.error) {
@@ -1089,7 +1091,7 @@ export async function deleteBooking(bookingId: number): Promise<{ success: boole
     }
 
     const data = await response.json();
-    
+
     // The API returns [{ "success": true }]
     if (Array.isArray(data) && data.length > 0) {
       return data[0];

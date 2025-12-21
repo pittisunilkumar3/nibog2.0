@@ -22,7 +22,7 @@ export async function GET(
       );
     }
 
-    console.log(`GET /api/testimonials/${id} - Fetching testimonial`);
+
 
     // Call external backend API to get single testimonial
     const base = (BACKEND_URL || '').replace(/\/$/, '');
@@ -52,7 +52,7 @@ export async function GET(
           { status: 404 }
         );
       }
-      
+
       const errorText = await response.text();
       console.error('External API error:', errorText);
       return NextResponse.json(
@@ -62,7 +62,7 @@ export async function GET(
     }
 
     const result = await response.json();
-    
+
     // Handle both direct data and wrapped response
     const testimonial = result.data || result;
 
@@ -158,13 +158,13 @@ export async function PUT(
   try {
     const { id } = params;
 
-    console.log(`[PUT /api/testimonials/${id}] Starting update request`);
+
 
     // Check for authorization header
     const authHeader = request.headers.get('Authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log(`[PUT /api/testimonials/${id}] No authorization header`);
+
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -190,10 +190,10 @@ export async function PUT(
       );
     }
 
-    console.log(`PUT /api/testimonials/${id} - Updating testimonial:`, body);
+
 
     // Prepare payload for backend API
-    const payload: any = { 
+    const payload: any = {
       name: body.name,
       city_id: body.city_id || null,
       event_id: body.event_id,
@@ -209,7 +209,7 @@ export async function PUT(
     const base = (BACKEND_URL || '').replace(/\/$/, '');
     const updateUrl = `${base}/api/testimonials/${id}`;
 
-    console.log(`[PUT] Calling backend at: ${updateUrl}`);
+
 
     let response;
     try {
@@ -229,16 +229,16 @@ export async function PUT(
       );
     }
 
-    console.log(`[PUT] Backend response status: ${response.status}`);
+
 
     // If we get 401 (unauthorized), return clear auth error
     if (response.status === 401) {
       const errorBody = await response.text();
-      console.log(`[PUT /api/testimonials/${id}] Backend returned 401:`, errorBody);
+
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Authentication required. Please ensure you are logged in with valid admin credentials.' 
+        {
+          success: false,
+          message: 'Authentication required. Please ensure you are logged in with valid admin credentials.'
         },
         { status: 401 }
       );
@@ -251,7 +251,7 @@ export async function PUT(
           { status: 404 }
         );
       }
-      
+
       const errorText = await response.text();
       console.error('Backend API error:', errorText);
       return NextResponse.json(
@@ -261,8 +261,8 @@ export async function PUT(
     }
 
     const data = await response.json();
-    console.log('Backend update response:', data);
-    
+
+
     // Check if the response indicates success
     if (data && data.success) {
       return NextResponse.json(
@@ -302,13 +302,13 @@ export async function DELETE(
   try {
     const { id } = params;
 
-    console.log(`[DELETE /api/testimonials/${id}] Starting delete request`);
+
 
     // Check for authorization header
     const authHeader = request.headers.get('Authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log(`[DELETE /api/testimonials/${id}] No authorization header`);
+
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -323,13 +323,13 @@ export async function DELETE(
       );
     }
 
-    console.log(`DELETE /api/testimonials/${id} - Deleting testimonial`);
+
 
     // Use BACKEND_URL to call the backend API directly
     const base = (BACKEND_URL || '').replace(/\/$/, '');
     const deleteUrl = `${base}/api/testimonials/${id}`;
 
-    console.log(`[DELETE] Calling backend at: ${deleteUrl}`);
+
 
     let response;
     try {
@@ -348,7 +348,7 @@ export async function DELETE(
       );
     }
 
-    console.log(`[DELETE] Backend response status: ${response.status}`);
+
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -357,7 +357,7 @@ export async function DELETE(
           { status: 404 }
         );
       }
-      
+
       const errorText = await response.text();
       console.error('Backend API error:', errorText);
       return NextResponse.json(
@@ -367,8 +367,8 @@ export async function DELETE(
     }
 
     const data = await response.json();
-    console.log('Backend delete response:', data);
-    
+
+
     // Check if the response indicates success
     if (data && data.success) {
       return NextResponse.json(

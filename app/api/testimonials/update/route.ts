@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Updating testimonial via external API");
+
 
     // Parse the request body
     const testimonialData = await request.json();
-    console.log("Server API route: Testimonial data:", JSON.stringify(testimonialData, null, 2));
+
 
     // Validate required fields according to API documentation
     if (!testimonialData.id || !testimonialData.name ||
-        !testimonialData.event_id || !testimonialData.rating || !testimonialData.testimonial) {
+      !testimonialData.event_id || !testimonialData.rating || !testimonialData.testimonial) {
       return NextResponse.json(
         { error: "Missing required testimonial data" },
         { status: 400 }
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     // Call the external API to update testimonial
-    console.log("Server API route: Calling external API to update testimonial");
+
 
     let response;
     try {
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Server API route: Update testimonial response status: ${response.status}`);
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log("Server API route: Testimonial updated successfully:", data);
+
 
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {

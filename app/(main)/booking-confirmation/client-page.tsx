@@ -70,8 +70,6 @@ function BookingConfirmationContent() {
   // Simply extract the booking reference without any format conversion
   // This ensures we use the EXACT SAME reference ID throughout the entire system
   const normalizeBookingRef = (ref: string): string => {
-    console.log('Extracting booking reference, input:', ref);
-    
     if (!ref) return '';
     
     // If the reference is a URL, extract the ref parameter
@@ -80,17 +78,14 @@ function BookingConfirmationContent() {
         const url = new URL(ref, window.location.origin);
         const bookingRef = url.searchParams.get('ref');
         if (bookingRef) {
-          console.log(`📋 Using booking reference from URL: ${bookingRef}`);
           localStorage.setItem('lastBookingRef', bookingRef);
           return bookingRef;
         }
       } catch (e) {
-        console.error('Error extracting booking ref from URL', e);
       }
     }
     
     // If not a URL, use the reference as-is
-    console.log(`📋 Using provided booking reference: ${ref}`);
     localStorage.setItem('lastBookingRef', ref);
     return ref;
   };
@@ -105,37 +100,27 @@ function BookingConfirmationContent() {
     sessionStorage.removeItem('nibog_restored_childAgeMonths')
     localStorage.removeItem('nibog_booking_data')
 
-    // Log the current URL path and query parameters for debugging
-    console.log('Current URL:', window.location.href);
-    console.log('Booking ref from query param:', bookingRef);
-      
     const fetchBookingDetails = async () => {
       setIsLoading(true);
       setError(null);
       
       // Check if we have a booking reference from URL or need to check localStorage
       let refToUse = bookingRef;
-      console.log('Initial booking reference from URL:', refToUse);
       
       if (!refToUse) {
-        console.log('No booking reference in URL, checking localStorage...');
         // Check if we have a stored booking reference from the payment callback
         try {
           const storedBookingRef = localStorage.getItem('lastBookingRef');
-          console.log('Raw stored booking ref from localStorage:', storedBookingRef);
           
           if (storedBookingRef) {
-            console.log(`📋 Found stored booking reference: ${storedBookingRef}`);
             refToUse = storedBookingRef;
           }
         } catch (e) {
-          console.error("Error accessing stored booking reference", e);
         }
       }
       
       // If we still don't have a reference, show error
       if (!refToUse) {
-        console.error("No booking reference available from URL or localStorage");
         setError("No booking reference provided - please check your confirmation email")
         setIsLoading(false)
         return
@@ -146,21 +131,13 @@ function BookingConfirmationContent() {
         
         // Normalize the booking reference
         const normalizedRef = normalizeBookingRef(refToUse);
-        console.log(`Original booking ref: ${refToUse}, Normalized: ${normalizedRef}`);
         
         // Try to get comprehensive ticket details using the API with normalized ref
         try {
-          console.log("Trying to fetch ticket details using API with normalized booking reference:", normalizedRef)
           const ticketData = await getTicketDetails(normalizedRef)
           
           if (ticketData && ticketData.length > 0) {
-            console.log("Successfully fetched ticket details from API:", ticketData)
-            console.log("Venue information in ticket data:", {
-              venue_name: ticketData[0]?.venue_name,
-              venue_address: ticketData[0]?.venue_address,
-              city_name: ticketData[0]?.city_name,
-              state: ticketData[0]?.state
-            })
+            
             setTicketDetails(ticketData)
             // Store the first ticket as the booking details for display
             if (ticketData[0]) {
@@ -174,8 +151,6 @@ function BookingConfirmationContent() {
             return
           }
         } catch (ticketError) {
-          console.error("Error fetching ticket details from new API:", ticketError)
-          // Continue to fallback methods if new API fails
         }
         
         // Try to check if this is a payment transaction ID by calling payment status API
@@ -194,14 +169,10 @@ function BookingConfirmationContent() {
             });
 
             const data = await response.json();
-            console.log("Payment status response:", data);
 
-            // If the payment status API returns a booking ID, use that to fetch booking details
             if (data.bookingCreated && data.bookingId) {
               const normalizedApiBookingId = normalizeBookingRef(data.bookingId);
-              console.log("Found booking ID from payment API:", data.bookingId, "Normalized to:", normalizedApiBookingId);
 
-              // Try to get ticket details with this normalized booking ID
               try {
                 const ticketData = await getTicketDetails(normalizedApiBookingId);
                 if (ticketData && ticketData.length > 0) {

@@ -32,25 +32,25 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
   const [generationComplete, setGenerationComplete] = useState<boolean>(false)
   const [sendingComplete, setSendingComplete] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const handleGenerateCertificates = async () => {
     if (!selectedTemplate) {
       setError("Please select a certificate template")
       return
     }
-    
+
     setError(null)
     setIsGenerating(true)
     setProgress(0)
     setGenerationComplete(false)
-    
+
     try {
       // In a real app, this would be an API call
       // await fetch(`/api/admin/events/${eventId}/generate-certificates`, {
       //   method: "POST",
       //   body: JSON.stringify({ templateId: selectedTemplate, includeNoShows }),
       // })
-      
+
       // Simulate progress updates
       const interval = setInterval(() => {
         setProgress(prev => {
@@ -61,7 +61,7 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
           return prev + 10
         })
       }, 300)
-      
+
       // Simulate completion after progress reaches 100%
       setTimeout(() => {
         clearInterval(interval)
@@ -70,29 +70,29 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
         setGenerationComplete(true)
       }, 3500)
     } catch (error) {
-      console.error("Error generating certificates:", error)
+
       setError("Failed to generate certificates. Please try again.")
       setIsGenerating(false)
     }
   }
-  
+
   const handleSendCertificates = async () => {
     if (!generationComplete) {
       setError("Please generate certificates first")
       return
     }
-    
+
     setError(null)
     setIsSending(true)
     setProgress(0)
     setSendingComplete(false)
-    
+
     try {
       // In a real app, this would be an API call
       // await fetch(`/api/admin/events/${eventId}/send-certificates`, {
       //   method: "POST",
       // })
-      
+
       // Simulate progress updates
       const interval = setInterval(() => {
         setProgress(prev => {
@@ -103,7 +103,7 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
           return prev + 5
         })
       }, 200)
-      
+
       // Simulate completion after progress reaches 100%
       setTimeout(() => {
         clearInterval(interval)
@@ -112,20 +112,20 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
         setSendingComplete(true)
       }, 4500)
     } catch (error) {
-      console.error("Error sending certificates:", error)
+
       setError("Failed to send certificates. Please try again.")
       setIsSending(false)
     }
   }
-  
+
   const handleDownloadCertificates = () => {
     // In a real app, this would trigger a download
-    console.log("Downloading certificates for event:", eventId)
-    
+
+
     // Simulate download by opening a new window
     window.open(`/api/admin/events/${eventId}/certificates/download`, "_blank")
   }
-  
+
   return (
     <Card>
       <CardHeader>
@@ -150,18 +150,18 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="flex items-center space-x-2 pt-2">
-          <Checkbox 
-            id="include-no-shows" 
-            checked={includeNoShows} 
-            onCheckedChange={(checked) => setIncludeNoShows(checked as boolean)} 
+          <Checkbox
+            id="include-no-shows"
+            checked={includeNoShows}
+            onCheckedChange={(checked) => setIncludeNoShows(checked as boolean)}
           />
           <Label htmlFor="include-no-shows" className="text-sm font-normal">
             Include no-show participants
           </Label>
         </div>
-        
+
         {(isGenerating || isSending) && (
           <div className="space-y-2 pt-2">
             <div className="flex justify-between text-sm">
@@ -171,7 +171,7 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
             <Progress value={progress} className="h-2" />
           </div>
         )}
-        
+
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -179,7 +179,7 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        
+
         {generationComplete && !isSending && !sendingComplete && (
           <Alert>
             <CheckCircle className="h-4 w-4" />
@@ -189,7 +189,7 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
             </AlertDescription>
           </Alert>
         )}
-        
+
         {sendingComplete && (
           <Alert>
             <CheckCircle className="h-4 w-4" />
@@ -201,18 +201,18 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
         )}
       </CardContent>
       <CardFooter className="flex flex-col space-y-2 sm:flex-row sm:justify-between sm:space-x-2 sm:space-y-0">
-        <Button 
-          onClick={handleGenerateCertificates} 
+        <Button
+          onClick={handleGenerateCertificates}
           disabled={!selectedTemplate || isGenerating || isSending}
           className="w-full sm:w-auto"
         >
           <FileText className="mr-2 h-4 w-4" />
           {isGenerating ? "Generating..." : "Generate Certificates"}
         </Button>
-        
+
         <div className="flex w-full flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0">
-          <Button 
-            onClick={handleSendCertificates} 
+          <Button
+            onClick={handleSendCertificates}
             disabled={!generationComplete || isSending || sendingComplete}
             className="w-full sm:w-auto"
             variant={sendingComplete ? "outline" : "default"}
@@ -220,9 +220,9 @@ export default function CertificateGenerator({ eventId, eventTitle, participantC
             <Send className="mr-2 h-4 w-4" />
             {isSending ? "Sending..." : sendingComplete ? "Sent" : "Send to Participants"}
           </Button>
-          
-          <Button 
-            onClick={handleDownloadCertificates} 
+
+          <Button
+            onClick={handleDownloadCertificates}
             disabled={!generationComplete}
             variant="outline"
             className="w-full sm:w-auto"

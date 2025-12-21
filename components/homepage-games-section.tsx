@@ -31,7 +31,7 @@ export default function HomepageGamesSection() {
     try {
       setIsLoading(true);
       setError(null);
-      console.log('🎮 Homepage: Fetching games with images...');
+
 
       const response = await fetch('/api/games-with-images', {
         method: 'GET',
@@ -48,7 +48,7 @@ export default function HomepageGamesSection() {
       }
 
       const data = await response.json();
-      console.log('✅ Homepage: Fetched games:', data);
+
       setGames(data);
 
     } catch (error) {

@@ -124,13 +124,13 @@ export interface UserBookingsResponse {
 // Global fetcher function for SWR
 const fetcher = async (url: string) => {
   const res = await fetch(url)
-  
+
   // If the status code is not in the range 200-299, throw an error
   if (!res.ok) {
     const error = new Error('An error occurred while fetching the data.')
     throw error
   }
-  
+
   return res.json()
 }
 
@@ -144,8 +144,8 @@ function transformEventsData(apiEvents: any[]): EventListItem[] {
     // Extract age range information from games if available
     if (event.games && event.games.length > 0) {
       // Extract age ranges from games
-      const minAges = event.games.map((game: any) => game.min_age || 6).filter(age => age > 0);
-      const maxAges = event.games.map((game: any) => game.max_age || 84).filter(age => age > 0);
+      const minAges = event.games.map((game: any) => game.min_age || 6).filter((age: number) => age > 0);
+      const maxAges = event.games.map((game: any) => game.max_age || 84).filter((age: number) => age > 0);
 
       if (minAges.length > 0) {
         minAgeMonths = Math.min(...minAges);
@@ -162,8 +162,8 @@ function transformEventsData(apiEvents: any[]): EventListItem[] {
     // Extract time from games if available, otherwise use default
     let formattedTime = "9:00 AM - 8:00 PM"; // Default time range
     if (event.games && event.games.length > 0) {
-      const startTimes = event.games.map((game: any) => game.start_time).filter(t => t);
-      const endTimes = event.games.map((game: any) => game.end_time).filter(t => t);
+      const startTimes = event.games.map((game: any) => game.start_time).filter((t: string) => t);
+      const endTimes = event.games.map((game: any) => game.end_time).filter((t: string) => t);
 
       if (startTimes.length > 0 && endTimes.length > 0) {
         const earliestStart = startTimes.sort()[0];
@@ -241,9 +241,7 @@ export function useEvents(initialData?: EventListItem[]) {
     // Use the new events API with images as primary source
     async () => {
       try {
-        console.log('Fetching events with images...');
         const eventsWithImages = await getAllEventsWithImagesFormatted();
-        console.log(`Successfully fetched ${eventsWithImages.length} events with images`);
         return eventsWithImages;
       } catch (err) {
         console.error('Failed to fetch events with images, falling back to events with games:', err);
@@ -554,8 +552,8 @@ export function useCustomerProfile(userId: number | null) {
         });
         mergedProfile.bookings = Array.from(bookingsMap.values());
 
-        console.log(`Merged ${result.length} records into profile with ${mergedProfile.children.length} children and ${mergedProfile.bookings.length} bookings`);
-        
+
+
         return mergedProfile;
       }
 

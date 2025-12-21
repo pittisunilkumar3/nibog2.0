@@ -63,6 +63,7 @@ let dashboardCache: {
   metrics?: { data: DashboardMetrics; timestamp: number }
   revenueData?: { data: RevenueData[]; timestamp: number }
   recentActivity?: { data: RecentActivity[]; timestamp: number }
+  api_metrics?: { data: DashboardMetrics; timestamp: number }
 } = {}
 
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
@@ -70,7 +71,7 @@ const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   const cacheKey = 'metrics'
   const now = Date.now()
-  
+
   // Check cache first
   if (dashboardCache.metrics && (now - dashboardCache.metrics.timestamp) < CACHE_DURATION) {
     return dashboardCache.metrics.data
@@ -101,6 +102,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
     const totalEvents = events.length
     const now = new Date()
+    const nowTs = now.getTime()
     const upcomingEvents = events.filter(e => new Date(e.event_date) > now).length
     const completedEvents = events.filter(e => new Date(e.event_date) <= now).length
 
@@ -119,7 +121,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     const recentRevenue = recentBookings
       .filter(b => ['confirmed', 'completed'].includes(b.booking_status?.toLowerCase() || ''))
       .reduce((sum, b) => sum + parseFloat(b.total_amount || '0'), 0)
-    
+
     const previousRevenue = previousBookings
       .filter(b => ['confirmed', 'completed'].includes(b.booking_status?.toLowerCase() || ''))
       .reduce((sum, b) => sum + parseFloat(b.total_amount || '0'), 0)
@@ -151,8 +153,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     }
 
     // Cache the result
-    dashboardCache.metrics = { data: metrics, timestamp: now }
-    
+    dashboardCache.metrics = { data: metrics, timestamp: nowTs }
+
     return metrics
   } catch (error) {
     console.error('Error fetching dashboard metrics:', error)
@@ -163,7 +165,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 export async function getRevenueData(): Promise<RevenueData[]> {
   const cacheKey = 'revenueData'
   const now = Date.now()
-  
+
   // Check cache first
   if (dashboardCache.revenueData && (now - dashboardCache.revenueData.timestamp) < CACHE_DURATION) {
     return dashboardCache.revenueData.data
@@ -207,8 +209,8 @@ export async function getRevenueData(): Promise<RevenueData[]> {
           if (['confirmed', 'completed'].includes(booking.booking_status?.toLowerCase() || '')) {
             monthlyData[monthKey].revenue += parseFloat(booking.total_amount || '0')
           }
-          if (booking.event_id) {
-            monthlyData[monthKey].events.add(booking.event_id)
+          if (booking.event_id || booking.event?.event_id) {
+            monthlyData[monthKey].events.add(booking.event_id || booking.event?.event_id)
           }
         }
       }
@@ -228,7 +230,7 @@ export async function getRevenueData(): Promise<RevenueData[]> {
 
     // Cache the result
     dashboardCache.revenueData = { data: revenueData, timestamp: now }
-    
+
     return revenueData
   } catch (error) {
     console.error('Error fetching revenue data:', error)
@@ -239,7 +241,7 @@ export async function getRevenueData(): Promise<RevenueData[]> {
 export async function getRecentActivity(): Promise<RecentActivity[]> {
   const cacheKey = 'recentActivity'
   const now = Date.now()
-  
+
   // Check cache first
   if (dashboardCache.recentActivity && (now - dashboardCache.recentActivity.timestamp) < CACHE_DURATION) {
     return dashboardCache.recentActivity.data
@@ -256,7 +258,7 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
 
     // Recent bookings (last 24 hours)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    
+
     bookings
       .filter(b => new Date(b.booking_created_at) > oneDayAgo)
       .slice(0, 5)
@@ -308,7 +310,7 @@ export async function getRecentActivity(): Promise<RecentActivity[]> {
 
     // Cache the result
     dashboardCache.recentActivity = { data: sortedActivities, timestamp: now }
-    
+
     return sortedActivities
   } catch (error) {
     console.error('Error fetching recent activity:', error)
@@ -404,7 +406,7 @@ export async function getDashboardMetricsFromAPI(): Promise<DashboardMetrics> {
 
   // Check cache first
   if (dashboardCache[cacheKey] &&
-      Date.now() - dashboardCache[cacheKey].timestamp < cacheTimeout) {
+    Date.now() - dashboardCache[cacheKey].timestamp < cacheTimeout) {
     return dashboardCache[cacheKey].data
   }
 

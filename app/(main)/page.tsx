@@ -21,9 +21,6 @@ function HomeHeroSlider() {
 
   const fetchSliderImages = async (forceRefresh = false) => {
     try {
-      console.log("Frontend: Fetching slider images...", forceRefresh ? "(forced refresh)" : "")
-
-      // Add timestamp and cache-busting parameters
       const timestamp = Date.now()
       const cacheBust = Math.random().toString(36).substring(7)
       const url = `/api/homepage-sections?t=${timestamp}&cb=${cacheBust}`
@@ -43,9 +40,7 @@ function HomeHeroSlider() {
       }
 
       const result = await response.json()
-      console.log("Frontend: API response:", result)
 
-      // The new API returns { success: true, data: [...] }
       const imgs = result.success && Array.isArray(result.data)
         ? result.data
           .filter((img: any) => img.status === "active")
@@ -55,12 +50,10 @@ function HomeHeroSlider() {
           })
         : []
 
-      console.log("Frontend: Final slider images:", imgs)
       setSliderImages(imgs)
       setLastFetch(timestamp)
 
     } catch (error) {
-      console.error("Failed to fetch slider images:", error)
       setSliderImages([])
     }
   }
@@ -73,7 +66,6 @@ function HomeHeroSlider() {
   // Periodic refresh every 30 seconds to catch updates
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log("Frontend: Periodic refresh of slider images")
       fetchSliderImages()
     }, 30000) // 30 seconds
 
@@ -84,9 +76,7 @@ function HomeHeroSlider() {
   useEffect(() => {
     const handleFocus = () => {
       const now = Date.now()
-      // Only refresh if it's been more than 10 seconds since last fetch
       if (now - lastFetch > 10000) {
-        console.log("Frontend: Refreshing slider images on focus")
         fetchSliderImages()
       }
     }
@@ -99,14 +89,10 @@ function HomeHeroSlider() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'homeSliderUpdate' || e.key === 'homeSliderClearCache' || e.key === 'homeSliderDeleteComplete') {
-        console.log("Frontend: Received cache update notification from admin panel:", e.key)
 
-        // Force clear any cached image references
         if (e.key === 'homeSliderClearCache' || e.key === 'homeSliderDeleteComplete') {
-          console.log("Frontend: Performing aggressive cache clear")
           setSliderImages([]) // Clear current images immediately
 
-          // Clear any browser image cache by forcing reload with cache busting
           setTimeout(() => {
             fetchSliderImages(true) // Force refresh after clearing
           }, 100)
@@ -132,16 +118,8 @@ function HomeHeroSlider() {
       const cacheBustFlag = localStorage.getItem('homeSlideCacheBust')
 
       if (updateFlag || clearCacheFlag || deleteCompleteFlag || cacheBustFlag) {
-        console.log("Frontend: Found pending notifications", {
-          update: !!updateFlag,
-          clearCache: !!clearCacheFlag,
-          deleteComplete: !!deleteCompleteFlag,
-          cacheBust: !!cacheBustFlag
-        })
 
-        // If cache clear or delete complete, clear images first
         if (clearCacheFlag || deleteCompleteFlag) {
-          console.log("Frontend: Clearing cached images before refresh")
           setSliderImages([])
         }
 

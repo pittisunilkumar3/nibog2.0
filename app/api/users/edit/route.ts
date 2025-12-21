@@ -3,15 +3,15 @@ import { USER_API } from '@/config/api';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Starting edit user request");
+
 
     // Parse the request body
     const userData = await request.json();
-    console.log(`Server API route: Received request body: ${JSON.stringify(userData)}`);
+
 
     // Ensure user_id is a number
     const userId = Number(userData.user_id);
-    console.log(`Server API route: Extracted user_id: ${userId}, type: ${typeof userId}`);
+
 
     if (!userId || isNaN(userId) || userId <= 0) {
       console.error(`Server API route: Invalid user ID: ${userId}`);
@@ -55,12 +55,11 @@ export async function POST(request: Request) {
       userData.city_id = Number(userData.city_id);
     }
 
-    console.log(`Server API route: Attempting to edit user with ID: ${userId}`);
+
 
     // Forward the request to the external API with the correct URL
     const apiUrl = USER_API.UPDATE;
-    console.log("Server API route: Calling API URL:", apiUrl);
-    console.log(`Server API route: Request method: POST`);
+
 
     // Ensure city_id is a number when provided, otherwise keep it null
     const normalizedUserData = {
@@ -70,8 +69,8 @@ export async function POST(request: Request) {
       city_id: userData.city_id !== null && userData.city_id !== undefined ? Number(userData.city_id) : null,
       accept_terms: Boolean(userData.accept_terms)
     };
-    
-    console.log("Server API route: city_id type:", typeof normalizedUserData.city_id, "value:", normalizedUserData.city_id);
+
+
 
     // Ensure boolean fields are properly set
     if (userData.is_active !== undefined) {
@@ -82,7 +81,7 @@ export async function POST(request: Request) {
       normalizedUserData.is_locked = Boolean(userData.is_locked);
     }
 
-    console.log(`Server API route: Final request body: ${JSON.stringify(normalizedUserData)}`);
+
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -93,16 +92,16 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Edit user response status: ${response.status}`);
+
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
+
 
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: Edit user response:", responseData);
+
 
       return NextResponse.json(responseData, { status: 200 });
     } catch (parseError) {

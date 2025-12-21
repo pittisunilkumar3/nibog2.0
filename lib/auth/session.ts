@@ -138,7 +138,7 @@ export function clearSession() {
     if (stillExists) {
       console.warn('Warning: Cookie may not have been fully cleared');
     } else {
-      console.log('Session cleared successfully');
+
     }
   } catch (error) {
     console.error('Error clearing session:', error);

@@ -54,21 +54,21 @@ export async function getAllUsers(): Promise<User[]> {
 // Get user by ID
 export async function getUserById(userId: number): Promise<User | null> {
   try {
-    console.log(`[getUserById] Fetching user with ID: ${userId}`);
-    
+
+
     // Get token from local/session storage - try superadmin token first, then admin token
     let token = '';
     if (typeof window !== 'undefined') {
-      token = localStorage.getItem('superadminToken') || 
-              sessionStorage.getItem('superadminToken') || 
-              localStorage.getItem('adminToken') || 
-              sessionStorage.getItem('adminToken') || 
-              localStorage.getItem('token') || 
-              sessionStorage.getItem('token') || '';
+      token = localStorage.getItem('superadminToken') ||
+        sessionStorage.getItem('superadminToken') ||
+        localStorage.getItem('adminToken') ||
+        sessionStorage.getItem('adminToken') ||
+        localStorage.getItem('token') ||
+        sessionStorage.getItem('token') || '';
     }
-    
-    console.log(`[getUserById] Token present: ${!!token}`);
-    
+
+
+
     const response = await fetch(`/api/users/${userId}`, {
       method: 'GET',
       headers: {
@@ -77,18 +77,18 @@ export async function getUserById(userId: number): Promise<User | null> {
       },
       cache: 'no-store',
     });
-    
-    console.log(`[getUserById] Response status: ${response.status}`);
-    
+
+
+
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       console.error(`[getUserById] Error response:`, data);
       throw new Error(data.message || `Failed to fetch user: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    console.log(`[getUserById] User data received:`, data);
-    
+
+
     return data || null;
   } catch (error) {
     console.error(`Error fetching user with ID ${userId}:`, error);
@@ -100,7 +100,7 @@ export async function getUserById(userId: number): Promise<User | null> {
 export async function toggleUserActiveStatus(userId: number, isActive: boolean): Promise<boolean> {
   // This is a placeholder for the actual API call
   // In a real implementation, you would call the API to update the user's status
-  console.log(`Toggling user ${userId} active status to ${isActive}`);
+
   return true;
 }
 
@@ -108,7 +108,7 @@ export async function toggleUserActiveStatus(userId: number, isActive: boolean):
 export async function toggleUserLockedStatus(userId: number, isLocked: boolean): Promise<boolean> {
   // This is a placeholder for the actual API call
   // In a real implementation, you would call the API to update the user's locked status
-  console.log(`Toggling user ${userId} locked status to ${isLocked}`);
+
   return true;
 }
 
@@ -123,7 +123,7 @@ export interface CreateUserData {
 }
 
 export async function createUser(userData: CreateUserData): Promise<User> {
-  console.log(`Attempting to create a new user`);
+
 
   // Validate required fields
   if (!userData.full_name || userData.full_name.trim() === '') {
@@ -152,8 +152,7 @@ export async function createUser(userData: CreateUserData): Promise<User> {
 
   try {
     // Use our internal API route to avoid CORS issues
-    console.log(`Sending POST request to /api/users/create with user data`);
-    console.log(`Request body: ${JSON.stringify(userData)}`);
+
 
     const response = await fetch('/api/users/create', {
       method: "POST",
@@ -163,7 +162,7 @@ export async function createUser(userData: CreateUserData): Promise<User> {
       body: JSON.stringify(userData),
     });
 
-    console.log(`Create user response status: ${response.status}`);
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -180,7 +179,7 @@ export async function createUser(userData: CreateUserData): Promise<User> {
     }
 
     const data = await response.json();
-    console.log(`Create user response data:`, data);
+
 
     // Return the first item if it's an array, otherwise return the data
     if (Array.isArray(data) && data.length > 0) {
@@ -216,37 +215,35 @@ export async function updateUser(userData: UpdateUserData): Promise<any> {
     throw new Error("Invalid user ID. ID must be a positive number.");
   }
 
-  console.log(`[updateUser] Updating user with ID: ${userData.user_id}`);
-  console.log(`[updateUser] Input data:`, userData);
+
 
   // Only send fields that are provided (partial update)
   const { user_id, accept_terms, ...fields } = userData;
   const payload: Record<string, any> = {};
-  
+
   // Only include fields that are explicitly set and not undefined
   for (const key in fields) {
-    const value = fields[key];
+    const value = fields[key as keyof typeof fields];
     if (value !== undefined) {
       payload[key] = value;
     }
   }
 
   // Don't send accept_terms for updates - it's only for registration
-  console.log(`[updateUser] Final payload (without user_id and accept_terms):`, payload);
+
 
   // Get token from local/session storage - try superadmin token first, then admin token
   let token = '';
   if (typeof window !== 'undefined') {
-    token = localStorage.getItem('superadminToken') || 
-            sessionStorage.getItem('superadminToken') || 
-            localStorage.getItem('adminToken') || 
-            sessionStorage.getItem('adminToken') || 
-            localStorage.getItem('token') || 
-            sessionStorage.getItem('token') || '';
+    token = localStorage.getItem('superadminToken') ||
+      sessionStorage.getItem('superadminToken') ||
+      localStorage.getItem('adminToken') ||
+      sessionStorage.getItem('adminToken') ||
+      localStorage.getItem('token') ||
+      sessionStorage.getItem('token') || '';
   }
 
-  console.log(`[updateUser] Token present: ${!!token}`);
-  console.log(`[updateUser] Token value (first 20 chars): ${token.substring(0, 20)}...`);
+
 
   if (!token) {
     throw new Error('No authentication token found. Please log in again.');
@@ -262,11 +259,11 @@ export async function updateUser(userData: UpdateUserData): Promise<any> {
     cache: 'no-store',
   });
 
-  console.log(`[updateUser] Response status: ${response.status}`);
+
 
   const data = await response.json();
-  console.log(`[updateUser] Response data:`, data);
-  
+
+
   if (!response.ok || !data.success) {
     throw new Error(data.message || 'Failed to update user');
   }
@@ -275,7 +272,7 @@ export async function updateUser(userData: UpdateUserData): Promise<any> {
 
 // Delete user
 export async function deleteUser(userId: number): Promise<boolean> {
-  console.log(`Attempting to delete user with ID: ${userId}`);
+
 
   // Ensure userId is a number
   const numericUserId = Number(userId);
@@ -287,9 +284,7 @@ export async function deleteUser(userId: number): Promise<boolean> {
 
   try {
     // Use our internal API route to avoid CORS issues
-    console.log(`Sending POST request to /api/users/delete with user_id: ${numericUserId}`);
     const requestBody = { user_id: numericUserId };
-    console.log(`Request body: ${JSON.stringify(requestBody)}`);
 
     const response = await fetch('/api/users/delete', {
       method: "POST",
@@ -300,7 +295,7 @@ export async function deleteUser(userId: number): Promise<boolean> {
       cache: "no-store", // Ensure we don't get a cached response
     });
 
-    console.log(`Delete user response status: ${response.status}`);
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -318,18 +313,18 @@ export async function deleteUser(userId: number): Promise<boolean> {
 
     // Get the response text first to log it
     const responseText = await response.text();
-    console.log(`Delete user raw response:`, responseText);
+
 
     // Try to parse the response as JSON
     let data;
     try {
       data = JSON.parse(responseText);
-      console.log(`Delete user parsed response data:`, data);
+
     } catch (parseError) {
       console.error("Error parsing response:", parseError);
       // If the response is empty or not valid JSON but the status is OK, consider it a success
       if (response.status >= 200 && response.status < 300) {
-        console.log("Response is not valid JSON but status is OK, considering it a success");
+
         return true;
       }
       throw new Error("Failed to parse API response");
@@ -343,7 +338,7 @@ export async function deleteUser(userId: number): Promise<boolean> {
     } else if (response.status >= 200 && response.status < 300) {
       // If the status is OK but the response doesn't match our expected format,
       // still consider it a success
-      console.log("Response format doesn't match expected but status is OK, considering it a success");
+
       return true;
     }
 

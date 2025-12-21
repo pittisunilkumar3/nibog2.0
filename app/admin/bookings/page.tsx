@@ -88,19 +88,65 @@ export default function BookingsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [isLoadingFilters, setIsLoadingFilters] = useState(false)
 
-  // Fetch bookings from API
+  // Fetch bookings from API - using new API endpoint
   const fetchBookings = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      const response = await getPaginatedBookings({ page: 1, limit: 1000 })
-      // Filter out empty booking objects
-      const validBookings = (response.data || []).filter(booking => {
-        return booking && Object.keys(booking).length > 0 &&
-          Object.values(booking).some(value => value !== null && value !== undefined && value !== '')
-      })
-      setBookings(validBookings)
+      const response = await fetch('/api/bookings')
+      if (!response.ok) {
+        throw new Error('Failed to fetch bookings')
+      }
+      
+      const result = await response.json()
+      
+      if (result.success && Array.isArray(result.data)) {
+        // Transform the new API response to match the expected format
+        const transformedBookings = result.data.map((booking: any) => ({
+          booking_id: booking.id,
+          booking_ref: booking.booking_ref,
+          booking_status: booking.status,
+          total_amount: booking.total_amount,
+          payment_method: booking.payment_method,
+          payment_status: booking.payment_status,
+          booking_date: booking.booking_date,
+          booking_created_at: booking.booking_date,
+          booking_updated_at: booking.updated_at,
+          
+          // Parent info
+          parent_name: booking.parent?.name || '',
+          parent_email: booking.parent?.email || '',
+          parent_phone: booking.parent?.phone || '',
+          parent_additional_phone: booking.parent?.phone || '',
+          parent_id: booking.parent?.id,
+          
+          // Event info
+          event_id: booking.event?.id,
+          event_title: booking.event?.name || '',
+          event_date: booking.event?.date,
+          venue_name: booking.event?.venue?.name || '',
+          city_name: booking.event?.venue?.city || '',
+          
+          // Child info (first child)
+          child_full_name: booking.children?.[0]?.full_name || '',
+          child_gender: booking.children?.[0]?.gender || '',
+          child_school_name: booking.children?.[0]?.school_name || '',
+          child_age: booking.children?.[0]?.date_of_birth ? 
+            Math.floor((new Date().getTime() - new Date(booking.children[0].date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 365)) : null,
+          
+          // Game info (first game of first child)
+          game_name: booking.children?.[0]?.booking_games?.[0]?.game_name || '',
+          game_id: booking.children?.[0]?.booking_games?.[0]?.game_id,
+          
+          // Keep the original nested structure for detail view
+          _original: booking
+        }))
+        
+        setBookings(transformedBookings)
+      } else {
+        throw new Error('Invalid response format')
+      }
     } catch (error: any) {
       console.error("Failed to fetch bookings:", error)
       setError(error.message || "Failed to load bookings. Please try again.")

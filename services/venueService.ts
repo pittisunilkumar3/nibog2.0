@@ -75,7 +75,7 @@ export const getVenueById = async (id: number): Promise<Venue> => {
       throw new Error(`Invalid venue ID: ${id}. ID must be a positive number.`);
     }
 
-    console.log(`Fetching venue with ID: ${id}`);
+
 
     // Use our internal API route to avoid CORS issues
     const response = await fetch('/api/venues/get', {
@@ -86,7 +86,7 @@ export const getVenueById = async (id: number): Promise<Venue> => {
       body: JSON.stringify({ id }),
     });
 
-    console.log(`Get venue response status: ${response.status}`);
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -105,7 +105,7 @@ export const getVenueById = async (id: number): Promise<Venue> => {
     }
 
     const data = await response.json();
-    console.log("Venue data retrieved:", data);
+
 
     // The API route already handles the array vs object response format
     return data;
@@ -122,7 +122,7 @@ export const getVenueById = async (id: number): Promise<Venue> => {
  */
 export const createVenue = async (venueData: Omit<Venue, "id" | "created_at" | "updated_at">): Promise<Venue> => {
   try {
-    console.log("Creating venue with data:", venueData);
+
 
     const authHeaders = await getAuthHeaders();
     // Use our internal API route to avoid CORS issues
@@ -132,7 +132,7 @@ export const createVenue = async (venueData: Omit<Venue, "id" | "created_at" | "
       body: JSON.stringify(venueData),
     });
 
-    console.log(`Create venue response status: ${response.status}`);
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -151,7 +151,7 @@ export const createVenue = async (venueData: Omit<Venue, "id" | "created_at" | "
     }
 
     const data = await response.json();
-    console.log("Venue created successfully:", data);
+
 
     if (Array.isArray(data) && data.length > 0) {
       return data[0];
@@ -177,8 +177,7 @@ export const updateVenue = async (venueData: Venue): Promise<Venue> => {
       throw new Error(`Invalid venue data: Missing or invalid ID. ID must be a positive number.`);
     }
 
-    console.log("Updating venue with data:", venueData);
-    console.log("Venue service: Sending data to API:", JSON.stringify(venueData, null, 2));
+
 
     const authHeaders = await getAuthHeaders();
     // Use our internal API route to avoid CORS issues
@@ -188,8 +187,7 @@ export const updateVenue = async (venueData: Venue): Promise<Venue> => {
       body: JSON.stringify(venueData),
     });
 
-    console.log(`Update venue response status: ${response.status}`);
-    console.log(`Update venue response headers:`, Object.fromEntries(response.headers.entries()));
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -213,7 +211,7 @@ export const updateVenue = async (venueData: Venue): Promise<Venue> => {
     }
 
     const data = await response.json();
-    console.log("Venue updated successfully:", data);
+
 
     if (Array.isArray(data) && data.length > 0) {
       return data[0];
@@ -239,7 +237,7 @@ export const deleteVenue = async (id: number): Promise<{ success: boolean }> => 
       throw new Error(`Invalid venue ID: ${id}. ID must be a positive number.`);
     }
 
-    console.log(`Attempting to delete venue with ID: ${id}`);
+
 
     const authHeaders = await getAuthHeaders();
     // Use our internal API route to avoid CORS issues
@@ -249,8 +247,7 @@ export const deleteVenue = async (id: number): Promise<{ success: boolean }> => 
       body: JSON.stringify({ id }),
     });
 
-    console.log(`Delete venue response status: ${response.status}`);
-    console.log(`Delete venue response headers:`, Object.fromEntries(response.headers.entries()));
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -274,7 +271,7 @@ export const deleteVenue = async (id: number): Promise<{ success: boolean }> => 
     }
 
     const data = await response.json();
-    console.log("Venue deleted successfully:", data);
+
 
     // Handle different response formats
     if (Array.isArray(data) && data.length > 0 && data[0].success) {
@@ -283,7 +280,7 @@ export const deleteVenue = async (id: number): Promise<{ success: boolean }> => 
       return { success: true };
     } else if (data && typeof data === 'object') {
       // If we get any object response from a successful API call, consider it successful
-      console.log("Delete operation completed, assuming success based on 200 response");
+
       return { success: true };
     }
 
@@ -350,7 +347,7 @@ export const getVenuesByCity = async (cityId: number): Promise<Venue[]> => {
  */
 export const getAllVenuesWithCity = async (): Promise<any[]> => {
   try {
-    console.log("Fetching all venues with city details from internal proxy...");
+
 
     const response = await fetch('/api/venues/getall-with-city', {
       method: "GET",
@@ -359,7 +356,7 @@ export const getAllVenuesWithCity = async (): Promise<any[]> => {
       },
     });
 
-    console.log(`Get all venues with city response status: ${response.status}`);
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -378,7 +375,7 @@ export const getAllVenuesWithCity = async (): Promise<any[]> => {
     }
 
     const data = await response.json();
-    console.log(`Retrieved ${data.length} venues with city details from API`);
+
 
     if (!Array.isArray(data)) {
       console.warn("API did not return an array for venues with city:", data);

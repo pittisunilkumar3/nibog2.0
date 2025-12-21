@@ -10,7 +10,7 @@ function readTestimonials() {
   if (!fs.existsSync(TESTIMONIALS_FILE)) {
     return [];
   }
-  
+
   try {
     const data = fs.readFileSync(TESTIMONIALS_FILE, 'utf8');
     return JSON.parse(data);
@@ -22,11 +22,11 @@ function readTestimonials() {
 
 export async function GET() {
   try {
-    console.log("Local API: Getting all testimonials");
+
 
     // Read local testimonials
     const localTestimonials = readTestimonials();
-    
+
     // Also get external testimonials for comparison/backup
     let externalTestimonials = [];
     try {
@@ -40,13 +40,13 @@ export async function GET() {
         }));
       }
     } catch (error) {
-      console.log("Could not fetch external testimonials:", error);
+
     }
 
     // Combine local and external testimonials
     // Local testimonials take priority (they have city names)
     const allTestimonials = [...localTestimonials, ...externalTestimonials];
-    
+
     // Remove duplicates (prefer local over external)
     const uniqueTestimonials = allTestimonials.reduce((acc: any[], current: any) => {
       const existing = acc.find((t: any) => t.name === current.name && t.testimonial === current.testimonial);
@@ -60,13 +60,13 @@ export async function GET() {
       return acc;
     }, [] as any[]);
 
-    console.log(`Local API: Returning ${uniqueTestimonials.length} testimonials (${localTestimonials.length} local, ${externalTestimonials.length} external)`);
+
 
     return NextResponse.json(uniqueTestimonials, { status: 200 });
 
   } catch (error: any) {
     console.error("Local API: Error getting testimonials:", error);
-    
+
     return NextResponse.json(
       { error: error.message || "Failed to get testimonials" },
       { status: 500 }

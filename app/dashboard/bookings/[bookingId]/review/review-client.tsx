@@ -59,11 +59,7 @@ export default function ReviewClient({ booking, bookingId }: ReviewClientProps) 
 
     // Simulate API call
     setTimeout(() => {
-      console.log({
-        bookingId,
-        rating,
-        review,
-      })
+
 
       setIsSubmitting(false)
       setIsSubmitted(true)

@@ -21,14 +21,14 @@ export function generateConsistentBookingRef(identifier: string): string {
   const year = currentDate.getFullYear().toString().slice(-2);
   const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
   const day = currentDate.getDate().toString().padStart(2, '0');
-  
+
   // Extract numeric part from identifier for uniqueness
   const numericPart = identifier.replace(/\D/g, '').slice(-3).padStart(3, '0');
-  
+
   // Generate PPT format: PPTYYMMDDxxx
   const reference = `PPT${year}${month}${day}${numericPart}`;
-  
-  console.log(`✅ Generated PPT format booking reference: ${reference} from identifier: ${identifier}`);
+
+
   return reference;
 }
 
@@ -47,7 +47,7 @@ export function convertBookingRefFormat(bookingRef: string, targetFormat: 'PPT' 
 
   // Clean the reference (remove quotes, whitespace, etc.)
   const cleanRef = bookingRef.replace(/["\s]/g, '').trim();
-  
+
   if (!cleanRef) {
     throw new Error('Invalid booking reference format');
   }
@@ -58,11 +58,11 @@ export function convertBookingRefFormat(bookingRef: string, targetFormat: 'PPT' 
   const year = currentDate.getFullYear().toString().slice(-2);
   const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
   const day = currentDate.getDate().toString().padStart(2, '0');
-  
+
   if (cleanRef.startsWith('B')) {
     // Extract from B format (B0000123)
     numericPart = cleanRef.replace(/^B(\d+)$/, '$1');
-    
+
     if (targetFormat === 'B') {
       // Already in B format, just normalize
       return `B${numericPart.padStart(7, '0')}`;
@@ -102,8 +102,8 @@ export function convertBookingRefFormat(bookingRef: string, targetFormat: 'PPT' 
   } else {
     // Unknown format, extract any numeric parts
     numericPart = cleanRef.replace(/\D/g, '');
-    return targetFormat === 'B' ? 
-      `B${numericPart.slice(-7).padStart(7, '0')}` : 
+    return targetFormat === 'B' ?
+      `B${numericPart.slice(-7).padStart(7, '0')}` :
       `PPT${year}${month}${day}${numericPart.slice(-3).padStart(3, '0')}`;
   }
 }
@@ -116,10 +116,10 @@ export function convertBookingRefFormat(bookingRef: string, targetFormat: 'PPT' 
  */
 export function isValidPPTFormat(bookingRef: string): boolean {
   if (!bookingRef) return false;
-  
+
   const cleanRef = bookingRef.replace(/["\s]/g, '').trim();
   const pptPattern = /^PPT\d{6}\d{3,}$/;
-  
+
   return pptPattern.test(cleanRef);
 }
 
@@ -168,7 +168,7 @@ export function generateManualBookingRef(identifier: string): string {
   // Generate MAN format: MANYYMMDDxxx
   const reference = `MAN${year}${month}${day}${numericPart}`;
 
-  console.log(`✅ Generated MAN format manual booking reference: ${reference} from identifier: ${identifier}`);
+
   return reference;
 }
 

@@ -56,7 +56,7 @@ export default function EventCard({
     setIsFavorite(!isFavorite)
 
     // In a real app, this would call an API to save the favorite status
-    console.log(`Toggle favorite for event ${id}: ${!isFavorite}`)
+
   }
 
   return (

@@ -29,15 +29,15 @@ export default function CitySelector({ onCityChange }: CitySelectorProps) {
         setLoading(true);
         setError(null);
 
-        console.log('Fetching cities via cityService...');
+
         const activeCities = await getAllCities();
 
         if (!isMounted) return;
 
-        console.log(`Found ${activeCities.length} cities`);
+
 
         if (activeCities.length === 0) {
-          console.warn('No cities found');
+
         }
 
         // The service already returns the cities, we can filter for active ones here if needed
@@ -52,7 +52,7 @@ export default function CitySelector({ onCityChange }: CitySelectorProps) {
         }
       } catch (error) {
         const err = error as Error;
-        console.error('Error fetching cities:', err);
+
         setError(err.message || 'Failed to load cities');
       } finally {
         if (isMounted) {
