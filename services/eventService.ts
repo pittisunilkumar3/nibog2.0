@@ -9,9 +9,12 @@ export interface Event {
   venue_id: number;
   event_date: string;
   status: string;
+  is_active?: number;
+  image_url?: string;
+  priority?: number;
   created_at?: string;
   updated_at?: string;
-  games: EventGame[];
+  event_games_with_slots: EventGame[];
 }
 
 // Define the event game interface for creating events
@@ -25,6 +28,9 @@ export interface EventGame {
   end_time: string;
   slot_price: number;
   max_participants: number;
+  min_age?: number;
+  max_age?: number;
+  is_active?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -79,13 +85,51 @@ export interface EventGameListItem {
  */
 export async function createEvent(eventData: Event): Promise<Event> {
   console.log("Creating event:", eventData);
+  console.log("Event has event_games_with_slots:", eventData.event_games_with_slots);
+  console.log("event_games_with_slots length:", eventData.event_games_with_slots?.length);
+  console.log("event_games_with_slots is array:", Array.isArray(eventData.event_games_with_slots));
 
   try {
+    // Get authentication token
+    let token: string | null = null;
+    
+    if (typeof window !== 'undefined') {
+      // Try localStorage and sessionStorage
+      token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+
+      // Try auth-token cookie
+      if (!token) {
+        const cookies = document.cookie.split(';');
+        const authTokenCookie = cookies.find(c => c.trim().startsWith('auth-token='));
+        if (authTokenCookie) {
+          token = authTokenCookie.split('=')[1];
+        }
+      }
+
+      // Try superadmin-token cookie
+      if (!token) {
+        const cookies = document.cookie.split(';');
+        const superadminCookie = cookies.find(c => c.trim().startsWith('superadmin-token='));
+        if (superadminCookie) {
+          try {
+            const cookieValue = decodeURIComponent(superadminCookie.split('=')[1]);
+            const userData = JSON.parse(cookieValue);
+            if (userData && userData.token) {
+              token = userData.token;
+            }
+          } catch (e) {
+            console.warn('Failed to parse superadmin-token cookie:', e);
+          }
+        }
+      }
+    }
+
     // Use our internal API route to avoid CORS issues
     const response = await fetch('/api/events/create', {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(eventData),
     });
@@ -95,14 +139,20 @@ export async function createEvent(eventData: Event): Promise<Event> {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
-      throw new Error(`API returned error status: ${response.status}`);
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(errorJson.message || errorJson.error || `API returned error status: ${response.status}`);
+      } catch (parseError) {
+        throw new Error(`API returned error status: ${response.status} - ${errorText}`);
+      }
     }
 
     const data = await response.json();
     console.log("Created event:", data);
 
-    // Return the first item if it's an array, otherwise return the data
-    return Array.isArray(data) ? data[0] : data;
+    // Return the data (the response should contain event_id)
+    return data;
   } catch (error) {
     console.error("Error creating event:", error);
     throw error;
@@ -120,6 +170,7 @@ export function formatEventDataForAPI(formData: {
   venueId: string;
   date: string;
   status: string;
+  isActive?: boolean;
   games: Array<{
     templateId: string;
     customTitle?: string;
@@ -132,19 +183,28 @@ export function formatEventDataForAPI(formData: {
       endTime: string;
       price: number;
       maxParticipants: number;
+      minAge?: number;
+      maxAge?: number;
+      isActive?: boolean;
     }>;
   }>;
   cityId?: number;
+  imagePath?: string | null;
+  imagePriority?: string;
 }): Event {
   // Get current date and time for created_at and updated_at
   const now = new Date();
   const formattedNow = now.toISOString();
+
+  console.log("formatEventDataForAPI - Input games:", formData.games);
+  console.log("formatEventDataForAPI - Number of games:", formData.games.length);
 
   // Format games data
   const formattedGames: EventGame[] = [];
 
   // Process each game and its slots
   formData.games.forEach(game => {
+    console.log("Processing game:", game.templateId, "with", game.slots.length, "slots");
     game.slots.forEach(slot => {
       formattedGames.push({
         game_id: parseInt(game.templateId),
@@ -156,6 +216,9 @@ export function formatEventDataForAPI(formData: {
         end_time: slot.endTime + ":00", // Add seconds
         slot_price: slot.price,
         max_participants: slot.maxParticipants,
+        min_age: slot.minAge || 0,
+        max_age: slot.maxAge || 12,
+        is_active: slot.isActive !== false ? 1 : 0,
         created_at: formattedNow,
         updated_at: formattedNow
       });
@@ -166,14 +229,20 @@ export function formatEventDataForAPI(formData: {
   const formattedEvent: Event = {
     title: formData.title,
     description: formData.description,
-    city_id: formData.cityId || 0, // This will need to be set correctly
+    city_id: formData.cityId || 0,
     venue_id: parseInt(formData.venueId),
     event_date: formData.date,
     status: formData.status === "draft" ? "Draft" : "Published",
+    is_active: formData.isActive !== false ? 1 : 0,
+    image_url: formData.imagePath || "",
+    priority: parseInt(formData.imagePriority || "1"),
     created_at: formattedNow,
     updated_at: formattedNow,
-    games: formattedGames
+    event_games_with_slots: formattedGames
   };
+
+  console.log("formatEventDataForAPI - Formatted event:", formattedEvent);
+  console.log("formatEventDataForAPI - event_games_with_slots length:", formattedEvent.event_games_with_slots.length);
 
   return formattedEvent;
 }
@@ -543,8 +612,9 @@ export async function getAllSlotStatuses(): Promise<Record<string, string>> {
  * @param eventData The event data to update
  * @returns Promise with the updated event or success status
  */
-export async function updateEvent(eventData: Event): Promise<Event | { success: boolean }> {
-  console.log("Updating event:", eventData);
+export async function updateEvent(eventData: any): Promise<{ success: boolean; event_id?: number }> {
+  console.log("=== updateEvent ===");
+  console.log("Event data:", JSON.stringify(eventData, null, 2));
 
   // Ensure the event has an ID
   if (!eventData.id) {
@@ -553,12 +623,66 @@ export async function updateEvent(eventData: Event): Promise<Event | { success: 
   }
 
   try {
-    // Use our internal API route to avoid CORS issues
-    const response = await fetch('/api/events/update', {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    // Get the auth token from various sources
+    let token: string | null = null;
+
+    // Try to get token from localStorage
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('token') || localStorage.getItem('auth-token');
+      console.log("Token from localStorage:", token ? "Found" : "Not found");
+    }
+
+    // Try to get token from sessionStorage
+    if (!token && typeof window !== 'undefined') {
+      token = sessionStorage.getItem('token') || sessionStorage.getItem('auth-token');
+      console.log("Token from sessionStorage:", token ? "Found" : "Not found");
+    }
+
+    // Try to get token from cookies
+    if (!token && typeof document !== 'undefined') {
+      const authTokenCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth-token='));
+      if (authTokenCookie) {
+        token = authTokenCookie.split('=')[1];
+        console.log("Token from auth-token cookie:", token ? "Found" : "Not found");
+      }
+
+      // Try superadmin-token as fallback
+      if (!token) {
+        const superadminTokenCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('superadmin-token='));
+        if (superadminTokenCookie) {
+          token = superadminTokenCookie.split('=')[1];
+          console.log("Token from superadmin-token cookie:", token ? "Found" : "Not found");
+        }
+      }
+    }
+
+    if (!token) {
+      console.error("No authentication token found");
+      throw new Error("Authentication required. Please log in.");
+    }
+
+    // Prepare headers
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    };
+
+    // Extract the event ID
+    const eventId = eventData.id;
+    delete eventData.id; // Remove id from body as it's in the URL
+
+    // Use our internal API route to update the event
+    const apiUrl = `/api/events/${eventId}/edit`;
+    console.log("Calling PUT:", apiUrl);
+    console.log("Request body:", JSON.stringify(eventData, null, 2));
+
+    const response = await fetch(apiUrl, {
+      method: "PUT",
+      headers,
       body: JSON.stringify(eventData),
     });
 
@@ -573,16 +697,12 @@ export async function updateEvent(eventData: Event): Promise<Event | { success: 
     const data = await response.json();
     console.log("Updated event response:", data);
 
-    // The API might return a success object or the updated event
-    if (Array.isArray(data) && data[0]?.success === true) {
-      return { success: true };
-    } else if (data?.success === true) {
-      return { success: true };
-    }
-
-    // If it's the updated event data, return it
-    return eventData;
-  } catch (error) {
+    // Return success
+    return {
+      success: true,
+      event_id: data.event_id || eventId
+    };
+  } catch (error: any) {
     console.error("Error updating event:", error);
     throw error;
   }
@@ -602,6 +722,9 @@ export function formatEventDataForUpdate(
     venueId: string;
     date: string;
     status: string;
+    isActive?: boolean;
+    imagePath?: string | null;
+    imagePriority?: string;
     games: Array<{
       templateId: string;
       customTitle?: string;
@@ -610,52 +733,82 @@ export function formatEventDataForUpdate(
       note?: string;
       slots: Array<{
         id: string;
+        originalId?: number; // Database ID for existing slots
         startTime: string;
         endTime: string;
         price: number;
         maxParticipants: number;
+        minAge?: number;
+        maxAge?: number;
+        isActive?: boolean;
       }>;
     }>;
     cityId?: number;
+    slotsToDelete?: number[]; // Array of slot IDs to delete
   }
-): Event {
-  // Get current date and time for updated_at
-  const now = new Date();
-  const formattedNow = now.toISOString();
+): any {
+  console.log("=== formatEventDataForUpdate ===");
+  console.log("Event ID:", eventId);
+  console.log("Form data:", JSON.stringify(formData, null, 2));
 
-  // Format games data
-  const formattedGames: EventGame[] = [];
+  // Format games data using event_games_with_slots structure
+  const eventGamesWithSlots: any[] = [];
 
   // Process each game and its slots
   formData.games.forEach(game => {
     game.slots.forEach(slot => {
-      formattedGames.push({
+      const slotData: any = {
         game_id: parseInt(game.templateId),
         custom_title: game.customTitle || "",
         custom_description: game.customDescription || "",
         custom_price: typeof game.customPrice === 'number' ? game.customPrice : 0,
-        note: game.note,
-        start_time: slot.startTime + ":00", // Add seconds
-        end_time: slot.endTime + ":00", // Add seconds
+        note: game.note || "",
+        start_time: slot.startTime.includes(":") ? slot.startTime + ":00" : slot.startTime, // Add seconds if not present
+        end_time: slot.endTime.includes(":") ? slot.endTime + ":00" : slot.endTime, // Add seconds if not present
         slot_price: typeof slot.price === 'number' ? slot.price : 0,
         max_participants: typeof slot.maxParticipants === 'number' ? slot.maxParticipants : 10,
-        updated_at: formattedNow
-      });
+        is_active: slot.isActive !== undefined ? (slot.isActive ? 1 : 0) : 1,
+        min_age: typeof slot.minAge === 'number' ? slot.minAge : null,
+        max_age: typeof slot.maxAge === 'number' ? slot.maxAge : null
+      };
+
+      // Include database ID if this is an existing slot
+      if (slot.originalId) {
+        slotData.id = slot.originalId;
+      }
+
+      eventGamesWithSlots.push(slotData);
     });
   });
 
+  console.log("Formatted event_games_with_slots:", JSON.stringify(eventGamesWithSlots, null, 2));
+
   // Create the formatted event data
-  const formattedEvent: Event = {
-    id: eventId,
+  const formattedEvent: any = {
     title: formData.title,
     description: formData.description,
     city_id: formData.cityId || 0,
     venue_id: parseInt(formData.venueId),
     event_date: formData.date,
     status: formData.status === "draft" ? "Draft" : "Published",
-    updated_at: formattedNow,
-    games: formattedGames
+    is_active: formData.isActive !== undefined ? (formData.isActive ? 1 : 0) : 1,
+    event_games_with_slots: eventGamesWithSlots
   };
+
+  // Add optional fields
+  if (formData.imagePath) {
+    formattedEvent.image_url = formData.imagePath;
+  }
+  if (formData.imagePriority) {
+    formattedEvent.priority = parseInt(formData.imagePriority);
+  }
+
+  // Add slots to delete if any
+  if (formData.slotsToDelete && formData.slotsToDelete.length > 0) {
+    formattedEvent.event_games_with_slots_to_delete = formData.slotsToDelete;
+  }
+
+  console.log("Final formatted event data:", JSON.stringify(formattedEvent, null, 2));
 
   return formattedEvent;
 }
@@ -1127,6 +1280,7 @@ export async function uploadEventImage(file: File): Promise<{
 }
 
 export async function deleteEvent(id: number): Promise<{ success: boolean } | Array<{ success: boolean }>> {
+  console.log("=== deleteEvent ===");
   console.log(`Attempting to delete event with ID: ${id}`);
 
   // Ensure id is a number
@@ -1138,6 +1292,54 @@ export async function deleteEvent(id: number): Promise<{ success: boolean } | Ar
   }
 
   try {
+    // Get the auth token from various sources
+    let token: string | null = null;
+
+    // Try to get token from localStorage
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('token') || localStorage.getItem('auth-token');
+      console.log("Token from localStorage:", token ? "Found" : "Not found");
+    }
+
+    // Try to get token from sessionStorage
+    if (!token && typeof window !== 'undefined') {
+      token = sessionStorage.getItem('token') || sessionStorage.getItem('auth-token');
+      console.log("Token from sessionStorage:", token ? "Found" : "Not found");
+    }
+
+    // Try to get token from cookies
+    if (!token && typeof document !== 'undefined') {
+      const authTokenCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth-token='));
+      if (authTokenCookie) {
+        token = authTokenCookie.split('=')[1];
+        console.log("Token from auth-token cookie:", token ? "Found" : "Not found");
+      }
+
+      // Try superadmin-token as fallback
+      if (!token) {
+        const superadminTokenCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('superadmin-token='));
+        if (superadminTokenCookie) {
+          token = superadminTokenCookie.split('=')[1];
+          console.log("Token from superadmin-token cookie:", token ? "Found" : "Not found");
+        }
+      }
+    }
+
+    if (!token) {
+      console.error("No authentication token found");
+      throw new Error("Authentication required. Please log in.");
+    }
+
+    // Prepare headers
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    };
+
     // Use our internal API route to avoid CORS issues
     console.log(`Sending POST request to /api/events/delete with ID: ${numericId}`);
     const requestBody = { id: numericId };
@@ -1145,15 +1347,11 @@ export async function deleteEvent(id: number): Promise<{ success: boolean } | Ar
 
     const response = await fetch('/api/events/delete', {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(requestBody),
     });
 
     console.log(`Delete event response status: ${response.status}`);
-    console.log(`Response headers: ${JSON.stringify(Object.fromEntries([...response.headers]))}`);
-    console.log(`Response ok: ${response.ok}`);
 
     if (!response.ok) {
       const errorText = await response.text();

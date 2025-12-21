@@ -73,7 +73,12 @@ export default function EventsPage() {
 
   // Function to fetch events with complete information
   const fetchEventsWithGames = async () => {
-    const response = await fetch('/api/events/get-all-with-games')
+    const response = await fetch('/api/events/list', {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    })
     if (!response.ok) {
       throw new Error(`Failed to fetch events: ${response.status}`)
     }
@@ -180,30 +185,33 @@ export default function EventsPage() {
     const validEvents = apiEvents
       .map((apiEvent: any) => {
         // Skip events that are completely empty or invalid
-        if (!apiEvent || !apiEvent.event_id) return null;
+        if (!apiEvent || !apiEvent.id) return null;
         
-        // Extract games from the nested structure
-        const games = apiEvent.games || [];
+        // Extract games from event_games_with_slots
+        const games = apiEvent.event_games_with_slots || [];
         const gameNames = games.map((game: any) => game.custom_title || game.game_title);
         const uniqueGameNames = [...new Set(gameNames.filter(Boolean))]; // Remove duplicates and empty values
 
         // Create the event object
         const event = {
-          id: apiEvent.event_id.toString(),
-          title: apiEvent.event_title || "Untitled Event",
+          id: apiEvent.id.toString(),
+          title: apiEvent.title || "Untitled Event",
           gameTemplate: uniqueGameNames.length > 0 ? uniqueGameNames.join(", ") : "No games",
-          venue: apiEvent.venue?.venue_name,
-          venueId: apiEvent.venue?.venue_id?.toString(),
-          city: apiEvent.city?.city_name,
+          venue: apiEvent.venue_name,
+          venueId: apiEvent.venue_id?.toString(),
+          city: apiEvent.city_name,
           date: apiEvent.event_date ? apiEvent.event_date.split('T')[0] : null, // Format date to YYYY-MM-DD
           slots: games.map((game: any, index: number) => ({
-            id: `${apiEvent.event_id}-${game.game_id || 'unknown'}-${index}`,
+            id: `${apiEvent.id}-${game.game_id || 'unknown'}-${index}`,
             time: game.start_time && game.end_time ? `${game.start_time} - ${game.end_time}` : null,
             capacity: game.max_participants || 0,
             booked: 0, // API doesn't provide this information
-            status: "active" // Default status
+            status: game.is_active === 1 ? "active" : "inactive"
           })).filter((slot: any) => slot.time !== null), // Only keep slots with valid times
-          status: apiEvent.event_status ? apiEvent.event_status.toLowerCase() : "draft",
+          status: apiEvent.status ? apiEvent.status.toLowerCase() : "draft",
+          isActive: apiEvent.is_active === 1,
+          imageUrl: apiEvent.image_url,
+          priority: apiEvent.priority,
           _isValid: true // Flag to indicate this is a valid event
         };
 
@@ -227,13 +235,13 @@ export default function EventsPage() {
     if (apiEvents && Array.isArray(apiEvents)) {
       // Check if we have any valid events (not just empty or invalid ones)
       const hasAnyValidEvents = apiEvents.some(apiEvent => {
-        if (!apiEvent || !apiEvent.event_id) return false;
+        if (!apiEvent || !apiEvent.id) return false;
         return (
-          apiEvent.event_title ||
-          apiEvent.venue?.venue_name ||
-          apiEvent.city?.city_name ||
+          apiEvent.title ||
+          apiEvent.venue_name ||
+          apiEvent.city_name ||
           apiEvent.event_date ||
-          (apiEvent.games && apiEvent.games.length > 0)
+          (apiEvent.event_games_with_slots && apiEvent.event_games_with_slots.length > 0)
         );
       });
       setHasValidEvents(hasAnyValidEvents);
@@ -475,7 +483,10 @@ export default function EventsPage() {
 
         // Remove the deleted event from the state
         setApiEvents(prevEvents => {
-          const filteredEvents = (prevEvents || []).filter(event => event.event_id.toString() !== eventId);
+          const filteredEvents = (prevEvents || []).filter(event => {
+            const eventIdStr = (event.id || event.event_id)?.toString();
+            return eventIdStr !== eventId;
+          });
           return filteredEvents;
         });
 
@@ -503,7 +514,7 @@ export default function EventsPage() {
       setEventToUpdate(eventId);
 
       // Find the event in the current data
-      const eventToUpdate = apiEvents.find(event => event.event_id.toString() === eventId);
+      const eventToUpdate = apiEvents.find(event => (event.id || event.event_id)?.toString() === eventId);
       if (!eventToUpdate) {
         throw new Error("Event not found");
       }
@@ -540,7 +551,7 @@ export default function EventsPage() {
         // Update the event status in the state
         setApiEvents(prevEvents => {
           return prevEvents.map(event =>
-            event.event_id.toString() === eventId
+            (event.id || event.event_id)?.toString() === eventId
               ? { ...event, event_status: newStatus }
               : event
           );
@@ -567,7 +578,7 @@ export default function EventsPage() {
       setEventToUpdate(eventId);
 
       // Find the event in the current data
-      const eventToCancel = apiEvents.find(event => event.event_id.toString() === eventId);
+      const eventToCancel = apiEvents.find(event => (event.id || event.event_id)?.toString() === eventId);
       if (!eventToCancel) {
         throw new Error("Event not found");
       }
@@ -601,7 +612,7 @@ export default function EventsPage() {
         // Update the event status in the state
         setApiEvents(prevEvents => {
           return prevEvents.map(event =>
-            event.event_id.toString() === eventId
+            (event.id || event.event_id)?.toString() === eventId
               ? { ...event, event_status: "Cancelled" }
               : event
           );

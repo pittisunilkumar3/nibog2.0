@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { getEventById, EventListItem } from "@/services/eventService"
+import { getEventWithDetails, EventListItem } from "@/services/eventService"
 import { useToast } from "@/components/ui/use-toast"
 
 // Mock data - in a real app, this would come from an API
@@ -118,7 +118,7 @@ export default function EventDetailPage({ params }: Props) {
         setApiError(null)
 
         console.log(`Fetching event data for ID: ${eventId}`)
-        const eventData = await getEventById(Number(eventId))
+        const eventData = await getEventWithDetails(Number(eventId))
         console.log("Event data received:", eventData)
 
         if (!eventData) {
@@ -230,7 +230,8 @@ export default function EventDetailPage({ params }: Props) {
   // Calculate total bookings and capacity from the API data
   // Since the API doesn't provide booking counts, we'll use 0 as a placeholder
   const totalBookings = 0 // In a real implementation, this would come from the API
-  const totalCapacity = event.games.reduce((acc, game) => acc + game.max_participants, 0)
+  const gameSlots = event.event_games_with_slots || []
+  const totalCapacity = gameSlots.reduce((acc, slot) => acc + (slot.max_participants || 0), 0)
   const fillRate = totalCapacity > 0 ? Math.round((totalBookings / totalCapacity) * 100) : 0
 
   return (
@@ -245,23 +246,23 @@ export default function EventDetailPage({ params }: Props) {
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">
-              {event.event_title}
+              {event.title || event.event_title}
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground truncate">
-              {event.venue_name}, {event.city_name} | {event.event_date.split('T')[0]}
+              {event.venue_name}, {event.city_name} | {(event.event_date || event.date || "").split('T')[0]}
             </p>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" asChild className="touch-manipulation">
-            <Link href={`/admin/events/${event.event_id}/edit`}>
+            <Link href={`/admin/events/${event.id || event.event_id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Edit Event</span>
               <span className="sm:hidden">Edit</span>
             </Link>
           </Button>
 
-          {event.event_status.toLowerCase() === "published" && (
+          {(event.status || event.event_status || "").toLowerCase() === "published" && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="touch-manipulation">
@@ -290,7 +291,7 @@ export default function EventDetailPage({ params }: Props) {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          {event.event_status.toLowerCase() === "paused" && (
+          {(event.status || event.event_status || "").toLowerCase() === "paused" && (
             <Button
               variant="outline"
               onClick={handleResumeEvent}
@@ -306,7 +307,7 @@ export default function EventDetailPage({ params }: Props) {
               </span>
             </Button>
           )}
-          {(event.event_status.toLowerCase() === "published" || event.event_status.toLowerCase() === "paused") && (
+          {((event.status || event.event_status || "").toLowerCase() === "published" || (event.status || event.event_status || "").toLowerCase() === "paused") && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -351,19 +352,19 @@ export default function EventDetailPage({ params }: Props) {
               <div className="flex flex-col gap-1 rounded-lg border p-3">
                 <span className="text-sm text-muted-foreground">Status</span>
                 <div className="flex items-center gap-2">
-                  {event.event_status.toLowerCase() === "published" && (
+                  {(event.status || event.event_status || "").toLowerCase() === "published" && (
                     <Badge className="bg-green-500 hover:bg-green-600">Published</Badge>
                   )}
-                  {event.event_status.toLowerCase() === "draft" && (
+                  {(event.status || event.event_status || "").toLowerCase() === "draft" && (
                     <Badge variant="outline">Draft</Badge>
                   )}
-                  {event.event_status.toLowerCase() === "paused" && (
+                  {(event.status || event.event_status || "").toLowerCase() === "paused" && (
                     <Badge className="bg-amber-500 hover:bg-amber-600">Paused</Badge>
                   )}
-                  {event.event_status.toLowerCase() === "cancelled" && (
+                  {(event.status || event.event_status || "").toLowerCase() === "cancelled" && (
                     <Badge className="bg-red-500 hover:bg-red-600">Cancelled</Badge>
                   )}
-                  {event.event_status.toLowerCase() === "completed" && (
+                  {(event.status || event.event_status || "").toLowerCase() === "completed" && (
                     <Badge className="bg-blue-500 hover:bg-blue-600">Completed</Badge>
                   )}
                 </div>
@@ -397,7 +398,7 @@ export default function EventDetailPage({ params }: Props) {
           </CardHeader>
           <CardContent className="space-y-2">
             <Button className="w-full justify-start" asChild>
-              <Link href={`/admin/events/${event.event_id}/edit`}>
+              <Link href={`/admin/events/${event.id || event.event_id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Event Details
               </Link>
@@ -448,12 +449,12 @@ export default function EventDetailPage({ params }: Props) {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <h3 className="mb-2 font-medium">Game Template</h3>
-                  <p>{event.games[0]?.game_title || "No game template"}</p>
+                  <p>{gameSlots[0]?.game_title || gameSlots[0]?.custom_title || "No game template"}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Age Range: {event.games[0]?.min_age || 0}-{event.games[0]?.max_age || 0} months
+                    Age Range: {gameSlots[0]?.min_age || 0}-{gameSlots[0]?.max_age || 0} {(gameSlots[0]?.min_age || 0) < 12 ? "months" : "years"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Duration: {event.games[0]?.game_duration_minutes || 0} minutes
+                    Duration: {gameSlots[0]?.game_duration_minutes || "N/A"} minutes
                   </p>
                 </div>
                 <div>
@@ -466,20 +467,20 @@ export default function EventDetailPage({ params }: Props) {
               <Separator />
               <div>
                 <h3 className="mb-2 font-medium">Description</h3>
-                <p className="text-sm text-muted-foreground">{event.event_description}</p>
+                <p className="text-sm text-muted-foreground">{event.description || event.event_description || "No description provided"}</p>
               </div>
               <Separator />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <h3 className="mb-2 font-medium">Created At</h3>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(event.event_created_at).toLocaleString()}
+                    {event.created_at || event.event_created_at ? new Date(event.created_at || event.event_created_at).toLocaleString() : "N/A"}
                   </p>
                 </div>
                 <div>
                   <h3 className="mb-2 font-medium">Last Updated At</h3>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(event.event_updated_at).toLocaleString()}
+                    {event.updated_at || event.event_updated_at ? new Date(event.updated_at || event.event_updated_at).toLocaleString() : "N/A"}
                   </p>
                 </div>
               </div>
@@ -507,39 +508,42 @@ export default function EventDetailPage({ params }: Props) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {event.games.map((game) => (
-                      <TableRow key={`${event.event_id}-${game.game_id}`}>
+                    {gameSlots.map((slot) => (
+                      <TableRow key={`${event.id || event.event_id}-${slot.id}`}>
                         <TableCell>
-                          {game.start_time} - {game.end_time}
+                          {slot.start_time} - {slot.end_time}
                         </TableCell>
-                        <TableCell>₹{game.slot_price}</TableCell>
-                        <TableCell>{game.max_participants}</TableCell>
+                        <TableCell>₹{slot.slot_price}</TableCell>
+                        <TableCell>{slot.max_participants}</TableCell>
                         <TableCell>
                           {/* Since the API doesn't provide booking counts, we'll use 0 as a placeholder */}
-                          0/{game.max_participants}
+                          0/{slot.max_participants}
                           <div className="mt-1 h-2 w-full rounded-full bg-muted">
                             <div
                               className="h-full rounded-full bg-primary"
                               style={{
-                                width: `${(0 / game.max_participants) * 100}%`,
+                                width: `${(0 / slot.max_participants) * 100}%`,
                               }}
                             />
                           </div>
                         </TableCell>
                         <TableCell>
-                          {/* Since the API doesn't provide slot status, we'll assume all slots are active */}
-                          <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
+                          {slot.is_active === 1 || slot.is_active === true ? (
+                            <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
+                          ) : (
+                            <Badge variant="outline">Inactive</Badge>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/admin/events/${event.event_id}/slots/${game.game_id}/edit`}>
+                              <Link href={`/admin/events/${event.id || event.event_id}/slots/${slot.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </Link>
                             </Button>
                             <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/admin/events/${event.event_id}/slots/${game.game_id}/participants`}>
+                              <Link href={`/admin/events/${event.id || event.event_id}/slots/${slot.id}/participants`}>
                                 <Users className="mr-2 h-4 w-4" />
                                 Participants
                               </Link>
@@ -622,21 +626,21 @@ export default function EventDetailPage({ params }: Props) {
               <CardDescription>View all bookings for this event</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue={event.games.length > 0 ? `${event.games[0].game_id}` : "no-games"} className="space-y-4">
+              <Tabs defaultValue={gameSlots.length > 0 ? `${gameSlots[0].id}` : "no-games"} className="space-y-4">
                 <TabsList className="flex w-full flex-wrap">
-                  {event.games.map((game) => (
-                    <TabsTrigger key={game.game_id} value={`${game.game_id}`} className="flex-grow">
-                      {game.start_time} - {game.end_time} (0/{game.max_participants})
+                  {gameSlots.map((slot) => (
+                    <TabsTrigger key={slot.id} value={`${slot.id}`} className="flex-grow">
+                      {slot.start_time} - {slot.end_time} (0/{slot.max_participants})
                     </TabsTrigger>
                   ))}
-                  {event.games.length === 0 && (
+                  {gameSlots.length === 0 && (
                     <TabsTrigger value="no-games" className="flex-grow">
-                      No games available
+                      No slots available
                     </TabsTrigger>
                   )}
                 </TabsList>
-                {event.games.map((game) => (
-                  <TabsContent key={game.game_id} value={`${game.game_id}`}>
+                {gameSlots.map((slot) => (
+                  <TabsContent key={slot.id} value={`${slot.id}`}>
                     <div className="rounded-md border">
                       <Table>
                         <TableHeader>
@@ -660,19 +664,19 @@ export default function EventDetailPage({ params }: Props) {
                     </div>
                     <div className="mt-4 flex justify-end gap-2">
                       <Button variant="outline" asChild>
-                        <Link href={`/admin/events/${event.event_id}/slots/${game.game_id}/participants/export`}>
+                        <Link href={`/admin/events/${event.id || event.event_id}/slots/${slot.id}/participants/export`}>
                           Export Participants
                         </Link>
                       </Button>
                       <Button asChild>
-                        <Link href={`/admin/events/${event.event_id}/slots/${game.game_id}/participants`}>
+                        <Link href={`/admin/events/${event.id || event.event_id}/slots/${slot.id}/participants`}>
                           Manage Participants
                         </Link>
                       </Button>
                     </div>
                   </TabsContent>
                 ))}
-                {event.games.length === 0 && (
+                {gameSlots.length === 0 && (
                   <TabsContent value="no-games">
                     <div className="flex h-[200px] items-center justify-center rounded-md border">
                       <div className="text-center">

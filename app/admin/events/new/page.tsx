@@ -19,21 +19,13 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { TimePickerDemo } from "@/components/time-picker"
-import { getAllCities } from "@/services/cityService"
-import { getVenuesByCity } from "@/services/venueService"
+// import { getAllCities } from "@/services/cityService"
+// import { getVenuesByCity } from "@/services/venueService"
 import { getAllBabyGames, BabyGame } from "@/services/babyGameService"
 import { createEvent, formatEventDataForAPI, uploadEventImage, sendEventImageToWebhook } from "@/services/eventService"
 import { toast } from "@/components/ui/use-toast"
 
-const venues = [
-  { id: "1", name: "Little Explorers Center", city: "Mumbai" },
-  { id: "2", name: "Rhythm Studio", city: "Delhi" },
-  { id: "3", name: "Tiny Champions Arena", city: "Bangalore" },
-  { id: "4", name: "Zen Baby Studio", city: "Mumbai" },
-  { id: "5", name: "Aqua Tots Center", city: "Pune" },
-  { id: "6", name: "Creative Kids Studio", city: "Chennai" },
-  { id: "7", name: "Little Movers Gym", city: "Hyderabad" },
-]
+// Removed hardcoded venues. Only use API data for cities and venues.
 
 // Fallback game templates in case API fails
 const fallbackGameTemplates = [
@@ -71,15 +63,17 @@ const fallbackGameTemplates = [
 
 export default function NewEventPage() {
   const router = useRouter()
-  const [cities, setCities] = useState<Array<{ id: number; name: string }>>([])
-  const [apiVenues, setApiVenues] = useState<Array<{ id: number; name: string }>>([])
+  const [citiesWithVenues, setCitiesWithVenues] = useState<Array<any>>([])
+  const [debugCities, setDebugCities] = useState<string>("")
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [babyGames, setBabyGames] = useState<BabyGame[]>([])
-  const [selectedCity, setSelectedCity] = useState("")
+  // Remove unused selectedCity state
   const [selectedVenue, setSelectedVenue] = useState("")
   const [selectedDate, setSelectedDate] = useState<Date>()
   const [eventTitle, setEventTitle] = useState("")
   const [eventDescription, setEventDescription] = useState("")
   const [eventStatus, setEventStatus] = useState("draft")
+  const [isActive, setIsActive] = useState(true)
   const [eventImage, setEventImage] = useState<string | null>(null)
   const [eventImageFile, setEventImageFile] = useState<File | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
@@ -96,6 +90,9 @@ export default function NewEventPage() {
       endTime: string;
       price: number;
       maxParticipants: number;
+      minAge?: number;
+      maxAge?: number;
+      isActive?: boolean;
     }>;
   }>>([])
   const [activeGameIndex, setActiveGameIndex] = useState<number | null>(null)
@@ -106,113 +103,42 @@ export default function NewEventPage() {
   const [venueError, setVenueError] = useState<string | null>(null)
   const [gamesError, setGamesError] = useState<string | null>(null)
 
-  // Fetch cities from API when component mounts
+  // Fetch cities with venues from API when component mounts
   useEffect(() => {
-    const fetchCities = async () => {
+    const fetchCitiesWithVenues = async () => {
       try {
         setIsLoadingCities(true)
         setCityError(null)
-
-        console.log("Fetching cities from API...")
-
-        // Fetch cities from the API
-        const citiesData = await getAllCities()
-        console.log("Cities data from API:", citiesData)
-
-        // Map the API response to the format expected by the dropdown
-        const formattedCities = citiesData.map(city => ({
-          id: city.id || 0,
-          name: city.city_name
-        }))
-
-        console.log("Formatted cities for dropdown:", formattedCities)
-        setCities(formattedCities)
+        console.log("Fetching cities with venues from API...")
+        const res = await fetch("/api/city/with-venues/list")
+        console.log("API Response status:", res.status)
+        if (!res.ok) throw new Error("Failed to fetch cities with venues")
+        let data = await res.json()
+        console.log("Cities with venues data:", data)
+        console.log("Data type:", Array.isArray(data) ? "array" : typeof data)
+        // Defensive: ensure data is always an array
+        if (!Array.isArray(data)) {
+          console.error("API response is not an array:", data)
+          data = []
+        }
+        console.log(`Loaded ${data.length} cities from API`)
+        // Filter only active cities
+        const activeCities = data.filter((city: any) => city.is_active === 1)
+        console.log(`Active cities: ${activeCities.length}`)
+        setCitiesWithVenues(activeCities)
+        setDebugCities(JSON.stringify(activeCities, null, 2))
       } catch (error: any) {
-        console.error("Failed to fetch cities:", error)
+        console.error("Error fetching cities:", error)
         setCityError("Failed to load cities. Please try again.")
+        setDebugCities(error.message || "Unknown error")
       } finally {
         setIsLoadingCities(false)
       }
     }
-
-    fetchCities()
+    fetchCitiesWithVenues()
   }, [])
 
-  // Fetch venues when a city is selected
-  useEffect(() => {
-    const fetchVenues = async () => {
-      if (!selectedCity) return
-
-      try {
-        setIsLoadingVenues(true)
-        setVenueError(null)
-
-        // Find the city ID from the selected city name
-        const cityObj = cities.find(c => c.name === selectedCity)
-        if (!cityObj) {
-          console.error(`City object not found for name: ${selectedCity}`)
-          setVenueError("Selected city not found")
-          return
-        }
-
-        // Make sure we have a valid city ID
-        const cityId = Number(cityObj.id)
-        if (isNaN(cityId) || cityId <= 0) {
-          console.error(`Invalid city ID: ${cityObj.id}`)
-          setVenueError("Invalid city ID")
-          return
-        }
-
-        console.log(`Fetching venues for city: ${selectedCity} (ID: ${cityId})`)
-
-        try {
-          // Fetch venues for the selected city
-          const venuesData = await getVenuesByCity(cityId)
-          console.log(`Retrieved ${venuesData.length} venues for city ${selectedCity}:`, venuesData)
-
-          // Map the API response to the format expected by the dropdown
-          const formattedVenues = venuesData.map(venue => ({
-            id: venue.id || 0,
-            name: venue.venue_name
-          }))
-
-          console.log(`Formatted venues for dropdown:`, formattedVenues)
-          setApiVenues(formattedVenues)
-
-          // If no venues are found, show a message
-          if (formattedVenues.length === 0) {
-            console.warn(`No venues found for city ${selectedCity} (ID: ${cityId})`)
-            setVenueError(`No venues found for ${selectedCity}`)
-          }
-        } catch (venueError: any) {
-          console.error(`Error fetching venues for city ${selectedCity} (ID: ${cityId}):`, venueError)
-
-          // Try to provide a more helpful error message
-          let errorMessage = "Failed to load venues. Please try again."
-          if (venueError.message.includes("404")) {
-            errorMessage = `No venues found for ${selectedCity} or API endpoint not available`
-          } else if (venueError.message.includes("500")) {
-            errorMessage = "Server error while fetching venues. Please try again later."
-          } else if (venueError.message.includes("timeout")) {
-            errorMessage = "Request timed out. Please check your connection and try again."
-          }
-
-          setVenueError(errorMessage)
-        }
-      } catch (error: any) {
-        console.error(`Failed to fetch venues for city ${selectedCity}:`, error)
-        setVenueError("Failed to load venues. Please try again.")
-      } finally {
-        setIsLoadingVenues(false)
-      }
-    }
-
-    if (selectedCity) {
-      fetchVenues()
-    } else {
-      setApiVenues([])
-    }
-  }, [selectedCity, cities])
+  // No need to fetch venues separately, handled by citiesWithVenues
 
   // Fetch baby games from API when component mounts
   useEffect(() => {
@@ -244,11 +170,10 @@ export default function NewEventPage() {
     fetchBabyGames()
   }, [])
 
-  // Get filtered venues based on selected city (fallback to mock data if API fails)
-  const filteredVenues = selectedCity
-    ? apiVenues.length > 0
-      ? apiVenues
-      : venues.filter((venue) => venue.city === selectedCity)
+  // Get filtered venues based on selected cityId
+  // Only show venues for the selected city (from API)
+  const filteredVenues = selectedCityId
+    ? (citiesWithVenues.find(city => city.id === selectedCityId)?.venues || [])
     : []
 
   // Get game templates (either from API or fallback)
@@ -291,7 +216,10 @@ export default function NewEventPage() {
         startTime: "10:00",
         endTime: "11:30",
         price: template.suggestedPrice ?? 0,
-        maxParticipants: 12
+        maxParticipants: 12,
+        minAge: Math.floor((template.minAgeMonths || 0) / 12),
+        maxAge: Math.floor((template.maxAgeMonths || 36) / 12),
+        isActive: true
       }]
     }
 
@@ -325,12 +253,16 @@ export default function NewEventPage() {
     const game = selectedGames[gameIndex]
     if (!game) return
 
+    const template = gameTemplates.find(t => t.id === game.templateId);
     const newSlot = {
       id: `game-${game.templateId}-slot-${game.slots.length + 1}`,
       startTime: "10:00",
       endTime: "11:30",
-      price: game.customPrice ?? gameTemplates.find(t => t.id === game.templateId)?.suggestedPrice ?? 0,
-      maxParticipants: 12
+      price: game.customPrice ?? template?.suggestedPrice ?? 0,
+      maxParticipants: 12,
+      minAge: Math.floor((template?.minAgeMonths || 0) / 12),
+      maxAge: Math.floor((template?.maxAgeMonths || 36) / 12),
+      isActive: true
     }
 
     setSelectedGames(selectedGames.map((g, i) => {
@@ -411,7 +343,13 @@ export default function NewEventPage() {
     e.preventDefault()
 
     // Validate form
-    if (!selectedVenue || !selectedDate || selectedGames.length === 0) {
+    if (!selectedCityId || !selectedVenue || !selectedDate || selectedGames.length === 0) {
+      console.error("Validation failed:", {
+        selectedCityId,
+        selectedVenue,
+        selectedDate,
+        selectedGamesCount: selectedGames.length
+      });
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields and add at least one game.",
@@ -423,6 +361,7 @@ export default function NewEventPage() {
     // Check if all games have at least one slot
     const gamesWithoutSlots = selectedGames.filter(game => game.slots.length === 0)
     if (gamesWithoutSlots.length > 0) {
+      console.error("Games without slots:", gamesWithoutSlots);
       toast({
         title: "Validation Error",
         description: `Please add at least one time slot to each game. Games without slots: ${gamesWithoutSlots.map(g => g.customTitle).join(", ")}`,
@@ -432,9 +371,8 @@ export default function NewEventPage() {
     }
 
     try {
-      // Get the city ID from the selected city name
-      const cityObj = cities.find(c => c.name === selectedCity)
-      const cityId = cityObj?.id || 0
+      // Get the city ID from the selected city
+      const cityId = selectedCityId || 0
 
       // Format the data for the API
       const formData = {
@@ -443,6 +381,7 @@ export default function NewEventPage() {
         venueId: selectedVenue,
         date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
         status: eventStatus,
+        isActive: isActive,
         games: selectedGames,
         cityId: cityId,
         imagePath: eventImage,
@@ -565,39 +504,38 @@ export default function NewEventPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="eventImage">Event Image</Label>
-                  <div className="space-y-2">
-                    <Input
-                      id="eventImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={isUploadingImage}
-                      className="cursor-pointer"
-                    />
-                    {isUploadingImage && (
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading image...
-                      </div>
-                    )}
-                    {eventImageFile && (
-                      <div className="flex items-center text-sm text-blue-600">
-                        <span>✓ Image selected: {eventImageFile.name} (will be uploaded after event creation)</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="priority">Priority</Label>
-                    <Input
-                      id="priority"
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={imagePriority}
-                      onChange={(e) => setImagePriority(e.target.value)}
-                      placeholder="Enter priority (1-10)"
-                    />
-                  </div>
+                  <Input
+                    id="eventImage"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={isUploadingImage}
+                    className="cursor-pointer"
+                  />
+                  {isUploadingImage && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading image...
+                    </div>
+                  )}
+                  {eventImageFile && (
+                    <div className="flex items-center text-sm text-blue-600">
+                      <span>✓ Image selected: {eventImageFile.name} (will be uploaded after event creation)</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="priority">Priority</Label>
+                  <Input
+                    id="priority"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={imagePriority}
+                    onChange={(e) => setImagePriority(e.target.value)}
+                    placeholder="Enter priority (1-10)"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -612,75 +550,88 @@ export default function NewEventPage() {
                       {cityError}
                     </div>
                   ) : (
-                    <Select
-                      value={selectedCity}
-                      onValueChange={(value) => {
-                        setSelectedCity(value)
-                        setSelectedVenue("")
-                      }}
-                      disabled={cities.length === 0}
-                    >
-                      <SelectTrigger id="city">
-                        <SelectValue placeholder={cities.length === 0 ? "No cities available" : "Select a city"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cities.map((city) => (
-                          <SelectItem key={city.id} value={city.name}>
-                            {city.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <>
+                      <div className="text-xs text-muted-foreground mb-1">
+                        {citiesWithVenues.length > 0 
+                          ? `${citiesWithVenues.length} cities loaded from API` 
+                          : "No cities available - Check console for errors"}
+                      </div>
+                      <Select
+                        value={selectedCityId ? String(selectedCityId) : ""}
+                        onValueChange={(value) => {
+                          setSelectedCityId(Number(value))
+                          setSelectedVenue("") // Reset venue when city changes
+                        }}
+                        disabled={citiesWithVenues.length === 0}
+                      >
+                        <SelectTrigger id="city">
+                          <SelectValue placeholder={citiesWithVenues.length === 0 ? "No cities available" : "Select a city"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {citiesWithVenues.map((city) => (
+                            <SelectItem key={city.id} value={String(city.id)}>
+                              {city.city_name} ({city.state})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="venue">Venue</Label>
-                  {isLoadingVenues ? (
-                    <div className="flex h-10 items-center rounded-md border border-input px-3 py-2 text-sm">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      <span className="text-muted-foreground">Loading venues...</span>
-                    </div>
-                  ) : venueError ? (
-                    <div className="flex h-10 items-center rounded-md border border-destructive px-3 py-2 text-sm text-destructive">
-                      {venueError}
-                    </div>
-                  ) : (
-                    <Select
-                      value={selectedVenue}
-                      onValueChange={setSelectedVenue}
-                      disabled={!selectedCity || filteredVenues.length === 0}
-                    >
-                      <SelectTrigger id="venue">
-                        <SelectValue
-                          placeholder={
-                            !selectedCity
-                              ? "Select a city first"
-                              : filteredVenues.length === 0
-                                ? "No venues available"
-                                : "Select a venue"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredVenues.length === 0 ? (
-                          <SelectItem value="no-venues" disabled>
-                            No venues available for this city
+                  <Select
+                    value={selectedVenue}
+                    onValueChange={setSelectedVenue}
+                    disabled={!selectedCityId || filteredVenues.length === 0}
+                  >
+                    <SelectTrigger id="venue">
+                      <SelectValue
+                        placeholder={
+                          !selectedCityId
+                            ? "Select a city first"
+                            : filteredVenues.length === 0
+                              ? "No venues available"
+                              : "Select a venue"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredVenues.length === 0 ? (
+                        <SelectItem value="no-venues" disabled>
+                          No venues available for this city
+                        </SelectItem>
+                      ) : (
+                        filteredVenues.map((venue: any) => (
+                          <SelectItem key={venue.id} value={venue.id.toString()}>
+                            {venue.venue_name}
                           </SelectItem>
-                        ) : (
-                          filteredVenues.map((venue) => (
-                            <SelectItem key={venue.id} value={venue.id.toString()}>
-                              {venue.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Display venues for selected city */}
+                  {selectedCityId && filteredVenues.length > 0 && (
+                    <div className="mt-3 p-3 rounded-md border bg-muted/50">
+                      <p className="text-sm font-medium mb-2">Available Venues ({filteredVenues.length}):</p>
+                      <div className="space-y-2">
+                        {filteredVenues.map((venue: any) => (
+                          <div key={venue.id} className="text-sm p-2 rounded bg-background border">
+                            <p className="font-medium">{venue.venue_name}</p>
+                            <p className="text-muted-foreground text-xs">{venue.address}</p>
+                            {venue.capacity && (
+                              <p className="text-muted-foreground text-xs">Capacity: {venue.capacity}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Event Date</Label>
+                <div className="space-y-2">\n                  <Label>Event Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -723,6 +674,17 @@ export default function NewEventPage() {
                       <SelectItem value="scheduled">Scheduled</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is-active"
+                    checked={isActive}
+                    onCheckedChange={setIsActive}
+                  />
+                  <Label htmlFor="is-active" className="cursor-pointer">
+                    Active Event (visible to users)
+                  </Label>
                 </div>
               </CardContent>
             </Card>
@@ -976,7 +938,23 @@ export default function NewEventPage() {
                         {game.slots.map((slot, slotIndex) => (
                           <div key={slot.id} className="rounded-md border p-4">
                             <div className="mb-2 flex items-center justify-between">
-                              <h4 className="font-medium">Slot {slotIndex + 1}</h4>
+                              <div className="flex items-center gap-3">
+                                <h4 className="font-medium">Slot {slotIndex + 1}</h4>
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    id={`slot-active-${slot.id}`}
+                                    checked={slot.isActive !== false}
+                                    onCheckedChange={(checked) => updateSlot(activeGameIndex, slot.id, "isActive", checked)}
+                                  />
+                                  <Label htmlFor={`slot-active-${slot.id}`} className="text-sm cursor-pointer">
+                                    {slot.isActive !== false ? (
+                                      <Badge variant="default" className="bg-green-500">Active</Badge>
+                                    ) : (
+                                      <Badge variant="secondary">Inactive</Badge>
+                                    )}
+                                  </Label>
+                                </div>
+                              </div>
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -1038,6 +1016,40 @@ export default function NewEventPage() {
                                     if (inputValue === '' || /^\d+$/.test(inputValue)) {
                                       const participants = inputValue === '' ? 1 : parseInt(inputValue) || 1
                                       updateSlot(activeGameIndex, slot.id, "maxParticipants", participants)
+                                    }
+                                  }}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`min-age-${slot.id}`}>Min Age (years)</Label>
+                                <Input
+                                  id={`min-age-${slot.id}`}
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={slot.minAge ?? 0}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value
+                                    if (inputValue === '' || /^\d+$/.test(inputValue)) {
+                                      const age = inputValue === '' ? 0 : parseInt(inputValue) || 0
+                                      updateSlot(activeGameIndex, slot.id, "minAge", age)
+                                    }
+                                  }}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`max-age-${slot.id}`}>Max Age (years)</Label>
+                                <Input
+                                  id={`max-age-${slot.id}`}
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={slot.maxAge ?? 12}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value
+                                    if (inputValue === '' || /^\d+$/.test(inputValue)) {
+                                      const age = inputValue === '' ? 12 : parseInt(inputValue) || 12
+                                      updateSlot(activeGameIndex, slot.id, "maxAge", age)
                                     }
                                   }}
                                 />

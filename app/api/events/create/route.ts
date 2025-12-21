@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { EVENT_API } from '@/config/api';
 
 export async function POST(request: Request) {
   try {
@@ -7,6 +6,10 @@ export async function POST(request: Request) {
     const eventData = await request.json();
 
     console.log("Server API route: Creating event:", eventData);
+    console.log("Server API route: event_games_with_slots:", eventData.event_games_with_slots);
+    console.log("Server API route: event_games_with_slots type:", typeof eventData.event_games_with_slots);
+    console.log("Server API route: event_games_with_slots is array:", Array.isArray(eventData.event_games_with_slots));
+    console.log("Server API route: event_games_with_slots length:", eventData.event_games_with_slots?.length);
 
     // Validate required fields
     if (!eventData.title) {
@@ -30,21 +33,26 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!eventData.games || !Array.isArray(eventData.games) || eventData.games.length === 0) {
+    if (!eventData.event_games_with_slots || !Array.isArray(eventData.event_games_with_slots) || eventData.event_games_with_slots.length === 0) {
       return NextResponse.json(
-        { error: "At least one game is required" },
+        { error: "At least one game slot is required (event_games_with_slots)" },
         { status: 400 }
       );
     }
 
-    // Forward the request to the external API with the correct URL
-    const apiUrl = EVENT_API.CREATE;
-    console.log("Server API route: Calling API URL:", apiUrl);
+    // Get authentication token from request headers
+    const authHeader = request.headers.get('authorization');
+    
+    // Forward the request to the backend API
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
+    const apiUrl = `${backendUrl}/api/events/create`;
+    console.log("Server API route: Calling backend API:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(authHeader ? { "Authorization": authHeader } : {}),
       },
       body: JSON.stringify(eventData),
       cache: "no-store",
@@ -55,10 +63,16 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Server API route: Error response:", errorText);
-      return NextResponse.json(
-        { error: `Failed to create event: ${response.status} ${response.statusText}` },
-        { status: response.status }
-      );
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        return NextResponse.json(errorJson, { status: response.status });
+      } catch {
+        return NextResponse.json(
+          { error: `Failed to create event: ${response.status} ${response.statusText}`, details: errorText },
+          { status: response.status }
+        );
+      }
     }
 
     // Get the response data

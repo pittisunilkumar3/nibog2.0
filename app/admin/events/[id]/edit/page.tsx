@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
-import { getEventById, updateEvent, formatEventDataForUpdate, uploadEventImage, fetchEventImages, sendEventImageToWebhook, updateEventImage } from "@/services/eventService"
+import { getEventWithDetails, updateEvent, formatEventDataForUpdate, uploadEventImage, fetchEventImages, sendEventImageToWebhook, updateEventImage } from "@/services/eventService"
 import { getAllCities } from "@/services/cityService"
 import { getVenuesByCity } from "@/services/venueService"
 import { getAllBabyGames, BabyGame as ImportedBabyGame } from "@/services/babyGameService"
@@ -106,6 +106,7 @@ export default function EditEventPage({ params }: Props) {
   const [selectedVenue, setSelectedVenue] = useState("")
   const [selectedDate, setSelectedDate] = useState<Date>()
   const [eventStatus, setEventStatus] = useState("draft")
+  const [isActive, setIsActive] = useState(true)
   const [selectedGames, setSelectedGames] = useState<Array<{
     templateId: string;
     customTitle?: string;
@@ -114,10 +115,14 @@ export default function EditEventPage({ params }: Props) {
     note?: string;
     slots: Array<{
       id: string;
+      originalId?: number; // Database ID for existing slots
       startTime: string;
       endTime: string;
       price: number;
       maxParticipants: number;
+      minAge?: number;
+      maxAge?: number;
+      isActive?: boolean;
     }>;
   }>>([])
   const [activeGameIndex, setActiveGameIndex] = useState<number | null>(null)
@@ -145,34 +150,54 @@ export default function EditEventPage({ params }: Props) {
         setError(null)
 
         console.log(`Fetching event with ID: ${eventId}`)
-        const event = await getEventById(Number(eventId))
+        const event = await getEventWithDetails(Number(eventId))
         console.log("Retrieved event:", event)
         setEventData(event)
 
         // Set initial form values
-        setEventTitle(event.event_title)
-        setEventDescription(event.event_description)
-        setSelectedCity(event.city_name)
-        setSelectedVenue(event.venue_id.toString())
-        setSelectedDate(new Date(event.event_date.split('T')[0]))
-        setEventStatus(event.event_status.toLowerCase())
+        setEventTitle(event.title || event.event_title || "")
+        setEventDescription(event.description || event.event_description || "")
+        setSelectedCity(event.city_name || "")
+        setSelectedVenue(event.venue_id ? event.venue_id.toString() : "")
+        setSelectedDate(new Date((event.event_date || event.date || "").split('T')[0]))
+        setEventStatus((event.status || event.event_status || "draft").toLowerCase())
+        setIsActive(event.is_active === 1 || event.is_active === true)
 
         // Format games data for the form
-        const formattedGames = event.games.map((game: any) => {
-          // The correct API returns flat structure with note field directly in game object
+        // The API returns event_games_with_slots array
+        const gameSlots = event.event_games_with_slots || []
+        console.log("Event games with slots:", gameSlots)
+        
+        // Group slots by game_id
+        const gamesByGameId = new Map<string, any[]>()
+        gameSlots.forEach((slot: any) => {
+          const gameId = slot.game_id.toString()
+          if (!gamesByGameId.has(gameId)) {
+            gamesByGameId.set(gameId, [])
+          }
+          gamesByGameId.get(gameId)!.push(slot)
+        })
+
+        // Format games with their slots
+        const formattedGames = Array.from(gamesByGameId.entries()).map(([gameId, slots]) => {
+          const firstSlot = slots[0]
           return {
-            templateId: game.game_id.toString(),
-            customTitle: game.custom_title || game.game_title,
-            customDescription: game.custom_description || game.game_description,
-            customPrice: game.custom_price || 0,
-            note: game.note || "",
-            slots: [{
-              id: `game-${game.game_id}-slot-1`,
-              startTime: game.start_time ? game.start_time.substring(0, 5) : "09:00",
-              endTime: game.end_time ? game.end_time.substring(0, 5) : "10:00",
-              price: game.slot_price || game.custom_price || 0,
-              maxParticipants: game.max_participants || 50
-            }]
+            templateId: gameId,
+            customTitle: firstSlot.custom_title || firstSlot.game_title || "",
+            customDescription: firstSlot.custom_description || firstSlot.game_description || "",
+            customPrice: firstSlot.custom_price || 0,
+            note: firstSlot.note || "",
+            slots: slots.map((slot: any) => ({
+              id: `game-${gameId}-slot-${slot.id}`,
+              originalId: slot.id, // Store database ID for updates
+              startTime: slot.start_time ? slot.start_time.substring(0, 5) : "09:00",
+              endTime: slot.end_time ? slot.end_time.substring(0, 5) : "10:00",
+              price: slot.slot_price || slot.custom_price || 0,
+              maxParticipants: slot.max_participants || 50,
+              minAge: slot.min_age || undefined,
+              maxAge: slot.max_age || undefined,
+              isActive: slot.is_active === 1 || slot.is_active === true
+            }))
           }
         })
         
@@ -458,7 +483,10 @@ export default function EditEventPage({ params }: Props) {
         startTime: "10:00",
         endTime: "11:30",
         price: template.suggestedPrice,
-        maxParticipants: 12
+        maxParticipants: 12,
+        minAge: template.minAgeMonths,
+        maxAge: template.maxAgeMonths,
+        isActive: true
       }]
     }
 
@@ -497,7 +525,10 @@ export default function EditEventPage({ params }: Props) {
       startTime: "10:00",
       endTime: "11:30",
       price: game.customPrice || gameTemplates.find(t => t.id === game.templateId)?.suggestedPrice || 799,
-      maxParticipants: 12
+      maxParticipants: 12,
+      minAge: undefined,
+      maxAge: undefined,
+      isActive: true
     }
 
     setSelectedGames(selectedGames.map((g, i) => {
@@ -612,6 +643,7 @@ export default function EditEventPage({ params }: Props) {
         venueId: selectedVenue,
         date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
         status: eventStatus,
+        isActive: isActive,
         games: selectedGames,
         cityId: cityId,
         imagePath: eventImage,
@@ -628,6 +660,7 @@ export default function EditEventPage({ params }: Props) {
 
       // Format the data for the API
       const apiData = formatEventDataForUpdate(Number(eventId), formData)
+      apiData.id = Number(eventId) // Add the event ID
       console.log("API data for update:", apiData)
 
       // Call the API to update the event
@@ -1068,6 +1101,20 @@ export default function EditEventPage({ params }: Props) {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="isActive">Event Active</Label>
+                    <Switch
+                      id="isActive"
+                      checked={isActive}
+                      onCheckedChange={setIsActive}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Control whether this event is visible and bookable
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -1416,6 +1463,49 @@ export default function EditEventPage({ params }: Props) {
                                   onChange={(e) => updateSlot(activeGameIndex, slot.id, "maxParticipants", parseInt(e.target.value))}
                                 />
                               </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`min-age-${slot.id}`}>Min Age (optional)</Label>
+                                <Input
+                                  id={`min-age-${slot.id}`}
+                                  type="number"
+                                  min="0"
+                                  value={slot.minAge ?? ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value === "" ? undefined : parseInt(e.target.value)
+                                    updateSlot(activeGameIndex, slot.id, "minAge", value)
+                                  }}
+                                  placeholder="No minimum"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`max-age-${slot.id}`}>Max Age (optional)</Label>
+                                <Input
+                                  id={`max-age-${slot.id}`}
+                                  type="number"
+                                  min="0"
+                                  value={slot.maxAge ?? ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value === "" ? undefined : parseInt(e.target.value)
+                                    updateSlot(activeGameIndex, slot.id, "maxAge", value)
+                                  }}
+                                  placeholder="No maximum"
+                                />
+                              </div>
+                            </div>
+                            <div className="mt-4 flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  id={`slot-active-${slot.id}`}
+                                  checked={slot.isActive !== false}
+                                  onCheckedChange={(checked) => updateSlot(activeGameIndex, slot.id, "isActive", checked)}
+                                />
+                                <Label htmlFor={`slot-active-${slot.id}`} className="cursor-pointer">
+                                  Slot Active
+                                </Label>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {slot.isActive !== false ? "Available for booking" : "Hidden from users"}
+                              </span>
                             </div>
                           </div>
                         ))}
