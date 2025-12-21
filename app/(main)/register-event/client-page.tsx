@@ -34,7 +34,8 @@ import type { AddOn } from "@/types"
 import type { AddOn as AddOnType } from "@/types"
 // OLD IMPORTS - No longer using these separate API calls
 // import { getAllCities } from "@/services/cityService"
-// import { getEventsByCityId, getGamesByAgeAndEvent, EventListItem, EventGameListItem } from "@/services/eventService"
+// import { getEventsByCityId, getGamesByAgeAndEvent, EventGameListItem } from "@/services/eventService"
+import { EventListItem } from "@/services/eventService"
 import { Game } from "@/services/gameService"
 import { registerBooking, formatBookingDataForAPI } from "@/services/bookingRegistrationService"
 import { initiatePhonePePayment } from "@/services/paymentService"
@@ -533,8 +534,10 @@ export default function RegisterEventClientPage() {
 
       // Get unique dates
       const dates = eligibleEventsMapped.map((event: any) => new Date(event.date));
-      const uniqueDates = Array.from(new Set(dates.map(date => date.toISOString())))
-        .map(dateStr => new Date(dateStr));
+      const uniqueIsoStrings: string[] = Array.from(
+        new Set(dates.map((date: Date) => date.toISOString()))
+      );
+      const uniqueDates = uniqueIsoStrings.map((dateStr: string) => new Date(dateStr));
       setAvailableDates(uniqueDates);
 
       if (uniqueDates.length > 0) {
@@ -671,7 +674,7 @@ export default function RegisterEventClientPage() {
   }
   */
 
-  // Handle game selection with slot selection - SINGLE SELECTION ONLY
+  // Handle game selection with slot selection - MULTIPLE GAMES, ONE SLOT PER GAME
   const handleGameSelection = (slotId: number) => {
     // Find the game associated with this slot
     const selectedSlot = eligibleGames.find((g) => g.id === slotId);
@@ -679,19 +682,29 @@ export default function RegisterEventClientPage() {
 
     const gameId = selectedSlot.game_id;
 
-    // SINGLE SELECTION LOGIC: Only allow one game/slot selection at a time
+    // MULTIPLE GAMES LOGIC: Allow multiple games, but only one slot per game
     setSelectedGames((prev) => {
       // Check if this exact slot is already selected
-      const isCurrentlySelected = prev.length === 1 && prev[0].slotId === slotId;
+      const isCurrentlySelected = prev.some(item => item.slotId === slotId);
 
       let newSelectedGames: Array<{ gameId: number; slotId: number }>;
 
       if (isCurrentlySelected) {
         // If clicking the same slot that's already selected, deselect it
-        newSelectedGames = [];
+        newSelectedGames = prev.filter(item => item.slotId !== slotId);
       } else {
-        // Replace any existing selection with this new selection (SINGLE SELECTION)
-        newSelectedGames = [{ gameId, slotId }];
+        // Check if we already have a slot selected for this game
+        const existingGameSelection = prev.find(item => item.gameId === gameId);
+        
+        if (existingGameSelection) {
+          // Replace the existing slot for this game with the new one
+          newSelectedGames = prev.map(item => 
+            item.gameId === gameId ? { gameId, slotId } : item
+          );
+        } else {
+          // Add this game to the selection (multiple games allowed)
+          newSelectedGames = [...prev, { gameId, slotId }];
+        }
       }
 
       // Reset promocode when games change
@@ -703,7 +716,7 @@ export default function RegisterEventClientPage() {
       if (newSelectedGames.length > 0 && selectedEventType) {
         const selectedApiEvent = apiEvents.find((event) => event.event_title === selectedEventType);
         if (selectedApiEvent) {
-          // Get unique game IDs for promo code API (should only be one now)
+          // Get unique game IDs for promo code API
           const gameIdsForPromo = [...new Set(newSelectedGames.map((selection) => selection.gameId))];
 
           if (gameIdsForPromo.length > 0) {
@@ -718,7 +731,8 @@ export default function RegisterEventClientPage() {
     });
 
     // Log selection state for debugging
-    console.log(`Selected slot ID: ${slotId} for game ID: ${gameId} (SINGLE SELECTION)`);
+    console.log(`Selected slot ID: ${slotId} for game ID: ${gameId} (MULTIPLE GAMES ALLOWED)`);
+    console.log("Current selections:", selectedGames);
     console.log("Selected slot:", selectedSlot);
   };
 
@@ -995,12 +1009,10 @@ export default function RegisterEventClientPage() {
         }
       }
 
-      // SINGLE GAME VALIDATION: Ensure exactly one game is selected
-      if (selectedGames.length !== 1) {
-        throw new Error(`Invalid game selection. Expected exactly 1 game, but found ${selectedGames.length}. Please select exactly one game.`)
-      }
-
       // Pre-validation checks with user-friendly error messages
+      if (selectedGames.length === 0) {
+        throw new Error("Please select at least one game to continue.")
+      }
       if (!isAuthenticated || !user?.user_id) {
         throw new Error("Please log in to complete your payment. Your registration data will be saved.")
       }
@@ -1033,7 +1045,7 @@ export default function RegisterEventClientPage() {
       console.log("DOB toISOString:", dob?.toISOString());
       console.log("Formatted DOB:", formatDateForAPI(dob));
 
-      // Note: Game selection validation already handled above (exactly 1 game required)
+      // Note: Game selection validation already handled above (at least 1 game required)
       if (false) { // Unreachable code - keeping structure for safety
         throw new Error("Please select at least one game for your child to participate in.")
       }
@@ -1070,12 +1082,7 @@ export default function RegisterEventClientPage() {
       console.log("Selected games objects:", selectedGamesObj.map(g => ({ id: g?.id, title: g?.custom_title || g?.game_title })))
 
       if (selectedGamesObj.length === 0) {
-        throw new Error("No valid games selected. Please select exactly one game.")
-      }
-
-      // SINGLE GAME VALIDATION: Ensure only one game is selected
-      if (selectedGamesObj.length > 1) {
-        throw new Error("Multiple games selected. Please select only one game per registration.")
+        throw new Error("No valid games selected. Please select at least one game.")
       }
 
       if (selectedGamesObj.length !== selectedGames.length) {
@@ -2084,10 +2091,10 @@ export default function RegisterEventClientPage() {
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1">
                       <span>Available Games</span>
-                      <span className="text-xs text-primary/70">(Required - Select ONE game)</span>
+                      <span className="text-xs text-primary/70">(Select one or more games)</span>
                     </Label>
                     <p className="text-xs text-muted-foreground mb-2">
-                      Please select exactly one game and time slot for your registration. You can only register for one game per booking.
+                      Select one or more games for your registration. For each game, choose one time slot.
                     </p>
                     
                     {isLoadingGames || isLoadingBookingInfo ? (
@@ -2118,27 +2125,25 @@ export default function RegisterEventClientPage() {
                           "mb-6 p-4 rounded-3xl border-2 text-base font-semibold shadow-lg",
                           selectedGames.length === 0
                             ? "bg-gradient-to-r from-skyblue-50 to-coral-50 border-skyblue-200 text-neutral-charcoal"
-                            : selectedGames.length === 1
-                            ? "bg-gradient-to-r from-mint-50 to-skyblue-50 border-mint-300 text-neutral-charcoal"
-                            : "bg-gradient-to-r from-coral-50 to-skyblue-50 border-coral-300 text-neutral-charcoal"
+                            : "bg-gradient-to-r from-mint-50 to-skyblue-50 border-mint-300 text-neutral-charcoal"
                         )}>
                           <div className="flex items-center gap-3">
                             {selectedGames.length === 0 && (
                               <>
                                 <div className="w-3 h-3 rounded-full bg-skyblue-400 animate-pulse"></div>
-                                <span>🎯 No game selected - Please select one game and time slot</span>
+                                <span>🎯 No games selected - Please select at least one game</span>
                               </>
                             )}
                             {selectedGames.length === 1 && (
                               <>
                                 <div className="w-3 h-3 rounded-full bg-mint-500 animate-bounce-gentle"></div>
-                                <span>✅ One game selected - Ready to continue!</span>
+                                <span>✅ {selectedGames.length} game selected - Ready to continue!</span>
                               </>
                             )}
                             {selectedGames.length > 1 && (
                               <>
-                                <div className="w-3 h-3 rounded-full bg-coral-500 animate-pulse"></div>
-                                <span>⚠️ Multiple games selected - Please select only one</span>
+                                <div className="w-3 h-3 rounded-full bg-mint-500 animate-bounce-gentle"></div>
+                                <span>✅ {selectedGames.length} games selected - Ready to continue!</span>
                               </>
                             )}
                           </div>
@@ -2222,7 +2227,7 @@ export default function RegisterEventClientPage() {
                                           <div className="flex items-center space-x-3">
                                             <input
                                               type="radio"
-                                              name="game-slot-selection"
+                                              name={`game-slot-${gameInfo.game_id}`}
                                               checked={isSelected}
                                               onChange={() => isAvailable && handleGameSelection(slot.id)}
                                               disabled={!isAvailable}
@@ -2344,13 +2349,13 @@ export default function RegisterEventClientPage() {
                 size="lg"
                 className={cn(
                   "w-full relative overflow-hidden group transition-all duration-300 h-16 text-lg font-bold touch-manipulation rounded-3xl shadow-2xl hover:shadow-3xl transform hover:scale-105 border-2 border-white/50 animate-medal-shine",
-                  (!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length !== 1 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
+                  (!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
                  (childAgeMonths && childAgeMonths >= 36 && !schoolName) || !termsAccepted || isProcessingPayment)
                     ? "opacity-50 cursor-not-allowed bg-gray-400"
                     : "bg-gradient-to-r from-skyblue-400 via-coral-400 to-mint-400 hover:from-skyblue-500 hover:via-coral-500 hover:to-mint-500 text-white"
                 )}
                 onClick={handleRegistration}
-                disabled={!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length !== 1 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
+                disabled={!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
                          (childAgeMonths && childAgeMonths >= 36 && !schoolName) || !termsAccepted || isProcessingPayment}
               >
                 <span className="relative z-10 flex items-center justify-center">
@@ -2557,6 +2562,24 @@ export default function RegisterEventClientPage() {
                       <span>{schoolName || (childAgeMonths && childAgeMonths < 36 ? "Home" : "Not specified")}</span>
                     </div>
                     <Separator />
+                    {selectedGames.map((selection) => {
+                      const game = eligibleGames.find(g => g.id === selection.slotId);
+                      if (!game) return null;
+                      
+                      const gamePrice = game.slot_price || game.custom_price || 0;
+                      const gameTitle = game.game_title || game.custom_title || "Game";
+                      const timeSlot = `${game.start_time} - ${game.end_time}`;
+                      
+                      return (
+                        <div key={selection.slotId} className="flex justify-between text-sm">
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground">{gameTitle}</span>
+                            <span className="text-xs text-muted-foreground">{timeSlot}</span>
+                          </div>
+                          <span className="font-medium">{formatPrice(gamePrice)}</span>
+                        </div>
+                      );
+                    })}
                     <div className="flex justify-between font-medium">
                       <span>Games Subtotal:</span>
                       <span>{formatPrice(calculateGamesTotal())}</span>

@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { PHONEPE_CONFIG, generateSHA256Hash, logPhonePeConfig } from '@/config/phonepe';
-import { BOOKING_API } from '@/config/api';
 import { validateGameData, formatGamesForAPI, createFallbackGame } from '@/utils/gameIdValidation';
 import { generateConsistentBookingRef } from '@/utils/bookingReference';
+
+// Use environment variable for API base URL or fallback to production
+const API_BASE_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3004";
+const BOOKING_CREATE_API = `${API_BASE_URL}/api/bookings`;
 import { sendBookingConfirmationFromServer } from '@/services/emailNotificationService';
 import { sendTicketEmail, TicketEmailData } from '@/services/ticketEmailService';
 import { getTicketDetails, TicketDetails } from '@/services/bookingService';
@@ -214,177 +217,132 @@ export async function POST(request: Request) {
           const currentDate = new Date();
           const formattedDate = currentDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
           
-          // Use booking data from client if available, otherwise create fallback booking data
-          // Define interface with all possible booking data properties
-          interface BookingDataPayload {
-            user_id: any;
-            parent: {
-              parent_name: any;
-              email: any;
-              additional_phone: any;
-            };
-            child: {
-              full_name: any;
-              date_of_birth: any;
-              school_name: any;
-              gender: any;
-            };
-            booking: {
-              event_id: any;
-              booking_date: string;
-              total_amount: any;
+          // NEW BOOKING API STRUCTURE - follows the updated API documentation
+          // booking_games is now nested inside each child object
+          let newBookingData: {
+            parent_name: string;
+            email: string;
+            phone: string;
+            event_id: number;
+            booking_ref: string;
+            status: string;
+            total_amount: number;
+            children: Array<{
+              full_name: string;
+              date_of_birth: string;
+              gender: string;
+              school_name: string;
+              booking_games: Array<{
+                game_id: number;
+                slot_id: number;
+                game_price: number;
+              }>;
+            }>;
+            payment: {
+              transaction_id: string;
+              amount: number;
               payment_method: string;
               payment_status: string;
-              terms_accepted: boolean;
-              transaction_id: any;
-              merchant_transaction_id: any;
-              booking_ref?: string;
-              status: string;
             };
-            booking_games: any[];
-            booking_addons?: any[];
-          }
-          
-          let finalBookingData: BookingDataPayload;
+          };
           
           if (bookingData) {
             console.log("Server API route: Using booking data from client localStorage");
-            
-            // Extract the necessary data from the client-provided booking data
-            // and ensure it has all required fields in the expected format
-            console.log("=== DEBUGGING DOB FIELD MAPPING ===");
+            console.log("=== DEBUGGING BOOKING DATA FIELD MAPPING ===");
             console.log("bookingData.childDob:", bookingData.childDob);
-            console.log("bookingData.dob:", bookingData.dob);
-            console.log("childDob type:", typeof bookingData.childDob);
-            console.log("dob type:", typeof bookingData.dob);
+            console.log("bookingData.childName:", bookingData.childName);
+            console.log("bookingData.gender:", bookingData.gender);
+            console.log("bookingData.schoolName:", bookingData.schoolName);
+            console.log("bookingData.gameId:", bookingData.gameId);
+            console.log("bookingData.slotId:", bookingData.slotId);
+            console.log("bookingData.gamePrice:", bookingData.gamePrice);
 
-            finalBookingData = {
-              user_id: bookingData.userId || userId,
-              parent: {
-                parent_name: bookingData.parentName || "PhonePe Customer",
-                email: bookingData.email || `customer-${userId}@example.com`,
-                additional_phone: bookingData.phone || "",
-              },
-              child: {
-                full_name: bookingData.childName || `Child ${userId}`,
-                date_of_birth: bookingData.childDob || bookingData.dob || new Date().toISOString().split('T')[0], // Fixed: use childDob (correct field name) first, then dob as fallback
-                school_name: bookingData.schoolName || "Unknown School",
-                gender: mapGenderToAllowedValue(bookingData.gender || ''),
-              },
-              booking: {
-                event_id: bookingData.eventId || 1,
-                booking_date: formattedDate,
-                total_amount: bookingData.totalAmount || (amount / 100), // Use stored amount or convert from paise to rupees
-                payment_method: "PhonePe",
-                payment_status: paymentState === 'COMPLETED' ? 'Paid' : 'Pending',
-                terms_accepted: true,
-                transaction_id: transactionId,
-                merchant_transaction_id: merchantTransactionId,
-                booking_ref: bookingRef, // Use the pre-generated booking reference
-                status: "Confirmed" // Always set status to Confirmed for successful payments
-              },
-              booking_games: (() => {
-                console.log(`Server API route: Processing booking games from booking data`);
-                console.log(`Server API route: bookingData.gameId:`, bookingData.gameId);
-                console.log(`Server API route: bookingData.gamePrice:`, bookingData.gamePrice);
-                console.log(`Server API route: bookingData.slotId:`, bookingData.slotId);
+            // Prepare booking games array - supporting multiple games for the child
+            const gameIds = Array.isArray(bookingData.gameId) ? bookingData.gameId : [bookingData.gameId];
+            const slotIds = Array.isArray(bookingData.slotId) ? bookingData.slotId : [bookingData.slotId];
+            const gamePrices = Array.isArray(bookingData.gamePrice) ? bookingData.gamePrice : [bookingData.gamePrice];
 
-                // Use validation utility to process game data
-                if (bookingData.gameId && bookingData.gamePrice) {
-                  const totalAmountInRupees = amount / 100; // Convert from paise to rupees
-                  const validationResult = validateGameData(
-                    bookingData.gameId,
-                    bookingData.gamePrice,
-                    totalAmountInRupees,
-                    bookingData.slotId // Include slot IDs for proper game details lookup
-                  );
+            // Create booking_games array for this child (no child_id needed - API handles it)
+            const bookingGamesForChild = gameIds.map((gameId: number, index: number) => ({
+              game_id: gameId,
+              slot_id: slotIds[index] || slotIds[0],
+              game_price: gamePrices[index] || gamePrices[0] || 0
+            }));
 
-                  if (validationResult.isValid && validationResult.validGames.length > 0) {
-                    console.log(`Server API route: Successfully validated ${validationResult.validGames.length} games`);
-                    return formatGamesForAPI(validationResult.validGames);
-                  } else {
-                    console.error(`Server API route: Game validation failed:`, validationResult.errors);
-                  }
-                } else {
-                  console.log(`Server API route: Missing game data in booking data`);
+            console.log("=== PREPARED BOOKING GAMES FOR CHILD ===");
+            console.log("Total games:", bookingGamesForChild.length);
+            console.log("Booking games array:", JSON.stringify(bookingGamesForChild, null, 2));
+
+            newBookingData = {
+              parent_name: bookingData.parentName || "PhonePe Customer",
+              email: bookingData.email || `customer-${userId}@example.com`,
+              phone: bookingData.phone || "",
+              event_id: bookingData.eventId || 1,
+              booking_ref: bookingRef,
+              status: "Pending",
+              total_amount: amount / 100, // Convert from paise to rupees
+              children: [
+                {
+                  full_name: bookingData.childName || `Child ${userId}`,
+                  date_of_birth: bookingData.childDob || new Date().toISOString().split('T')[0],
+                  gender: mapGenderToAllowedValue(bookingData.gender || ''),
+                  school_name: bookingData.schoolName || "Unknown School",
+                  booking_games: bookingGamesForChild // Nested inside child object
                 }
-
-                // Fallback: create a single game entry
-                console.log(`Server API route: Using fallback game`);
-                return [createFallbackGame(amount / 100)];
-              })()
+              ],
+              payment: {
+                transaction_id: transactionId,
+                amount: amount / 100, // Convert from paise to rupees
+                payment_method: "PhonePe",
+                payment_status: paymentState === 'COMPLETED' ? 'Paid' : 'Pending'
+              }
             };
-
-            // Handle add-ons if present
-            if (bookingData.addOns && bookingData.addOns.length > 0) {
-              finalBookingData.booking_addons = bookingData.addOns.map((addon: any) => ({
-                addon_id: addon.addOnId,
-                quantity: addon.quantity,
-                variant_id: addon.variantId || null,
-                price: 0 // Price calculation happens on the server
-              }));
-            }
           } else {
             console.log("Server API route: Using fallback booking data");
-            
-            // Create fallback booking data with user ID
-            // NOTE: This is a fallback - the actual user data should come from pending booking
             console.log("⚠️ WARNING: Using fallback booking data - actual user data not found!");
-            console.log("This means the pending booking data was not properly saved or retrieved.");
 
-            finalBookingData = {
-              user_id: userId,
-              parent: {
-                parent_name: "PhonePe Customer",
-                email: `customer-${userId}@example.com`,
-                additional_phone: "",
-              },
-              child: {
-                full_name: `Child ${userId}`,
-                date_of_birth: new Date().toISOString().split('T')[0], // Use current date as fallback instead of hardcoded 2015-01-01
-                school_name: "Unknown School",
-                gender: "Male", // Using 'Male' as fallback to match DB constraints
-              },
-              booking: {
-                event_id: 1,
-                booking_date: formattedDate,
-                total_amount: amount / 100, // Convert from paise to rupees
-                payment_method: "PhonePe",
-                payment_status: paymentState === 'COMPLETED' ? 'Paid' : 'Pending',
-                terms_accepted: true,
-                transaction_id: transactionId,
-                merchant_transaction_id: merchantTransactionId,
-                // Use the pre-generated booking reference to ensure consistency
-                booking_ref: bookingRef,
-                status: "Confirmed" // Always set status to Confirmed for successful payments
-              },
-              booking_games: [
+            newBookingData = {
+              parent_name: "PhonePe Customer",
+              email: `customer-${userId}@example.com`,
+              phone: "",
+              event_id: 1,
+              booking_ref: bookingRef,
+              status: "Pending",
+              total_amount: amount / 100,
+              children: [
                 {
-                  game_id: 1, // Using game ID 1 which should exist in the baby_games table
-                  child_index: 0, // Add child_index to match schema requirements
-                  game_price: amount / 100 // Convert from paise to rupees
+                  full_name: `Child ${userId}`,
+                  date_of_birth: new Date().toISOString().split('T')[0],
+                  gender: "Male",
+                  school_name: "Unknown School",
+                  booking_games: [
+                    {
+                      game_id: 1,
+                      slot_id: 1,
+                      game_price: amount / 100
+                    }
+                  ]
                 }
-              ]
+              ],
+              payment: {
+                transaction_id: transactionId,
+                amount: amount / 100,
+                payment_method: "PhonePe",
+                payment_status: paymentState === 'COMPLETED' ? 'Paid' : 'Pending'
+              }
             };
           }
           
-          // Force gender to be one of the allowed values before sending to API
-          // This is a safety check to ensure we're sending a valid gender value
-          if (finalBookingData.child && finalBookingData.child.gender) {
-            finalBookingData.child.gender = mapGenderToAllowedValue(finalBookingData.child.gender);
-          }
+          console.log(`Server API route: Creating booking with NEW API structure:`, JSON.stringify(newBookingData, null, 2));
           
-          console.log(`Server API route: Creating booking with data:`, JSON.stringify(finalBookingData, null, 2));
-          console.log(`Server API route: Child gender being sent:`, finalBookingData.child?.gender);
-          
-          // Create booking
-          console.log(`Server API route: Calling booking creation API at: ${BOOKING_API.CREATE}`);
-          const bookingResponse = await fetch(BOOKING_API.CREATE, {
+          // Create booking using NEW API endpoint
+          console.log(`Server API route: Calling NEW booking creation API at: ${BOOKING_CREATE_API}`);
+          const bookingResponse = await fetch(BOOKING_CREATE_API, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(finalBookingData),
+            body: JSON.stringify(newBookingData),
           });
           
           console.log(`Server API route: Booking creation response status: ${bookingResponse.status}`);
@@ -404,17 +362,8 @@ export async function POST(request: Request) {
           const bookingResult = await bookingResponse.json();
           console.log(`Server API route: Booking created successfully:`, bookingResult);
 
-          // Handle both array and object responses from the booking API
-          let bookingId;
-          if (Array.isArray(bookingResult) && bookingResult.length > 0) {
-            // API returned an array, get booking_id from first element
-            bookingId = bookingResult[0].booking_id || bookingResult[0].id;
-            console.log(`Server API route: Extracted booking ID from array response: ${bookingId}`);
-          } else if (bookingResult.booking_id || bookingResult.id) {
-            // API returned an object directly
-            bookingId = bookingResult.booking_id || bookingResult.id;
-            console.log(`Server API route: Extracted booking ID from object response: ${bookingId}`);
-          }
+          // Extract booking ID from the new API response
+          const bookingId = bookingResult.booking_id;
 
           if (!bookingId) {
             console.error('Server API route: No booking ID returned from API response');
@@ -426,53 +375,10 @@ export async function POST(request: Request) {
             }, { status: 200 });
           }
           
-          // Create payment record
-          console.log(`Server API route: Creating payment record for booking ID: ${bookingId}`);
+          console.log(`Server API route: Booking created with ID: ${bookingId}, payment already recorded in new API`);
           
-          const paymentResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/create', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              booking_id: parseInt(bookingId.toString()),
-              transaction_id: transactionId,
-              phonepe_transaction_id: merchantTransactionId,
-              amount: amount / 100, // Convert from paise to rupees
-              payment_method: 'PhonePe',
-              payment_status: 'successful',
-              payment_date: new Date().toISOString(),
-              gateway_response: {
-                // Send as object, not stringified JSON
-                code: "PAYMENT_SUCCESS",
-                merchantId: "NIBOGONLINE", // Your merchant ID
-                merchantTransactionId,
-                transactionId,
-                amount,
-                state: paymentState,
-              },
-            }),
-          });
-          
-          console.log(`Server API route: Payment creation response status: ${paymentResponse.status}`);
-          
-          if (!paymentResponse.ok) {
-            const errorText = await paymentResponse.text();
-            console.error(`Server API route: Failed to create payment record: ${errorText}`);
-            return NextResponse.json({
-              ...responseData,
-              bookingCreated: true,
-              bookingId,
-              paymentCreated: false,
-              error: 'Booking created but payment record failed',
-              bookingData: {
-                booking_ref: bookingRef
-              }
-            }, { status: 200 });
-          }
-          
-          const paymentResult = await paymentResponse.json();
-          console.log(`Server API route: Payment record created successfully:`, paymentResult);
+          // The new API creates payment record automatically, so we don't need a separate payment API call
+          const paymentId = bookingResult.payment_id;
 
           // Send booking confirmation email immediately after successful booking and payment creation
           console.log(`📧 STARTING EMAIL PROCESS for booking ID: ${bookingId}`);
@@ -670,7 +576,7 @@ export async function POST(request: Request) {
                   const qrCodeData = JSON.stringify({
                     ref: bookingRef,
                     id: bookingId,
-                    name: firstTicket.child_name || firstTicket.child_full_name || bookingData?.childName || 'Child',
+                    name: firstTicket.child_name || bookingData?.childName || 'Child',
                     game: firstTicket.custom_title || firstTicket.event_title || firstTicket.game_name || bookingData?.eventTitle || 'NIBOG Event',
                     slot_id: firstTicket.event_game_slot_id || firstTicket.booking_game_id || 0
                   });
@@ -703,7 +609,7 @@ export async function POST(request: Request) {
                 }
               } catch (ticketEmailError) {
                 console.error(`🎫 Failed to send ticket email:`, ticketEmailError);
-                console.error(`🎫 Ticket email error details:`, ticketEmailError.message);
+                console.error(`🎫 Ticket email error details:`, ticketEmailError instanceof Error ? ticketEmailError.message : ticketEmailError);
                 // Don't fail the entire process if ticket email fails
               }
             } else {
@@ -712,8 +618,8 @@ export async function POST(request: Request) {
             }
           } catch (emailError) {
             console.error(`📧 Failed to send booking confirmation email:`, emailError);
-            console.error(`📧 Email error details:`, emailError.message);
-            console.error(`📧 Email error stack:`, emailError.stack);
+            console.error(`📧 Email error details:`, emailError instanceof Error ? emailError.message : emailError);
+            console.error(`📧 Email error stack:`, emailError instanceof Error ? emailError.stack : 'N/A');
             // Don't fail the entire process if email fails - booking and payment were successful
           }
 
@@ -723,6 +629,7 @@ export async function POST(request: Request) {
             ...responseData,
             bookingCreated: true,
             bookingId,
+            paymentId: paymentId, // New API returns payment_id
             paymentCreated: true,
             emailSent: true, // Indicate that booking confirmation email was attempted
             ticketEmailSent: true, // Indicate that ticket email was attempted

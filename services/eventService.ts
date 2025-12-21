@@ -58,6 +58,7 @@ export interface EventListItem {
   venue_created_at: string;
   venue_updated_at: string;
   games: EventGameListItem[];
+  games_with_slots?: any[]; // Optional property for games with slot details
 }
 
 // Define the event game interface for fetching events

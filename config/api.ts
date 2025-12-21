@@ -1,5 +1,5 @@
-// API Base URL
-export const API_BASE_URL = "https://ai.nibog.in/webhook/v1/nibog";
+// API Base URL - Use environment variable or fallback to production
+export const API_BASE_URL = process.env.BACKEND_URL || "http://localhost:3004";
 
 // Authentication API endpoints
 export const AUTH_API = {
@@ -128,11 +128,12 @@ export const USER_API = {
 
 // Booking API endpoints
 export const BOOKING_API = {
-  CREATE: "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/create", // POST
-  GET_ALL: "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get-all", // GET
-  GET_USER_BOOKINGS: "https://ai.nibog.in/webhook/v1/nibog/user/booking", // POST
-  UPDATE: "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/update", // POST
-  UPDATE_STATUS: "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/update-status", // POST
+  CREATE: `${API_BASE_URL}/api/bookings`, // POST - NEW API structure with nested booking_games
+  CREATE_OLD: `${API_BASE_URL}/bookingsevents/create`, // POST - OLD API (deprecated)
+  GET_ALL: `${API_BASE_URL}/bookingsevents/get-all`, // GET
+  GET_USER_BOOKINGS: `${API_BASE_URL}/user/booking`, // POST
+  UPDATE: `${API_BASE_URL}/bookingsevents/update`, // POST
+  UPDATE_STATUS: `${API_BASE_URL}/bookingsevents/update-status`, // POST
 };
 
 // Promo Code API endpoints

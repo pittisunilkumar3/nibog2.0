@@ -825,11 +825,11 @@ export default function NewEventPage() {
                               <span className="font-medium">Suggested Price:</span>{" "}
                               <span>₹{template.suggestedPrice}</span>
                             </div>
-                            {template.categories && template.categories.length > 0 && (
+                            {template.categories && Array.isArray(template.categories) && template.categories.length > 0 && (
                               <div>
                                 <span className="font-medium">Categories:</span>{" "}
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {template.categories.map((category, idx) => (
+                                  {template.categories.map((category: string, idx: number) => (
                                     <Badge key={idx} variant="secondary">{category}</Badge>
                                   ))}
                                 </div>
