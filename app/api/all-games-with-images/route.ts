@@ -26,11 +26,10 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     const gamesData = data.success && Array.isArray(data.games) ? data.games : (Array.isArray(data) ? data : []);
 
-    // Filter only active games with images (for compatibility with current frontend)
+    // Filter only active games (removed image requirement to show all active games)
     const activeGamesWithImages = gamesData.filter((game: any) =>
       game &&
-      (game.is_active === true || game.is_active === 1) &&
-      game.image_url
+      (game.is_active === true || game.is_active === 1)
     );
 
     // Transform the data for frontend use
@@ -38,6 +37,9 @@ export async function GET(request: NextRequest) {
       let imageUrl = game.image_url;
       if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
         imageUrl = `/api/serve-image/${imageUrl}`;
+      } else if (!imageUrl) {
+        // Use placeholder image if no image is provided
+        imageUrl = '/placeholder-game.jpg';
       }
 
       return {
