@@ -426,11 +426,11 @@ export default function EditEventPage({ params }: Props) {
         id: game.id?.toString() || "",
         name: game.game_name,
         description: game.description || "",
-        minAgeMonths: game.min_age_months || 0,
-        maxAgeMonths: game.max_age_months || 0,
-        durationMinutes: game.duration_minutes,
-        suggestedPrice: game.suggested_price || 799,
-        categories: game.categories || []
+        minAgeMonths: game.min_age || 0,
+        maxAgeMonths: game.max_age || 0,
+        durationMinutes: game.duration_minutes || 90,
+        suggestedPrice: 799,
+        categories: Array.isArray(game.categories) ? game.categories : (game.categories ? [game.categories] : [])
       }))
     : fallbackGameTemplates
 
@@ -1296,7 +1296,7 @@ export default function EditEventPage({ params }: Props) {
                               <div>
                                 <span className="font-medium">Categories:</span>{" "}
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {template.categories.map((category, idx) => (
+                                  {template.categories.map((category: string, idx: number) => (
                                     <Badge key={idx} variant="secondary">{category}</Badge>
                                   ))}
                                 </div>
