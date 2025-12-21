@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
+
 export async function GET() {
   try {
-    console.log("Server API route: Getting testimonials with images from external API");
+    console.log("Server API route: Getting testimonials from backend API");
 
-    // Call the testimonial images API endpoint that returns complete data
-    const response = await fetch('https://ai.nibog.in/webhook/nibog/testmonialimages/get', {
+    // Call the backend API endpoint for testimonials
+    const response = await fetch(`${BACKEND_URL}/api/testimonials?status=Published`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -16,46 +18,52 @@ export async function GET() {
       cache: 'no-store', // Disable caching to get real-time data
     });
 
-    console.log(`External API response status: ${response.status}`);
+    console.log(`Backend API response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('External API error:', errorText);
+      console.error('Backend API error:', errorText);
       return NextResponse.json(
-        { error: `External API returned error status: ${response.status}` },
+        { error: `Backend API returned error status: ${response.status}` },
         { status: response.status }
       );
     }
 
-    const data = await response.json();
-    console.log("Testimonials with images data received:", data);
+    const result = await response.json();
+    console.log("Testimonials data received:", result);
+
+    // Extract data from the response
+    const data = result.success && Array.isArray(result.data) ? result.data : [];
 
     // Transform the data to match our expected format
-    const transformedData = Array.isArray(data) ? data.map(item => ({
-      // Standard testimonial fields (for compatibility)
-      id: item.testimonial_id,
-      name: item.testimonial_name,
-      city: item.city,
+    const transformedData = data.map(item => ({
+      // Standard testimonial fields
+      testimonial_id: item.id,
+      testimonial_name: item.name,
+      city: item.city_name || item.city,
       event_id: item.event_id,
       rating: item.rating,
       testimonial: item.testimonial,
       submitted_at: item.submitted_at,
       status: item.status,
-      // Original API response fields
-      testimonial_id: item.testimonial_id,
-      testimonial_name: item.testimonial_name,
       // Image fields
-      image_id: item.image_id,
-      image_url: item.image_url,
-      image_priority: item.image_priority,
-      image_is_active: item.image_is_active,
-      image_created_at: item.image_created_at,
-      image_updated_at: item.image_updated_at
-    })) : [];
+      image_url: item.image_url || '',
+      image_priority: item.priority || 0,
+      image_is_active: item.is_active === 1 || item.is_active === true,
+      image_created_at: item.created_at,
+      image_updated_at: item.updated_at
+    }));
 
-    return NextResponse.json(transformedData, { status: 200 });
+    console.log(`Transformed ${transformedData.length} testimonials`);
+
+    return NextResponse.json(transformedData, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      }
+    });
   } catch (error: any) {
-    console.error("Server API route: Error getting testimonials with images:", error);
+    console.error("Server API route: Error getting testimonials:", error);
     
     // Handle specific error types
     if (error.name === 'AbortError') {
@@ -73,7 +81,7 @@ export async function GET() {
     }
     
     return NextResponse.json(
-      { error: error.message || "Failed to get testimonials with images" },
+      { error: error.message || "Failed to get testimonials" },
       { status: 500 }
     );
   }

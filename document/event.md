@@ -2,7 +2,7 @@
 
 ## Create Event
 
-**POST** `http://localhost:3004/api/events/create`
+**POST** `/api/create`
 
 Create a new event with event games with slots. Requires employee Bearer token authentication.
 

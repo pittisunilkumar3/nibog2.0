@@ -32,9 +32,10 @@ const AddOnSelector = dynamic(() => import("@/components/add-on-selector"), {
 import { fetchAllAddOnsFromExternalApi } from "@/services/addOnService"
 import type { AddOn } from "@/types"
 import type { AddOn as AddOnType } from "@/types"
-import { getAllCities } from "@/services/cityService"
-import { getEventsByCityId, getGamesByAgeAndEvent, EventListItem, EventGameListItem } from "@/services/eventService"
-import { getGamesByAge, Game } from "@/services/gameService"
+// OLD IMPORTS - No longer using these separate API calls
+// import { getAllCities } from "@/services/cityService"
+// import { getEventsByCityId, getGamesByAgeAndEvent, EventListItem, EventGameListItem } from "@/services/eventService"
+import { Game } from "@/services/gameService"
 import { registerBooking, formatBookingDataForAPI } from "@/services/bookingRegistrationService"
 import { initiatePhonePePayment } from "@/services/paymentService"
 import { getPromoCodesByEventAndGames, validatePromoCodePreview } from "@/services/promoCodeService"
@@ -128,8 +129,69 @@ export default function RegisterEventClientPage() {
   const [discountAmount, setDiscountAmount] = useState<number>(0)
   const [isApplyingPromocode, setIsApplyingPromocode] = useState<boolean>(false)
 
+  // State for booking info data
+  const [bookingInfoData, setBookingInfoData] = useState<any[]>([])
+  const [isLoadingBookingInfo, setIsLoadingBookingInfo] = useState<boolean>(false)
+  const [bookingInfoError, setBookingInfoError] = useState<string | null>(null)
+
   // Get authentication state from auth context
   const { isAuthenticated, user } = useAuth()
+  
+  // Fetch booking info (cities with events, games, and slots)
+  useEffect(() => {
+    async function loadBookingInfo() {
+      setIsLoadingBookingInfo(true);
+      setIsLoadingCities(true);
+      setBookingInfoError(null);
+      setCityError(null);
+      try {
+        console.log('Fetching booking info from API...');
+        const response = await fetch('/api/city/booking-info/list');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking information');
+        }
+        
+        const result = await response.json();
+        console.log('Booking info data:', result);
+        console.log('📊 Data structure check:');
+        if (result.data && result.data.length > 0) {
+          console.log('  - First city:', result.data[0].city_name);
+          console.log('  - Events in first city:', result.data[0].events?.length || 0);
+          if (result.data[0].events && result.data[0].events.length > 0) {
+            console.log('  - First event:', result.data[0].events[0].title);
+            console.log('  - Games in first event:', result.data[0].events[0].games_with_slots?.length || 0);
+            if (result.data[0].events[0].games_with_slots && result.data[0].events[0].games_with_slots.length > 0) {
+              console.log('  - First game:', result.data[0].events[0].games_with_slots[0]);
+            }
+          }
+        }
+        
+        if (result.success && result.data) {
+          setBookingInfoData(result.data);
+          
+          // Extract cities for dropdown
+          const citiesFromData = result.data.map((city: any) => ({
+            id: city.id,
+            name: city.city_name
+          }));
+          setCities(citiesFromData);
+          console.log('Cities extracted:', citiesFromData);
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } catch (error) {
+        console.error('Failed to load booking info:', error);
+        setBookingInfoError('Failed to load booking information. Please try again.');
+        setCityError('Failed to load cities. Please try again.');
+      } finally {
+        setIsLoadingBookingInfo(false);
+        setIsLoadingCities(false);
+      }
+    }
+    
+    loadBookingInfo();
+  }, [])
   
   // Fetch add-ons from external API
   useEffect(() => {
@@ -314,12 +376,74 @@ export default function RegisterEventClientPage() {
       console.log(`Child's age: ${ageInMonths} months`)
       console.log("Formatted DOB for API:", formatDateForAPI(date));
 
-      // If an event is already selected, fetch games for this age
+      // If an event is already selected, filter games by age from booking info
       if (selectedEventType) {
+        console.log('🔍 Searching for games in selectedEventType:', selectedEventType);
+        console.log('📋 Available apiEvents:', apiEvents);
+        
         const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
+        console.log('🎯 Selected API event:', selectedApiEvent);
+        
         if (selectedApiEvent) {
-          fetchGamesByEventAndAge(selectedApiEvent.event_id, ageInMonths);
+          const gamesWithSlots = selectedApiEvent.games_with_slots || [];
+          console.log('🎮 Total games_with_slots available:', gamesWithSlots.length);
+          console.log('🎮 Games data structure:', gamesWithSlots);
+          
+          if (gamesWithSlots.length === 0) {
+            console.warn('⚠️ No games_with_slots found in selected event!');
+            setEligibleGames([]);
+            return;
+          }
+          
+          // Filter games by child age
+          const eligibleGamesForAge = gamesWithSlots.filter((game: any) => {
+            const minAge = game.min_age || 0;
+            const maxAge = game.max_age || 999;
+            const isEligible = ageInMonths >= minAge && ageInMonths <= maxAge;
+            console.log(`  Game "${game.game_name || game.custom_title}" - Age range: ${minAge}-${maxAge}, Child: ${ageInMonths}, Eligible: ${isEligible}`);
+            return isEligible;
+          });
+
+          console.log(`✅ Eligible games after age filter: ${eligibleGamesForAge.length}`);
+
+          // Map games to the format expected by the UI
+          const gamesForUI = eligibleGamesForAge.map((slot: any) => {
+            const mappedGame = {
+              id: slot.slot_id,
+              game_id: slot.game_id,
+              game_name: slot.game_name || slot.custom_title,
+              game_title: slot.game_name || slot.custom_title, // Add game_title for UI compatibility
+              game_description: slot.game_description || slot.custom_description,
+              game_image: slot.game_image,
+              slot_price: slot.price,
+              custom_price: slot.price,
+              start_time: slot.start_time,
+              end_time: slot.end_time,
+              max_participants: slot.max_participants,
+              booked_count: slot.booked_count,
+              available_slots: slot.available_slots,
+              is_available: slot.is_available,
+              min_age: slot.min_age,
+              max_age: slot.max_age,
+              duration_minutes: slot.duration_minutes,
+              game_duration_minutes: slot.duration_minutes, // Add game_duration_minutes for UI compatibility
+              categories: slot.categories,
+              custom_title: slot.custom_title,
+              custom_description: slot.custom_description,
+              note: slot.note
+            };
+            console.log('📌 Mapped game for UI:', mappedGame);
+            return mappedGame;
+          });
+
+          setEligibleGames(gamesForUI);
+          console.log(`✅ Set ${gamesForUI.length} eligible games for age ${ageInMonths} months`);
+          console.log('🎯 Final eligible games:', gamesForUI);
+        } else {
+          console.warn('⚠️ Selected API event not found!');
         }
+      } else {
+        console.log('ℹ️ No event type selected yet');
       }
     } else {
       // Reset age if DOB is cleared
@@ -339,78 +463,18 @@ export default function RegisterEventClientPage() {
     }
   }
 
-  // Fetch events for a specific city - extracted as a separate function for reusability
+  // ==================================================================================
+  // OLD FUNCTION - NO LONGER USED - Using booking-info API instead
+  // This function previously fetched events from a separate API endpoint
+  // Now all data comes from /api/city/booking-info/list in one call
+  // ==================================================================================
+  /*
   const fetchEventsForCity = useCallback(async (cityId: number, cityName: string) => {
-    try {
-      setIsLoadingEvents(true);
-      setEventError(null);
-
-      console.log(`Fetching events for city ID: ${cityId}`);
-      const eventsData = await getEventsByCityId(cityId);
-      console.log("Events data from API:", eventsData);
-
-      setApiEvents(eventsData);
-
-      // No need to filter events by age anymore - games will be fetched separately
-      // when both event and DOB are selected
-
-      // Convert API events to the format expected by the UI for display purposes
-      if (eventsData.length > 0) {
-        const apiEventsMapped = eventsData.map(event => {
-          const eventAny = event as any;
-          const venueValue = event.venue_name ||
-                           eventAny.venue ||
-                           eventAny.location ||
-                           eventAny.address ||
-                           eventAny.place ||
-                           eventAny.site ||
-                           eventAny.event_venue ||
-                           "Venue TBD";
-
-          console.log(`Event ${event.event_id}: venue_name="${event.venue_name}", final venue="${venueValue}"`);
-
-          return {
-            id: event.event_id.toString(),
-            title: event.event_title,
-            description: event.event_description,
-            minAgeMonths: 5, // Default min age if not specified in API data
-            maxAgeMonths: 84, // Default max age if not specified in API data
-            date: event.event_date.split('T')[0], // Format the date
-            time: "9:00 AM - 8:00 PM", // Default time
-            venue: venueValue,
-            city: event.city_name || cityName,
-            price: 1800, // Default price
-            image: "/images/baby-crawling.jpg" // Default image
-          };
-        });
-
-        // Set all events as eligible without age filtering
-        setEligibleEvents(apiEventsMapped);
-
-        // Get unique dates for this city from API events
-        const dates = apiEventsMapped.map(event => new Date(event.date));
-        const uniqueDates = Array.from(new Set(dates.map(date => date.toISOString())))
-          .map(dateStr => new Date(dateStr));
-        setAvailableDates(uniqueDates);
-
-        // Set event date to the first available date
-        if (uniqueDates.length > 0) {
-          setEventDate(uniqueDates[0]);
-        }
-      }
-    } catch (error: any) {
-      console.error(`Failed to fetch events for city ID ${cityId}:`, error);
-      setEventError("Failed to load events. Please try again.");
-
-      // Clear events on error
-      setEligibleEvents([]);
-      setAvailableDates([]);
-    } finally {
-      setIsLoadingEvents(false);
-    }
+    // ... old implementation removed ...
   }, []);
+  */
 
-  // Handle city change and fetch events for the selected city
+  // Handle city change using booking info data
   const handleCityChange = async (city: string) => {
     setSelectedCity(city)
     setSelectedEventType("") // Reset event type when city changes
@@ -419,18 +483,71 @@ export default function RegisterEventClientPage() {
     setEligibleGames([]) // Reset eligible games
     setSelectedGames([]) // Reset selected games
 
-    // Find city ID from the cities list
-    const cityObj = cities.find(c => c.name === city)
-    if (!cityObj) return
+    // Find city from booking info data
+    const cityData = bookingInfoData.find(c => c.city_name === city);
+    if (!cityData) {
+      console.log('City not found in booking info data');
+      return;
+    }
 
-    const cityId = Number(cityObj.id)
-    setSelectedCityId(cityId);
+    setSelectedCityId(cityData.id);
+    console.log('🏙️ Selected city:', cityData.city_name);
+    console.log('📊 City has', cityData.total_events, 'events');
+    console.log('📋 Full city data:', cityData);
 
-    // Fetch events for the selected city
-    await fetchEventsForCity(cityId, city);
+    // Extract events from booking info data
+    if (cityData.events && cityData.events.length > 0) {
+      console.log('✅ Processing', cityData.events.length, 'events from booking info');
+      // Map events to API events format for compatibility
+      const eventsFromBookingInfo = cityData.events.map((event: any) => ({
+        event_id: event.id,
+        event_title: event.title,
+        event_description: event.description,
+        event_date: event.event_date,
+        city_id: event.city_id,
+        city_name: cityData.city_name,
+        venue_name: event.venue_name,
+        venue_address: event.venue_address,
+        venue_capacity: event.venue_capacity,
+        games_with_slots: event.games_with_slots || []
+      }));
+
+      setApiEvents(eventsFromBookingInfo);
+
+      // Set eligible events for display
+      const eligibleEventsMapped = eventsFromBookingInfo.map((event: any) => ({
+        id: event.event_id.toString(),
+        title: event.event_title,
+        description: event.event_description,
+        minAgeMonths: 5,
+        maxAgeMonths: 84,
+        date: event.event_date.split('T')[0],
+        time: "9:00 AM - 8:00 PM",
+        venue: event.venue_name || "Venue TBD",
+        city: cityData.city_name,
+        price: 1800,
+        image: "/images/baby-crawling.jpg"
+      }));
+
+      setEligibleEvents(eligibleEventsMapped);
+
+      // Get unique dates
+      const dates = eligibleEventsMapped.map((event: any) => new Date(event.date));
+      const uniqueDates = Array.from(new Set(dates.map(date => date.toISOString())))
+        .map(dateStr => new Date(dateStr));
+      setAvailableDates(uniqueDates);
+
+      if (uniqueDates.length > 0) {
+        setEventDate(uniqueDates[0]);
+      }
+    } else {
+      setApiEvents([]);
+      setEligibleEvents([]);
+      setAvailableDates([]);
+    }
   }
 
-  // Handle event type change
+  // Handle event type change using booking info data
   const handleEventTypeChange = async (eventType: string) => {
     setSelectedEventType(eventType)
     setSelectedEvent("") // Reset selected event when event type changes
@@ -447,55 +564,24 @@ export default function RegisterEventClientPage() {
     const selectedApiEvent = apiEvents.find(event => event.event_title === eventType);
 
     if (selectedApiEvent) {
-      // Try to get proper venue information using the event details API
-      try {
-        console.log(`Fetching detailed event information for event ID: ${selectedApiEvent.event_id}`);
-        const eventWithVenue = await getEventWithVenueDetails(selectedApiEvent.event_id);
+      console.log("🎯 Selected event:", selectedApiEvent);
+      console.log("🎮 Event has games_with_slots:", selectedApiEvent.games_with_slots?.length || 0, "games");
 
-        if (eventWithVenue && eventWithVenue.venue && eventWithVenue.venue.venue_name) {
-          console.log(`Successfully fetched venue: ${eventWithVenue.venue.venue_name}`);
-          // Update the selectedApiEvent with proper venue information
-          selectedApiEvent.venue_name = eventWithVenue.venue.venue_name;
-          selectedApiEvent.venue_address = eventWithVenue.venue.address;
-        }
-      } catch (error) {
-        console.error('Error fetching detailed venue information:', error);
-        // Continue with existing venue data
-      }
-    }
-
-    if (selectedApiEvent) {
-      console.log("Selected event:", selectedApiEvent);
-
-      // Create a mock event from the API event data to maintain compatibility with the rest of the form
-      // Try multiple possible venue field names
-      const selectedApiEventAny = selectedApiEvent as any;
-      const venueValue = selectedApiEvent.venue_name ||
-                       selectedApiEventAny.venue ||
-                       selectedApiEventAny.location ||
-                       selectedApiEventAny.address ||
-                       selectedApiEventAny.place ||
-                       selectedApiEventAny.site ||
-                       selectedApiEventAny.event_venue ||
-                       "Venue TBD";
-
-      console.log(`Mock event for ${selectedApiEvent.event_id}: venue="${venueValue}"`);
-
+      // Create event object for display
       const mockEvent = {
         id: selectedApiEvent.event_id.toString(),
         title: selectedApiEvent.event_title,
         description: selectedApiEvent.event_description,
-        minAgeMonths: 5, // Default values since API might not have these
-        maxAgeMonths: 84, // Default values since API might not have these
-        date: selectedApiEvent.event_date.split('T')[0], // Format the date
-        time: "9:00 AM - 8:00 PM", // Default time
-        venue: venueValue,
+        minAgeMonths: 5,
+        maxAgeMonths: 84,
+        date: selectedApiEvent.event_date.split('T')[0],
+        time: "9:00 AM - 8:00 PM",
+        venue: selectedApiEvent.venue_name || "Venue TBD",
         city: selectedApiEvent.city_name,
-        price: 1800, // Default price
-        image: "/images/baby-crawling.jpg", // Default image
+        price: 1800,
+        image: "/images/baby-crawling.jpg",
       };
 
-      // Set this as the only eligible event
       setEligibleEvents([mockEvent]);
       setSelectedEvent(mockEvent.id);
 
@@ -504,154 +590,86 @@ export default function RegisterEventClientPage() {
         const eventDate = new Date(selectedApiEvent.event_date);
         setEventDate(eventDate);
         setAvailableDates([eventDate]);
+      }
 
-        // If DOB is set, use the already calculated age (based on current date)
-        if (dob && childAgeMonths !== null) {
-          // Fetch games for this event and child age
-          fetchGamesByEventAndAge(selectedApiEvent.event_id, childAgeMonths);
+      // If DOB is set, filter games by age
+      if (dob && childAgeMonths !== null) {
+        console.log('🎂 DOB is set, filtering games for age:', childAgeMonths);
+        console.log('📋 Selected API event has games_with_slots:', selectedApiEvent.games_with_slots);
+        
+        // Get games from booking info data
+        const gamesWithSlots = selectedApiEvent.games_with_slots || [];
+        console.log('🎮 Total games available in event:', gamesWithSlots.length);
+        
+        if (gamesWithSlots.length === 0) {
+          console.warn('⚠️ No games found in selected event!');
+          setEligibleGames([]);
+          return;
         }
+        
+        // Filter games by child age
+        const eligibleGamesForAge = gamesWithSlots.filter((game: any) => {
+          const minAge = game.min_age || 0;
+          const maxAge = game.max_age || 999;
+          const isEligible = childAgeMonths >= minAge && childAgeMonths <= maxAge;
+          console.log(`  🎯 Game "${game.game_name || game.custom_title}" - Age: ${minAge}-${maxAge}, Child: ${childAgeMonths}, Match: ${isEligible}`);
+          return isEligible;
+        });
+
+        console.log(`✅ ${eligibleGamesForAge.length} games match age criteria`);
+
+        // Map games to the format expected by the UI
+        const gamesForUI = eligibleGamesForAge.map((slot: any) => {
+          const mappedGame = {
+            id: slot.slot_id,
+            game_id: slot.game_id,
+            game_name: slot.game_name || slot.custom_title,
+            game_title: slot.game_name || slot.custom_title, // Add game_title for UI compatibility
+            game_description: slot.game_description || slot.custom_description,
+            game_image: slot.game_image,
+            slot_price: slot.price,
+            custom_price: slot.price,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            max_participants: slot.max_participants,
+            booked_count: slot.booked_count,
+            available_slots: slot.available_slots,
+            is_available: slot.is_available,
+            min_age: slot.min_age,
+            max_age: slot.max_age,
+            duration_minutes: slot.duration_minutes,
+            game_duration_minutes: slot.duration_minutes, // Add game_duration_minutes for UI compatibility
+            categories: slot.categories,
+            custom_title: slot.custom_title,
+            custom_description: slot.custom_description,
+            note: slot.note
+          };
+          console.log('  📌 Mapped game:', mappedGame.game_name, 'Slot:', mappedGame.start_time, '-', mappedGame.end_time);
+          return mappedGame;
+        });
+
+        setEligibleGames(gamesForUI);
+        console.log(`✅ Set ${gamesForUI.length} eligible games in state`);
+        console.log('🎯 Complete eligible games list:', gamesForUI);
+      } else {
+        console.log('ℹ️ DOB or childAgeMonths not set yet');
       }
     } else {
-      // If no matching event found, clear eligible events
       setEligibleEvents([]);
     }
   }
   
-  // Fetch games based on event ID and child age
+  // ==================================================================================
+  // OLD FUNCTION - NO LONGER USED - Using booking-info API instead
+  // This function previously fetched games from a separate API endpoint by age
+  // Now all game data with age restrictions comes from /api/city/booking-info/list
+  // Games are filtered client-side based on child's age from the booking-info data
+  // ==================================================================================
+  /*
   const fetchGamesByEventAndAge = async (eventId: number, childAge: number) => {
-    if (!eventId || childAge === null) return;
-
-    setIsLoadingGames(true);
-    setGameError("");
-
-    try {
-      console.log(`Fetching games for event ID: ${eventId} and child age: ${childAge} months`);
-
-      // Call the new API to get games by age and event
-      const gamesData = await getGamesByAgeAndEvent(eventId, childAge);
-
-      if (gamesData && gamesData.length > 0) {
-        console.log(`Found ${gamesData.length} games for event ${eventId} and age ${childAge} months`);
-        console.log('Game data from API:', gamesData);
-
-        // Update event details with correct date and venue from the games API response
-        const firstGame = gamesData[0];
-        if (firstGame && firstGame.event_date) {
-          console.log('Updating event details with correct date and venue from games API');
-          console.log('Event date from games API (corrected):', firstGame.event_date);
-
-          // Try multiple possible venue field names from games API
-          const firstGameAny = firstGame as any;
-          const gameVenueValue = firstGameAny.venue_name ||
-                               firstGameAny.venue ||
-                               firstGameAny.location ||
-                               firstGameAny.address ||
-                               firstGameAny.place ||
-                               firstGameAny.site ||
-                               firstGameAny.event_venue ||
-                               "Venue TBD";
-
-          console.log(`Games API venue for event ${eventId}: "${gameVenueValue}"`);
-
-          // Find the current selected event from API events
-          const currentSelectedApiEvent = apiEvents.find(event => event.event_id === eventId);
-          
-          // Update the event details with correct date and venue
-          if (selectedEvent && currentSelectedApiEvent) {
-            const currentSelectedApiEventAny = currentSelectedApiEvent as any;
-            
-            // Use venue from games API if available, otherwise fall back to original event venue
-            const finalVenueValue = gameVenueValue ||
-                                  currentSelectedApiEvent.venue_name ||
-                                  currentSelectedApiEventAny.venue ||
-                                  currentSelectedApiEventAny.location ||
-                                  currentSelectedApiEventAny.address ||
-                                  currentSelectedApiEventAny.place ||
-                                  currentSelectedApiEventAny.site ||
-                                  currentSelectedApiEventAny.event_venue ||
-                                  "Venue TBD";
-
-            console.log(`Final venue for updated event ${eventId}: "${finalVenueValue}"`);
-
-            // Parse the date from the games API response
-            const correctDate = firstGame.event_date.split('T')[0]; // Get just the date part
-            const [year, month, day] = correctDate.split('-').map(Number);
-
-            const updatedEvent = {
-              id: currentSelectedApiEvent.event_id.toString(),
-              title: currentSelectedApiEvent.event_title,
-              description: currentSelectedApiEvent.event_description,
-              minAgeMonths: 5,
-              maxAgeMonths: 84,
-              date: correctDate, // Use the correct date from games API (already in correct timezone)
-              time: "9:00 AM - 8:00 PM",
-              venue: finalVenueValue, // Use the best available venue information
-              city: currentSelectedApiEvent.city_name,
-              price: 1800,
-              image: "/images/baby-crawling.jpg",
-            };
-
-            // Update eligible events with the corrected information
-            setEligibleEvents([updatedEvent]);
-
-            // Create Date object using local timezone (month is 0-indexed in JavaScript)
-            const correctEventDate = new Date(year, month - 1, day);
-            console.log('Created Date object:', correctEventDate);
-            console.log('Date will display as:', correctEventDate.toDateString());
-            setEventDate(correctEventDate);
-            setAvailableDates([correctEventDate]);
-
-            console.log('Updated event details:', updatedEvent);
-          }
-        }
-
-        // Format games to match the Game interface structure, using new API data format
-        // The new API groups slots under each game, so we need to create separate entries for each slot
-        const formattedGames: Game[] = [];
-        
-        gamesData.forEach((game: any) => {
-          // Each game now has a slots array
-          if (game.slots && Array.isArray(game.slots)) {
-            game.slots.forEach((slot: any) => {
-              formattedGames.push({
-                id: Number(slot.slot_id || 0), // Use slot_id as unique identifier for selection
-                game_id: Number(game.game_id || 0), // Store actual game_id for API calls
-                game_title: game.title || '',
-                game_description: game.description || '',
-                min_age: game.min_age || 0,
-                max_age: game.max_age || 0,
-                game_duration_minutes: game.duration_minutes || 0,
-                categories: [],
-                custom_price: game.listed_price || 0,
-                slot_price: slot.slot_price || 0,
-                start_time: slot.start_time || '',
-                end_time: slot.end_time || '',
-                custom_title: game.title || '',
-                custom_description: game.description || '',
-                max_participants: slot.max_participants || 0,
-                // Store slot_id separately for reference
-                slot_id: Number(slot.slot_id || 0),
-                // Handle the new note field from slot
-                note: slot.note || null
-              });
-            });
-          }
-        });
-
-        // Set the formatted games (this is separate from eligibleEvents which contains event details)
-        setEligibleGames(formattedGames);
-      } else {
-        console.log(`No games found for event ${eventId} and age ${childAge} months`);
-        setEligibleGames([]);
-      }
-    } catch (error) {
-      console.error('Error fetching games:', error);
-      setGameError("Failed to load games. Please try again.");
-      setEligibleGames([]);
-    } finally {
-      setIsLoadingGames(false);
-    }
+    // ... old implementation removed ...
   }
+  */
 
   // Handle game selection with slot selection - SINGLE SELECTION ONLY
   const handleGameSelection = (slotId: number) => {
@@ -1269,52 +1287,26 @@ export default function RegisterEventClientPage() {
     }
   }
 
-  // Fetch cities from API - extracted as a separate function for reusability
+  // ==================================================================================
+  // OLD FUNCTION - NO LONGER USED - Using booking-info API instead
+  // Previously fetched cities from separate /api/city/list endpoint
+  // Now all cities come from /api/city/booking-info/list loaded in the loadBookingInfo useEffect
+  // ==================================================================================
+  /*
   const fetchCitiesData = useCallback(async () => {
-    try {
-      setIsLoadingCities(true)
-      setCityError(null)
-
-      console.log("Fetching cities from API...")
-      const citiesData = await getAllCities()
-
-      console.log("Cities data from API:", citiesData)
-
-      // Map the API response to the format expected by the dropdown
-      const formattedCities = citiesData.map(city => ({
-        id: city.id || 0,
-        name: city.city_name
-      }))
-
-      console.log("Formatted cities for dropdown:", formattedCities)
-      setCities(formattedCities)
-    } catch (error: any) {
-      console.error("Failed to fetch cities:", error)
-      setCityError("Failed to load cities. Please try again.")
-    } finally {
-      setIsLoadingCities(false)
-    }
+    // ... old implementation removed ...
   }, [])
+  */
 
-  // Fetch cities from API when component mounts
+  // ==================================================================================
+  // OLD useEffect - NO LONGER USED - Cities loaded via booking-info API
+  // The loadBookingInfo useEffect at the top of the component now handles fetching cities
+  // ==================================================================================
+  /*
   useEffect(() => {
-    let isMounted = true; // Track if component is still mounted
-
-    const fetchCities = async () => {
-      // Only update state if component is still mounted
-      if (!isMounted) return;
-
-      await fetchCitiesData()
-    }
-
-    // Start fetching immediately
-    fetchCities()
-
-    // Cleanup function to prevent state updates on unmounted component
-    return () => {
-      isMounted = false
-    }
-  }, [fetchCitiesData]) // Depend on fetchCitiesData
+    // ... old implementation removed ...
+  }, [fetchCitiesData])
+  */
 
   // Log authentication state for debugging
   useEffect(() => {
@@ -1453,7 +1445,7 @@ export default function RegisterEventClientPage() {
     }
   }, [cities])
 
-  // --- Wait for apiEvents to load, then trigger fetchGamesByEventAndAge if needed ---
+  // --- Wait for apiEvents to load, then filter games from booking info if needed ---
   useEffect(() => {
     const restoredEventType = sessionStorage.getItem('nibog_restored_eventType')
     const restoredChildAgeMonths = sessionStorage.getItem('nibog_restored_childAgeMonths')
@@ -1462,9 +1454,49 @@ export default function RegisterEventClientPage() {
       restoredChildAgeMonths &&
       apiEvents.length > 0
     ) {
+      console.log('🔄 Restoring session: Event:', restoredEventType, 'Age:', restoredChildAgeMonths);
       const selectedApiEvent = apiEvents.find(event => event.event_title === restoredEventType)
-      if (selectedApiEvent) {
-        fetchGamesByEventAndAge(selectedApiEvent.event_id, Number(restoredChildAgeMonths))
+      if (selectedApiEvent && selectedApiEvent.games_with_slots) {
+        console.log('✅ Found event in session restore, filtering games from booking info');
+        const childAge = Number(restoredChildAgeMonths);
+        
+        // Filter games by child age from booking info data
+        const gamesWithSlots = selectedApiEvent.games_with_slots || [];
+        const eligibleGamesForAge = gamesWithSlots.filter((game: any) => {
+          const minAge = game.min_age || 0;
+          const maxAge = game.max_age || 999;
+          return childAge >= minAge && childAge <= maxAge;
+        });
+
+        // Map games to the format expected by the UI
+        const gamesForUI = eligibleGamesForAge.map((slot: any) => ({
+          id: slot.slot_id,
+          game_id: slot.game_id,
+          game_name: slot.game_name || slot.custom_title,
+          game_title: slot.game_name || slot.custom_title,
+          game_description: slot.game_description || slot.custom_description,
+          game_image: slot.game_image,
+          slot_price: slot.price,
+          custom_price: slot.price,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          max_participants: slot.max_participants,
+          booked_count: slot.booked_count,
+          available_slots: slot.available_slots,
+          is_available: slot.is_available,
+          min_age: slot.min_age,
+          max_age: slot.max_age,
+          duration_minutes: slot.duration_minutes,
+          game_duration_minutes: slot.duration_minutes,
+          categories: slot.categories,
+          custom_title: slot.custom_title,
+          custom_description: slot.custom_description,
+          note: slot.note
+        }));
+
+        setEligibleGames(gamesForUI);
+        console.log(`✅ Restored ${gamesForUI.length} games from session`);
+        
         sessionStorage.removeItem('nibog_restored_eventType')
         sessionStorage.removeItem('nibog_restored_childAgeMonths')
       }
@@ -1673,27 +1705,27 @@ export default function RegisterEventClientPage() {
                       <span>City</span>
                       <span className="text-xs text-primary/70">(Required)</span>
                     </Label>
-                    {isLoadingCities ? (
+                    {isLoadingCities || isLoadingBookingInfo ? (
                       <div className="flex h-10 items-center rounded-md border border-input px-3 py-2 text-sm">
                         <div className="animate-spin mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                        <span className="text-muted-foreground">Loading cities...</span>
+                        <span className="text-muted-foreground">Loading booking information...</span>
                       </div>
-                    ) : cityError ? (
+                    ) : cityError || bookingInfoError ? (
                       <div className="flex flex-col gap-2">
                         <div className="flex h-10 items-center rounded-md border border-destructive px-3 py-2 text-sm text-destructive">
-                          {cityError}
+                          {cityError || bookingInfoError}
                         </div>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={fetchCitiesData}
+                          onClick={() => window.location.reload()}
                           className="w-full sm:w-auto"
                         >
                           <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
-                          Retry Loading Cities
+                          Reload Page
                         </Button>
                       </div>
                     ) : (
@@ -1741,9 +1773,8 @@ export default function RegisterEventClientPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              if (selectedCityId) {
-                                fetchEventsForCity(selectedCityId, selectedCity);
-                              }
+                              // Reload the page to re-fetch booking info
+                              window.location.reload();
                             }}
                             className="w-full sm:w-auto"
                           >
@@ -2059,10 +2090,10 @@ export default function RegisterEventClientPage() {
                       Please select exactly one game and time slot for your registration. You can only register for one game per booking.
                     </p>
                     
-                    {isLoadingGames ? (
+                    {isLoadingGames || isLoadingBookingInfo ? (
                       <div className="flex items-center justify-center p-8 bg-gradient-to-r from-skyblue-50 via-coral-50 to-mint-50 rounded-3xl border-2 border-skyblue-200 shadow-lg">
                         <Loader2 className="h-8 w-8 animate-spin text-skyblue-600" />
-                        <span className="ml-3 text-base font-semibold text-neutral-charcoal">🎮 Loading games...</span>
+                        <span className="ml-3 text-base font-semibold text-neutral-charcoal">🎮 Loading available games and time slots...</span>
                       </div>
                     ) : gameError ? (
                       <div className="rounded-3xl bg-gradient-to-r from-coral-50 to-skyblue-50 p-6 dark:from-coral-950/50 dark:to-skyblue-950/50 border-2 border-coral-200 dark:border-coral-800 shadow-2xl">
@@ -2172,6 +2203,9 @@ export default function RegisterEventClientPage() {
                                   <div className="grid gap-2">
                                     {slots.map((slot) => {
                                       const isSelected = selectedSlotForGame?.slotId === slot.id;
+                                      const availableSlots = slot.available_slots ?? (slot.max_participants - (slot.booked_count || 0));
+                                      const isAvailable = slot.is_available ?? (availableSlots > 0);
+                                      
                                       return (
                                         <div
                                           key={slot.id}
@@ -2179,30 +2213,37 @@ export default function RegisterEventClientPage() {
                                             "flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all duration-200 touch-manipulation min-h-[60px] sm:min-h-[auto]",
                                             isSelected
                                               ? "border-primary bg-primary/10 shadow-md"
-                                              : slot.max_participants <= 0
+                                              : !isAvailable
                                                 ? "border-muted bg-gray-100 dark:bg-gray-800 opacity-70"
                                                 : "border-muted hover:border-primary/30 hover:bg-primary/5 cursor-pointer"
                                           )}
-                                          onClick={() => slot.max_participants > 0 && handleGameSelection(slot.id)}
+                                          onClick={() => isAvailable && handleGameSelection(slot.id)}
                                         >
                                           <div className="flex items-center space-x-3">
                                             <input
                                               type="radio"
                                               name="game-slot-selection"
                                               checked={isSelected}
-                                              onChange={() => slot.max_participants > 0 && handleGameSelection(slot.id)}
-                                              disabled={slot.max_participants <= 0}
-                                              className={`${slot.max_participants <= 0 ? 'opacity-50 cursor-not-allowed' : 'text-primary focus:ring-primary'}`}
+                                              onChange={() => isAvailable && handleGameSelection(slot.id)}
+                                              disabled={!isAvailable}
+                                              className={`${!isAvailable ? 'opacity-50 cursor-not-allowed' : 'text-primary focus:ring-primary'}`}
                                             />
                                             <div>
                                               <div className="font-medium text-sm">
                                                 {slot.start_time} - {slot.end_time}
                                               </div>
-                                              <div className={`text-xs ${slot.max_participants <= 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                                                {slot.max_participants <= 0 
-                                                  ? 'Max participants reached' 
-                                                  : `Max ${slot.max_participants} participants`
-                                                }
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <div className={`text-xs ${!isAvailable ? 'text-destructive font-medium' : availableSlots <= 3 ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-muted-foreground'}`}>
+                                                  {!isAvailable 
+                                                    ? '🔴 Fully Booked' 
+                                                    : `✅ ${availableSlots}/${slot.max_participants} slots available`
+                                                  }
+                                                </div>
+                                                {isAvailable && availableSlots <= 3 && (
+                                                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold dark:bg-orange-900 dark:text-orange-300">
+                                                    ⚡ Filling Fast
+                                                  </span>
+                                                )}
                                               </div>
                                               {slot.note && (
                                                 <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">

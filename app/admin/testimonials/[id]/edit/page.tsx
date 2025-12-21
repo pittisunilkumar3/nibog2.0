@@ -349,17 +349,30 @@ export default function EditTestimonialPage({ params }: Props) {
       }
 
       // Prepare update data
-      const updateData = {
+      const updateData: any = {
         id: parseInt(testimonialId),
         name,
         city_id: selectedCityId,
         event_id: parseInt(event),
         rating: parseInt(rating),
         testimonial: testimonialText,
-        date: date || new Date().toISOString().split('T')[0],
+        submitted_at: date || new Date().toISOString().split('T')[0],
         status: status.charAt(0).toUpperCase() + status.slice(1), // Capitalize first letter
         priority: priority,
-        is_active: true
+        is_active: 1
+      }
+
+      // Include image_url if a new image was uploaded or if there's an existing image
+      if (uploadedImagePath) {
+        // Extract just the filename from the path (e.g., "testimonial_1766294157627_3470.jpg")
+        const imageFilename = uploadedImagePath.split('/').pop() || uploadedImagePath
+        updateData.image_url = imageFilename
+        console.log('Including new uploaded image in update:', imageFilename)
+      } else if (existingImageUrl) {
+        // Keep the existing image URL
+        const imageFilename = existingImageUrl.split('/').pop() || existingImageUrl
+        updateData.image_url = imageFilename
+        console.log('Keeping existing image in update:', imageFilename)
       }
 
       console.log('Submitting update with data:', updateData)
@@ -399,49 +412,7 @@ export default function EditTestimonialPage({ params }: Props) {
         throw new Error(parsedData.message || `Failed to update testimonial (Status: ${response.status})`);
       }
 
-      // Always call the testimonial images API to update priority and image
-      // This ensures priority is updated even if no new image is uploaded
-      console.log('Calling testimonial images API for testimonial ID:', testimonialId)
-
-      const imageData = {
-        testimonial_id: parseInt(testimonialId),
-        image_url: uploadedImagePath || "https://example.com/default-testimonial-image.jpg", // Use uploaded image, existing image, or default
-        priority: priority,
-        is_active: true
-      }
-
-      console.log('Submitting image data:', imageData)
-
-      try {
-        const imageResponse = await fetch('/api/testimonials/images/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(imageData)
-        })
-
-        if (!imageResponse.ok) {
-          const errorText = await imageResponse.text()
-          console.error('Image API error response:', errorText)
-          throw new Error(`Failed to update testimonial image: ${errorText}`)
-        }
-
-        const imageResult = await imageResponse.json()
-        console.log('Image API response:', imageResult)
-
-        // Handle array response
-        if (Array.isArray(imageResult) && imageResult.length > 0) {
-          console.log('Image associated successfully with ID:', imageResult[0].id)
-        } else {
-          console.log('Image API response (non-array):', imageResult)
-        }
-
-      } catch (imageError) {
-        console.error('Error calling testimonial images API:', imageError)
-        // Don't throw here - testimonial was updated successfully, just log the image error
-        setError('Testimonial updated but failed to associate image. Please try uploading the image again.')
-      }
+      console.log('Testimonial updated successfully:', parsedData)
 
       setIsLoading(false)
       setIsSaved(true)

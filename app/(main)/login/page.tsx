@@ -90,6 +90,7 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState("")
   const [error, setError] = useState("")
 
   // Get the callback URL from the query parameters
@@ -108,12 +109,14 @@ function LoginContent() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setLoadingMessage("Authenticating...")
     setError("")
 
     // Validate form
     if (!email || !password) {
       setError("Please enter both email and password")
       setIsLoading(false)
+      setLoadingMessage("")
       return
     }
 
@@ -135,6 +138,8 @@ function LoginContent() {
       }
 
       console.log('Sending login request with:', { email, device_info: deviceInfo });
+      
+      setLoadingMessage("Verifying credentials...")
       
       // Call our API route
       const response = await fetch('/api/auth/login', {
@@ -209,8 +214,13 @@ function LoginContent() {
         description: "Welcome back " + userData.full_name,
       });
 
+      setLoadingMessage("Redirecting to dashboard...")
+
       // Store user data in auth context
       login(userDataForStorage, token);
+
+      // Small delay to show the redirect message
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Redirect to the callback URL or return URL after successful login
       router.push(callbackUrl || returnUrl);
@@ -218,6 +228,7 @@ function LoginContent() {
 
     } catch (error: any) {
       setError(error.message || 'An error occurred during login')
+      setLoadingMessage("")
     } finally {
       setIsLoading(false)
     }
@@ -237,6 +248,30 @@ function LoginContent() {
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 dark:from-blue-800/70 dark:via-purple-800/70 dark:to-pink-800/70 py-0 md:py-8 px-0 md:px-4">
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-2xl max-w-sm w-full mx-4 border-2 border-pink-300 dark:border-pink-700">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-500"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  <div className="animate-pulse text-2xl">🚀</div>
+                </div>
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                  Please Wait
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 animate-pulse">
+                  {loadingMessage || "Processing..."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Add animated shapes in the background - visible only on mobile */}
       <div className="absolute inset-0 overflow-hidden -z-10 opacity-20 md:hidden pointer-events-none">
         <div className="animate-float absolute top-1/4 left-1/5 w-24 h-24 rounded-full bg-yellow-200 dark:bg-yellow-400"></div>
@@ -288,7 +323,8 @@ function LoginContent() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all"
+                    disabled={isLoading}
+                    className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 
@@ -306,12 +342,14 @@ function LoginContent() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all pr-10"
+                      disabled={isLoading}
+                      className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                      disabled={isLoading}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -324,7 +362,8 @@ function LoginContent() {
                     id="remember"
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    className="data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
+                    disabled={isLoading}
+                    className="data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <Label
                     htmlFor="remember"
