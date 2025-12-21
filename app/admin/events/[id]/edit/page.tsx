@@ -646,17 +646,11 @@ export default function EditEventPage({ params }: Props) {
         isActive: isActive,
         games: selectedGames,
         cityId: cityId,
-        imagePath: eventImage,
+        imagePath: null, // Don't set image path yet, will update after upload
         imagePriority: imagePriority
       }
 
       console.log("Form data for update:", formData)
-
-      // Log uploaded image path and priority if available
-      if (eventImage) {
-        console.log("Event image uploaded successfully:", eventImage)
-        console.log("Event priority:", imagePriority)
-      }
 
       // Format the data for the API
       const apiData = formatEventDataForUpdate(Number(eventId), formData)
@@ -676,13 +670,38 @@ export default function EditEventPage({ params }: Props) {
           const uploadResult = await uploadEventImage(eventImageFile)
           console.log("✅ Event image uploaded:", uploadResult)
 
-          // Check if there are existing images to update or if we need to create new
+          // Extract just the filename from the path
+          const imageFilename = uploadResult.filename || uploadResult.path.split('/').pop()
+          console.log("📁 Extracted filename:", imageFilename)
+
+          // Update the event again with the image_url
+          const updateDataWithImage = {
+            title: eventTitle,
+            description: eventDescription,
+            venueId: selectedVenue,
+            date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
+            status: eventStatus,
+            isActive: isActive,
+            games: selectedGames,
+            cityId: cityId,
+            imagePath: imageFilename, // Now set the correct uploaded filename
+            imagePriority: imagePriority
+          }
+
+          const apiDataWithImage = formatEventDataForUpdate(Number(eventId), updateDataWithImage)
+          apiDataWithImage.id = Number(eventId)
+
+          console.log("Updating event with image filename:", apiDataWithImage)
+          const updatedEventWithImage = await updateEvent(apiDataWithImage)
+          console.log("✅ Event updated with image filename successfully:", updatedEventWithImage)
+
+          // Check if there are existing images to delete old files
           if (existingImages.length > 0) {
-            console.log("🔄 Updating existing event image with new file...")
+            console.log("🗑️ Deleting old event image files...")
 
             // Delete old image files from filesystem
             for (const existingImage of existingImages) {
-              if (existingImage.image_url) {
+              if (existingImage.image_url && existingImage.image_url !== imageFilename) {
                 try {
                   // Call API to delete the old file
                   await fetch('/api/files/delete', {
@@ -696,25 +715,6 @@ export default function EditEventPage({ params }: Props) {
                 }
               }
             }
-
-            // Update the image record with new file
-            const updateResult = await updateEventImage(
-              Number(eventId),
-              uploadResult.path,
-              parseInt(imagePriority),
-              true
-            )
-            console.log("✅ Event image update result:", updateResult)
-          } else {
-            console.log("➕ Creating new event image...")
-            // Create new image record
-            const webhookResult = await sendEventImageToWebhook(
-              Number(eventId),
-              uploadResult.path,
-              parseInt(imagePriority),
-              true
-            )
-            console.log("✅ Event image webhook result:", webhookResult)
           }
 
           toast({

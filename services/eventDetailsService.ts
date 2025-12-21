@@ -30,6 +30,36 @@ export interface EventDetailsWithImage {
 }
 
 /**
+ * Fetch events from the backend API /api/events/list
+ * @returns Promise with array of events from backend
+ */
+export async function getEventsFromBackend(): Promise<any[]> {
+  try {
+    console.log("Fetching events from backend API /api/events/list...");
+
+    const response = await fetch('/api/events/list', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch events from backend: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log(`Successfully fetched ${Array.isArray(data) ? data.length : 'unknown'} events from backend`);
+
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Error fetching events from backend:', error);
+    throw error;
+  }
+}
+
+/**
  * Fetch events with images from the new API endpoint
  * @returns Promise with array of event details including images
  */
@@ -154,15 +184,119 @@ export function transformEventDetailsToListItems(eventDetails: EventDetailsWithI
 }
 
 /**
+ * Transform backend event data to EventListItem format
+ * @param events Array of events from backend /api/events/list
+ * @returns Array of EventListItem objects
+ */
+export function transformBackendEventsToListItems(events: any[]): EventListItem[] {
+  return events.map((event) => {
+    // Extract time range from event_games_with_slots
+    const slots = event.event_games_with_slots || [];
+    let timeRange = "9:00 AM - 8:00 PM"; // Default
+    
+    if (slots.length > 0) {
+      const startTimes = slots.map((s: any) => s.start_time).filter(Boolean);
+      const endTimes = slots.map((s: any) => s.end_time).filter(Boolean);
+      
+      if (startTimes.length > 0 && endTimes.length > 0) {
+        // Convert 24h to 12h format
+        const formatTime = (time: string) => {
+          const [hours, minutes] = time.split(':');
+          const hour = parseInt(hours);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const hour12 = hour % 12 || 12;
+          return `${hour12}:${minutes} ${ampm}`;
+        };
+        
+        const earliestStart = startTimes.sort()[0];
+        const latestEnd = endTimes.sort().reverse()[0];
+        timeRange = `${formatTime(earliestStart)} - ${formatTime(latestEnd)}`;
+      }
+    }
+
+    // Get min/max ages from slots
+    let minAge = 5;
+    let maxAge = 84;
+    
+    if (slots.length > 0) {
+      const ages = slots.map((s: any) => ({
+        min: s.min_age || 5,
+        max: s.max_age || 84
+      }));
+      minAge = Math.min(...ages.map(a => a.min));
+      maxAge = Math.max(...ages.map(a => a.max));
+    }
+
+    // Handle image URL
+    let imageUrl = event.image_url;
+    if (imageUrl) {
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        // Full URL, use as is
+        imageUrl = imageUrl;
+      } else if (imageUrl.startsWith('./')) {
+        // Relative path with ./
+        imageUrl = `/api/serve-image/${imageUrl.substring(2)}`;
+      } else if (imageUrl.startsWith('upload/')) {
+        // Already has upload/ prefix
+        imageUrl = `/api/serve-image/${imageUrl}`;
+      } else if (imageUrl.startsWith('/')) {
+        // Absolute path from root
+        imageUrl = imageUrl;
+      } else if (imageUrl && imageUrl.trim() !== '') {
+        // Just a filename - assume it's in upload/eventimages/
+        imageUrl = `/api/serve-image/upload/eventimages/${imageUrl}`;
+      } else {
+        // Empty or invalid, use fallback
+        imageUrl = '/images/baby-crawling.jpg';
+      }
+    } else {
+      // No image URL provided
+      imageUrl = '/images/baby-crawling.jpg';
+    }
+
+    // Format date
+    const eventDate = new Date(event.event_date);
+    const formattedDate = eventDate.toISOString().split('T')[0];
+
+    return {
+      id: event.id.toString(),
+      title: event.title,
+      description: event.description || '',
+      minAgeMonths: minAge,
+      maxAgeMonths: maxAge,
+      date: formattedDate,
+      time: timeRange,
+      venue: event.venue_name || 'Venue',
+      city: event.city_name || 'City',
+      price: 0, // Not used in display
+      image: imageUrl,
+      spotsLeft: 0, // Not used in display
+      totalSpots: 0, // Not used in display
+      isOlympics: true,
+    };
+  });
+}
+
+/**
  * Get all events with images and transform to EventListItem format
+ * Uses backend API /api/events/list
  * @returns Promise with array of EventListItem objects
  */
 export async function getAllEventsWithImagesFormatted(): Promise<EventListItem[]> {
   try {
-    const eventDetails = await getEventDetailsWithImages();
-    return transformEventDetailsToListItems(eventDetails);
+    // Use the backend API endpoint
+    const events = await getEventsFromBackend();
+    return transformBackendEventsToListItems(events);
   } catch (error) {
-    console.error('Error getting formatted events with images:', error);
-    throw error;
+    console.error('Error getting formatted events from backend:', error);
+    // Fallback to old API if backend fails
+    try {
+      console.log('Falling back to old event details API...');
+      const eventDetails = await getEventDetailsWithImages();
+      return transformEventDetailsToListItems(eventDetails);
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      throw error;
+    }
   }
 }

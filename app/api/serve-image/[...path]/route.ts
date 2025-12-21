@@ -20,9 +20,12 @@ export async function GET(
     const imagePath = params.path.join(sep);
     const normalizedPath = normalize(imagePath);
     const basePath = process.cwd();
+    
+    // First, try the path as-is from the base
     let fullPath = join(basePath, normalizedPath);
     
-    if (!existsSync(fullPath)) {
+    // If not found and path doesn't start with 'upload', prepend it
+    if (!existsSync(fullPath) && !normalizedPath.startsWith('upload')) {
       fullPath = join(basePath, 'upload', normalizedPath);
     }
     

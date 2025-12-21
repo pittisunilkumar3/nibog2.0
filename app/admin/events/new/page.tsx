@@ -22,7 +22,7 @@ import { TimePickerDemo } from "@/components/time-picker"
 // import { getAllCities } from "@/services/cityService"
 // import { getVenuesByCity } from "@/services/venueService"
 import { getAllBabyGames, BabyGame } from "@/services/babyGameService"
-import { createEvent, formatEventDataForAPI, uploadEventImage, sendEventImageToWebhook } from "@/services/eventService"
+import { createEvent, formatEventDataForAPI, formatEventDataForUpdate, updateEvent, uploadEventImage, sendEventImageToWebhook } from "@/services/eventService"
 import { toast } from "@/components/ui/use-toast"
 
 // Removed hardcoded venues. Only use API data for cities and venues.
@@ -384,17 +384,11 @@ export default function NewEventPage() {
         isActive: isActive,
         games: selectedGames,
         cityId: cityId,
-        imagePath: eventImage,
+        imagePath: null, // Don't set image path yet, will update after upload
         imagePriority: imagePriority
       }
 
       console.log("Form data:", formData)
-
-      // Log uploaded image path and priority if available
-      if (eventImage) {
-        console.log("Event image uploaded successfully:", eventImage)
-        console.log("Event priority:", imagePriority)
-      }
 
       // Format the data for the API
       const apiData = formatEventDataForAPI(formData)
@@ -413,7 +407,7 @@ export default function NewEventPage() {
 
       console.log("Event created with ID:", eventId)
 
-      // If there's an image file, upload it and send to webhook
+      // If there's an image file, upload it and update the event
       if (eventImageFile) {
         try {
           console.log("Uploading event image after successful event creation...")
@@ -422,14 +416,32 @@ export default function NewEventPage() {
           const uploadResult = await uploadEventImage(eventImageFile)
           console.log("Event image uploaded:", uploadResult)
 
-          // Send to webhook with the event ID
-          const webhookResult = await sendEventImageToWebhook(
-            eventId,
-            uploadResult.path,
-            parseInt(imagePriority),
-            true
-          )
-          console.log("Event image webhook result:", webhookResult)
+          // Update the event with the correct image filename
+          // Extract just the filename from the path (e.g., "eventimage_1766294157627_3470.jpg")
+          const imageFilename = uploadResult.filename || uploadResult.path.split('/').pop()
+          
+          console.log("Updating event with image filename:", imageFilename)
+          
+          // Update the event with the correct image filename using the edit endpoint
+          const updateDataWithImage = {
+            title: eventTitle,
+            description: eventDescription,
+            venueId: selectedVenue,
+            date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
+            status: eventStatus,
+            isActive: isActive,
+            games: selectedGames,
+            cityId: cityId,
+            imagePath: imageFilename, // Set the correct uploaded filename
+            imagePriority: imagePriority
+          }
+
+          const apiDataWithImage = formatEventDataForUpdate(eventId, updateDataWithImage)
+          apiDataWithImage.id = eventId
+
+          console.log("Updating event with image data:", apiDataWithImage)
+          const updatedEvent = await updateEvent(apiDataWithImage)
+          console.log("Event updated with image filename successfully:", updatedEvent)
 
           toast({
             title: "Success",
