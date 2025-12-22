@@ -149,9 +149,8 @@ export default function EditEventPage({ params }: Props) {
         setIsLoading(true)
         setError(null)
 
-        console.log(`Fetching event with ID: ${eventId}`)
+        // Fetch event data (debug logs removed)
         const event = await getEventWithDetails(Number(eventId))
-        console.log("Retrieved event:", event)
         setEventData(event)
 
         // Set initial form values
@@ -166,7 +165,6 @@ export default function EditEventPage({ params }: Props) {
         // Format games data for the form
         // The API returns event_games_with_slots array
         const gameSlots = event.event_games_with_slots || []
-        console.log("Event games with slots:", gameSlots)
         
         // Group slots by game_id
         const gamesByGameId = new Map<string, any[]>()
@@ -201,21 +199,17 @@ export default function EditEventPage({ params }: Props) {
           }
         })
         
-        console.log("=== FINAL FORMATTED GAMES ===");
-        console.log("Formatted games with notes:", JSON.stringify(formattedGames, null, 2));
-        console.log("First game note value:", formattedGames[0]?.note);
-        console.log("=== END FINAL FORMATTED GAMES ===");
+        // Final formatted games prepared (debug logs removed)
         setSelectedGames(formattedGames)
         if (formattedGames.length > 0) {
           setActiveGameIndex(0)
         }
 
         // Fetch cities, venues, games, and images
-        console.log("🔄 Starting to fetch additional data...")
+        // Fetch additional data
         fetchCities()
         fetchBabyGames()
-        console.log("🖼️ About to call fetchExistingImages()...")
-        console.log("🎯 Event ID for image fetch:", eventId)
+        // Fetch existing images
         fetchExistingImages()
       } catch (error: any) {
         console.error(`Error fetching event with ID ${eventId}:`, error)
@@ -249,7 +243,6 @@ export default function EditEventPage({ params }: Props) {
         name: city.city_name
       }))
 
-      console.log("Formatted cities for dropdown:", formattedCities)
       setCities(formattedCities)
     } catch (error: any) {
       console.error("Failed to fetch cities:", error)
@@ -286,12 +279,11 @@ export default function EditEventPage({ params }: Props) {
           return
         }
 
-        console.log(`Fetching venues for city: ${selectedCity} (ID: ${cityId})`)
+        // Fetching venues for selected city (debug logs removed)
 
         try {
           // Fetch venues for the selected city
           const venuesData = await getVenuesByCity(cityId)
-          console.log(`Retrieved ${venuesData.length} venues for city ${selectedCity}:`, venuesData)
 
           // Map the API response to the format expected by the dropdown
           const formattedVenues = venuesData.map(venue => ({
@@ -299,7 +291,6 @@ export default function EditEventPage({ params }: Props) {
             name: venue.venue_name
           }))
 
-          console.log(`Formatted venues for dropdown:`, formattedVenues)
           setApiVenues(formattedVenues)
 
           // If no venues are found, show a message
@@ -343,13 +334,12 @@ export default function EditEventPage({ params }: Props) {
       setIsLoadingGames(true)
       setGamesError(null)
 
-      console.log("Fetching baby games from API...")
       const gamesData = await getAllBabyGames()
-      console.log("Baby games data from API:", gamesData)
 
-      if (gamesData.length === 0) {
-        console.warn("No baby games found in the API response")
+      if (!gamesData || gamesData.length === 0) {
+        // No games found
         setGamesError("No games found. Please add games first.")
+        setBabyGames([])
       } else {
         setBabyGames(gamesData as ImportedBabyGame[])
       }
@@ -365,11 +355,9 @@ export default function EditEventPage({ params }: Props) {
   const fetchExistingImages = async () => {
     try {
       setIsLoadingImages(true)
-      console.log(`🔍 Fetching existing images for event ID: ${eventId}`)
-      console.log(`📍 This will use the new mapping system to find the correct API ID`)
+      // Fetch existing images (debug logs removed)
 
       const images = await fetchEventImages(Number(eventId))
-      console.log("✅ Images fetched with mapping system:", images)
 
       // Filter out any invalid images and ensure we have an array
       const validImages = Array.isArray(images)
@@ -382,29 +370,23 @@ export default function EditEventPage({ params }: Props) {
             img.image_url.trim() !== ''
           )
         : []
-      console.log("Filtered valid images:", validImages)
       setExistingImages(validImages)
 
       // If there are existing images, set the first one as the current image and priority
       if (validImages.length > 0) {
         const firstImage = validImages[0]
-        console.log("Setting first image as current:", firstImage)
 
         if (firstImage.image_url) {
           setEventImage(firstImage.image_url)
-          console.log("Set event image to:", firstImage.image_url)
         }
 
         if (firstImage.priority !== undefined && firstImage.priority !== null) {
           const priorityValue = firstImage.priority.toString()
           setImagePriority(priorityValue)
-          console.log("Set image priority to:", priorityValue)
         } else {
           setImagePriority("1")
-          console.log("No priority found, defaulting to 1")
         }
       } else {
-        console.log("No existing images found")
         setEventImage(null)
         setImagePriority("1")
       }
@@ -596,7 +578,7 @@ export default function EditEventPage({ params }: Props) {
 
     setEventImageFile(file)
     setEventImage(file.name) // Store filename for display
-    console.log('Event image selected:', file.name)
+    // Event image selected (debug log removed)
 
     toast({
       title: "Success",
@@ -650,29 +632,28 @@ export default function EditEventPage({ params }: Props) {
         imagePriority: imagePriority
       }
 
-      console.log("Form data for update:", formData)
+      // Form data prepared (debug log removed)
 
       // Format the data for the API
       const apiData = formatEventDataForUpdate(Number(eventId), formData)
       apiData.id = Number(eventId) // Add the event ID
-      console.log("API data for update:", apiData)
+
+      // API data prepared (debug log removed)
 
       // Call the API to update the event
       const updatedEvent = await updateEvent(apiData)
-      console.log("Updated event:", updatedEvent)
+
 
       // Handle image updates - either new image upload or priority change
       if (eventImageFile) {
         try {
-          console.log("🖼️ Uploading new event image after successful event update...")
+          // Uploading new event image (debug logs removed)
 
           // Upload the new image
           const uploadResult = await uploadEventImage(eventImageFile)
-          console.log("✅ Event image uploaded:", uploadResult)
 
           // Extract just the filename from the path
           const imageFilename = uploadResult.filename || uploadResult.path.split('/').pop()
-          console.log("📁 Extracted filename:", imageFilename)
 
           // Update the event again with the image_url
           const updateDataWithImage = {
@@ -691,13 +672,11 @@ export default function EditEventPage({ params }: Props) {
           const apiDataWithImage = formatEventDataForUpdate(Number(eventId), updateDataWithImage)
           apiDataWithImage.id = Number(eventId)
 
-          console.log("Updating event with image filename:", apiDataWithImage)
           const updatedEventWithImage = await updateEvent(apiDataWithImage)
-          console.log("✅ Event updated with image filename successfully:", updatedEventWithImage)
 
           // Check if there are existing images to delete old files
           if (existingImages.length > 0) {
-            console.log("🗑️ Deleting old event image files...")
+            // Deleting old event image files (debug logs removed)
 
             // Delete old image files from filesystem
             for (const existingImage of existingImages) {
@@ -709,7 +688,6 @@ export default function EditEventPage({ params }: Props) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ filePath: existingImage.image_url })
                   })
-                  console.log(`🗑️ Deleted old image file: ${existingImage.image_url}`)
                 } catch (deleteError) {
                   console.warn(`⚠️ Failed to delete old image file: ${existingImage.image_url}`, deleteError)
                 }
@@ -732,7 +710,7 @@ export default function EditEventPage({ params }: Props) {
       } else if (existingImages.length > 0) {
         // No new image file, but update existing image priority if it changed
         try {
-          console.log("🔄 Updating existing event image priority (no new file)...")
+          // Updating existing image priority (debug logs removed)
 
           // Get the latest existing image
           const sortedImages = [...existingImages].sort((a, b) => {
@@ -743,9 +721,6 @@ export default function EditEventPage({ params }: Props) {
           });
           const latestImage = sortedImages[0];
 
-          console.log(`📊 Current image: ${latestImage.image_url}, Priority: ${latestImage.priority}`);
-          console.log(`📊 New priority: ${imagePriority}`);
-
           // Always call the secondary API to update priority (even if it's the same)
           const updateResult = await updateEventImage(
             Number(eventId),
@@ -753,7 +728,6 @@ export default function EditEventPage({ params }: Props) {
             parseInt(imagePriority),
             true
           )
-          console.log("✅ Event image priority update result:", updateResult)
 
           toast({
             title: "Success",
@@ -769,7 +743,6 @@ export default function EditEventPage({ params }: Props) {
         }
       } else {
         // No existing images and no new image file
-        console.log("ℹ️ No image updates needed - no existing images and no new file")
         toast({
           title: "Success",
           description: "Event updated successfully!",
@@ -1354,12 +1327,7 @@ export default function EditEventPage({ params }: Props) {
                             id="gameNote"
                             value={game.note || ""}
                             onChange={(e) => {
-                              console.log("=== NOTE FIELD UI DEBUG ===");
-                              console.log("Current game object:", JSON.stringify(game, null, 2));
-                              console.log("Current note value in UI:", game.note);
-                              console.log("New note value:", e.target.value);
-                              console.log("Active game index:", activeGameIndex);
-                              console.log("=== END NOTE FIELD UI DEBUG ===");
+                              // Note field change (debug logs removed)
                               updateGame(activeGameIndex, "note", e.target.value);
                             }}
                             placeholder="Add any special notes or instructions for this game..."

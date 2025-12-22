@@ -301,9 +301,6 @@ export default function RegisterEventClientPage() {
       const ageInMonths = calculateAge(date)
       setChildAgeMonths(ageInMonths)
 
-      console.log(`Child's age: ${ageInMonths} months`)
-      console.log("Formatted DOB for API:", formatDateForAPI(date));
-
       // If an event is already selected, fetch games for this age
       if (selectedEventType) {
         const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
@@ -390,8 +387,6 @@ export default function RegisterEventClientPage() {
                            eventAny.event_venue ||
                            "Venue TBD";
 
-          console.log(`Event ${event.event_id}: venue_name="${event.venue_name}", final venue="${venueValue}"`);
-
           return {
             id: event.event_id.toString(),
             title: event.event_title,
@@ -472,11 +467,9 @@ export default function RegisterEventClientPage() {
     if (selectedApiEvent) {
       // Try to get proper venue information using the event details API
       try {
-        console.log(`Fetching detailed event information for event ID: ${selectedApiEvent.event_id}`);
         const eventWithVenue = await getEventWithVenueDetails(selectedApiEvent.event_id);
 
         if (eventWithVenue && eventWithVenue.venue && eventWithVenue.venue.venue_name) {
-          console.log(`Successfully fetched venue: ${eventWithVenue.venue.venue_name}`);
           // Update the selectedApiEvent with proper venue information
           selectedApiEvent.venue_name = eventWithVenue.venue.venue_name;
           selectedApiEvent.venue_address = eventWithVenue.venue.address;
@@ -500,8 +493,6 @@ export default function RegisterEventClientPage() {
                        selectedApiEventAny.site ||
                        selectedApiEventAny.event_venue ||
                        "Venue TBD";
-
-      console.log(`Mock event for ${selectedApiEvent.event_id}: venue="${venueValue}"`);
 
       const mockEvent = {
         id: selectedApiEvent.event_id.toString(),
@@ -585,8 +576,6 @@ export default function RegisterEventClientPage() {
                                   currentSelectedApiEventAny.site ||
                                   currentSelectedApiEventAny.event_venue ||
                                   "Venue TBD";
-
-            console.log(`Final venue for updated event ${eventId}: "${finalVenueValue}"`);
 
             // Parse the date from the games API response
             const correctDate = firstGame.event_date.split('T')[0]; // Get just the date part
@@ -710,9 +699,7 @@ export default function RegisterEventClientPage() {
       return newSelectedGames;
     });
 
-    // Log selection state for debugging
-    console.log(`Selected slot ID: ${slotId} for game ID: ${gameId} (SINGLE SELECTION)`);
-    console.log("Selected slot:", selectedSlot);
+    // Selection state updated (debug logs removed)
   };
 
   // Get unique event titles from API events
@@ -731,14 +718,8 @@ export default function RegisterEventClientPage() {
   const handleRegistration = async () => {
     if (!isAuthenticated) {
       // Save complete registration data to sessionStorage including add-ons
-      console.log("=== SAVING REGISTRATION DATA TO SESSION STORAGE ===");
-      console.log("Current DOB state:", dob);
-      console.log("DOB type:", typeof dob);
-      console.log("DOB toString:", dob?.toString());
-      console.log("DOB toISOString:", dob?.toISOString());
-
+      // Saving registration data to session storage (debug logs removed)
       const formattedDob = dob ? formatDateForAPI(dob) : undefined;
-      console.log("Formatted DOB for storage:", formattedDob);
 
       const registrationData = {
         parentName,
@@ -826,7 +807,6 @@ export default function RegisterEventClientPage() {
     
     // Save eligible games data to preserve price information
     sessionStorage.setItem('eligibleGames', JSON.stringify(eligibleGames))
-    console.log('Saved eligible games to session:', eligibleGames)
   }
 
   // Handle continue to payment - now includes authentication check
@@ -849,7 +829,6 @@ export default function RegisterEventClientPage() {
       
       // Fetch promocodes from the API
       const promocodes = await getPromoCodesByEventAndGames(eventId, gameIds);
-      console.log('Fetched promocodes:', promocodes);
       
       // Filter out any invalid promocodes and update state
       const validPromocodes = promocodes.filter((code) => {
@@ -875,7 +854,7 @@ export default function RegisterEventClientPage() {
       setAvailablePromocodes(validPromocodes);
       
       if (validPromocodes.length === 0) {
-        console.log('No valid promocodes available for the selected games');
+  
       }
     } catch (error) {
       console.error('Error fetching promocodes:', error);
@@ -914,7 +893,7 @@ export default function RegisterEventClientPage() {
         subtotal
       );
       
-      console.log('Promocode validation result:', result);
+
       
       if (result.isValid) {
         // Find the promocode details from available promocodes
@@ -961,28 +940,12 @@ export default function RegisterEventClientPage() {
       setIsProcessingPayment(true)
       setPaymentError(null)
 
-      console.log("=== PAYMENT INITIATION STARTED ===")
-      console.log("User authenticated:", isAuthenticated)
-      console.log("User object:", user)
-      console.log("Selected games:", selectedGames)
-      console.log("Selected event type:", selectedEventType)
-      console.log("Parent name:", parentName)
-      console.log("Email:", email)
-      console.log("Phone:", phone)
-      console.log("Child name:", childName)
+      // Payment initiation started (debug logs removed)
 
       // Mobile browser compatibility check
       if (typeof window !== 'undefined') {
-        console.log("=== MOBILE COMPATIBILITY CHECK ===")
-        console.log("User Agent:", navigator.userAgent)
-        console.log("Screen size:", `${window.innerWidth}x${window.innerHeight}`)
-        console.log("Touch support:", 'ontouchstart' in window)
-        console.log("Crypto API:", window.crypto && window.crypto.subtle ? 'Available' : 'Not available')
-
         // Check if this is a mobile device
         const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        console.log("Mobile device detected:", isMobileDevice)
-
         if (isMobileDevice && (!window.crypto || !window.crypto.subtle)) {
           console.warn("⚠️ Mobile device with limited crypto support detected - using fallback implementation")
         }
@@ -1019,12 +982,7 @@ export default function RegisterEventClientPage() {
         throw new Error("Please select your child's date of birth to continue.")
       }
 
-      console.log("=== DOB VALIDATION DEBUG ===");
-      console.log("DOB state:", dob);
-      console.log("DOB type:", typeof dob);
-      console.log("DOB toString:", dob?.toString());
-      console.log("DOB toISOString:", dob?.toISOString());
-      console.log("Formatted DOB:", formatDateForAPI(dob));
+      // DOB validation debug logs removed
 
       // Note: Game selection validation already handled above (exactly 1 game required)
       if (false) { // Unreachable code - keeping structure for safety
@@ -1035,17 +993,9 @@ export default function RegisterEventClientPage() {
         throw new Error("Please select an event to continue.")
       }
 
-      console.log("✅ Pre-validation checks passed")
+      // Pre-validation checks passed (debug logs removed)
 
-      // Get the selected game details with comprehensive logging
-      console.log("=== GAME ID PROCESSING DEBUG ===")
-      console.log("Selected slot IDs (for UI selection):", selectedGames)
-      console.log("Eligible games:", eligibleGames.map(g => ({
-        slot_id: g.id, // This is the slot_id used for selection
-        game_id: g.game_id, // This is the actual game_id for API
-        title: g.custom_title || g.game_title,
-        time: `${g.start_time} - ${g.end_time}`
-      })))
+      // Get the selected game details (debug logs removed)
 
       // Filter out any undefined games to prevent errors
       const selectedGamesObj = selectedGames
@@ -1054,13 +1004,13 @@ export default function RegisterEventClientPage() {
           if (!game) {
             console.error(`❌ Game slot with ID ${selection.slotId} not found in eligible games!`)
           } else {
-            console.log(`✅ Found game slot: Slot ID ${selection.slotId}, Game ID ${game.game_id}, Title: ${game.custom_title || game.game_title}`)
+
           }
           return game
         })
         .filter(game => game !== undefined);
 
-      console.log("Selected games objects:", selectedGamesObj.map(g => ({ id: g?.id, title: g?.custom_title || g?.game_title })))
+
 
       if (selectedGamesObj.length === 0) {
         throw new Error("No valid games selected. Please select exactly one game.")
@@ -1093,11 +1043,7 @@ export default function RegisterEventClientPage() {
       const gamePrices = selectedGamesObj.map(game => game?.slot_price || game?.custom_price || 0)
       const slotIds = selectedGamesObj.map(game => game?.id).filter(Boolean) // Keep slot IDs for reference
 
-      console.log("=== BOOKING DATA PREPARATION ===")
-      console.log("Slot IDs (selected by user):", slotIds)
-      console.log("Game IDs (for API):", gameIds)
-      console.log("Game prices for booking:", gamePrices)
-      console.log("Event ID:", selectedApiEvent.event_id)
+      // Booking data preparation logs removed
 
       // Use validation utility to ensure game data is correct
       const totalAmount = calculateTotalPrice()
@@ -1111,8 +1057,7 @@ export default function RegisterEventClientPage() {
       const validGameIds = validationResult.validGames.map(game => game.gameId)
       const validGamePrices = validationResult.validGames.map(game => game.gamePrice)
 
-      console.log("Validated Game IDs:", validGameIds)
-      console.log("Validated Game Prices:", validGamePrices)
+
 
       const bookingData = {
         userId,
@@ -1178,22 +1123,9 @@ export default function RegisterEventClientPage() {
         }))
       }
 
-      console.log("=== CREATING PENDING BOOKING RECORD ===")
-      console.log("Selected city:", selectedCity)
-      console.log("Selected event details city:", selectedEventDetails?.city)
-      console.log("Event venue:", selectedEventDetails?.venue)
-      console.log("=== DOB TRACKING IN REGISTRATION ===")
-      console.log("Original DOB from form:", dob)
-      console.log("DOB type:", typeof dob)
-      console.log("DOB toString:", dob?.toString())
-      console.log("DOB toISOString:", dob?.toISOString())
-      console.log("Formatted DOB for booking:", bookingData.childDob)
-      console.log("DOB format validation:", /^\d{4}-\d{2}-\d{2}$/.test(bookingData.childDob) ? "✅ Valid YYYY-MM-DD" : "❌ Invalid format")
-      console.log("DOB matches expected format:", bookingData.childDob === "2024-07-01" ? "✅ Matches expected" : "❌ Does not match expected")
-      console.log("Booking data for pending booking:", JSON.stringify(bookingData, null, 2))
+      // Booking validation and pending booking debug logs removed
 
       // Create pending booking record in database
-      console.log("🔄 Creating pending booking record...")
       const pendingBookingResult = await createPendingBooking(bookingData)
 
       if (!pendingBookingResult.success || !pendingBookingResult.transactionId) {
@@ -1201,8 +1133,7 @@ export default function RegisterEventClientPage() {
       }
 
       const transactionId = pendingBookingResult.transactionId
-      console.log("✅ Pending booking created with transaction ID:", transactionId)
-
+      // Pending booking created and stored; PhonePe initiation debug logs removed
       // Also store in localStorage as backup
       localStorage.setItem('nibog_booking_data', JSON.stringify({
         ...bookingData,
@@ -1210,16 +1141,7 @@ export default function RegisterEventClientPage() {
         timestamp: new Date().getTime()
       }))
 
-      console.log("✅ Booking data also stored in localStorage as backup")
-
-      console.log("=== PHONEPE PAYMENT INITIATION ===")
-      console.log("Transaction ID:", transactionId)
-      console.log("User ID:", userId)
-      console.log("Phone:", phone)
-      console.log("Total Amount (₹):", totalAmount)
-
       // Initiate the payment with the generated transaction ID
-      console.log("🚀 Calling initiatePhonePePayment...")
       const paymentUrl = await initiatePhonePePayment(
         transactionId, // Use the generated transaction ID
         userId,
@@ -1227,8 +1149,7 @@ export default function RegisterEventClientPage() {
         phone
       )
 
-      console.log("✅ PhonePe payment URL received:", paymentUrl)
-      console.log("🔄 Redirecting to PhonePe payment page...")
+
 
       // Don't remove registration data yet as we might need it if payment fails
       // We'll clear it after successful payment completion
@@ -1286,10 +1207,7 @@ export default function RegisterEventClientPage() {
       setIsLoadingCities(true)
       setCityError(null)
 
-      console.log("Fetching cities from API...")
       const citiesData = await getAllCities()
-
-      console.log("Cities data from API:", citiesData)
 
       // Map the API response to the format expected by the dropdown
       const formattedCities = citiesData.map(city => ({
@@ -1297,7 +1215,6 @@ export default function RegisterEventClientPage() {
         name: city.city_name
       }))
 
-      console.log("Formatted cities for dropdown:", formattedCities)
       setCities(formattedCities)
     } catch (error: any) {
       console.error("Failed to fetch cities:", error)
@@ -1329,7 +1246,7 @@ export default function RegisterEventClientPage() {
 
   // Log authentication state for debugging
   useEffect(() => {
-    console.log("Authentication state:", isAuthenticated)
+    // Authentication state change
   }, [isAuthenticated])
 
   // Load city from URL or saved registration data
@@ -1351,9 +1268,7 @@ export default function RegisterEventClientPage() {
       try {
         const data = JSON.parse(savedData)
 
-        console.log("=== RESTORING REGISTRATION DATA FROM SESSION STORAGE ===");
-        console.log("Saved DOB data:", data.dob);
-        console.log("Saved DOB type:", typeof data.dob);
+        // Restoring registration data from session storage (debug logs removed)
 
         // Restore all form data
         setParentName(data.parentName || '')
@@ -1365,12 +1280,9 @@ export default function RegisterEventClientPage() {
         // Handle DOB restoration with debugging
         if (data.dob) {
           const restoredDob = new Date(data.dob);
-          console.log("Restored DOB object:", restoredDob);
-          console.log("Restored DOB ISO:", restoredDob.toISOString());
-          console.log("Restored DOB formatted:", formatDateForAPI(restoredDob));
+          // Restored DOB processed (debug logs removed)
           setDob(restoredDob);
         } else {
-          console.log("No saved DOB found, setting to undefined");
           setDob(undefined);
         }
 
@@ -1398,7 +1310,7 @@ export default function RegisterEventClientPage() {
         if (savedEligibleGames) {
           try {
             eligibleGamesData = JSON.parse(savedEligibleGames)
-            console.log('Restored eligible games from session:', eligibleGamesData)
+            // Restored eligible games from session (debug log removed)
             setEligibleGames(eligibleGamesData)
           } catch (error) {
             console.error('Error parsing saved eligible games data:', error)
@@ -1942,12 +1854,8 @@ export default function RegisterEventClientPage() {
                               : "border-coral-400 bg-coral-50 hover:bg-coral-100 text-neutral-charcoal dark:text-white dark:bg-coral-900/20"
                           )}
                           onClick={() => {
-                            console.log("=== DOB BUTTON CLICKED ===");
-                            console.log("Current DOB state:", dob);
-                            console.log("DOB type:", typeof dob);
-                            console.log("DOB toString:", dob?.toString());
-                            console.log("DOB toISOString:", dob?.toISOString());
-                            console.log("Formatted display:", dob ? format(dob, "PPP") : "Select date of birth");
+                            // DOB button clicked (debug logs removed)
+                            // Formatted display handled in UI
                           }}
                         >
                           <CalendarIcon className={cn("mr-2 h-4 w-4", dob ? "text-primary" : "text-muted-foreground")} />
@@ -1963,12 +1871,7 @@ export default function RegisterEventClientPage() {
                             mode="single"
                             selected={dob}
                             onSelect={(date) => {
-                              console.log("=== CALENDAR COMPONENT onSelect CALLED ===");
-                              console.log("Calendar selected date:", date);
-                              console.log("Date type:", typeof date);
-                              console.log("Date toString:", date?.toString());
-                              console.log("Date toISOString:", date?.toISOString());
-                              console.log("Formatted date:", date ? formatDateForAPI(date) : 'undefined');
+                              // Calendar selected date (debug logs removed)
                               handleDobChange(date);
                             }}
                             disabled={(date) => {
@@ -2535,7 +2438,7 @@ export default function RegisterEventClientPage() {
                     <>
                       {selectedAddOns.map((item) => {
                         // Debug the add-on and variant information
-                        console.log(`Add-on: ${item.addOn.name}`, item);
+
                         
                         // Start with the base add-on price
                         let price = parseFloat(String(item.addOn.price || '0'))
@@ -2544,7 +2447,7 @@ export default function RegisterEventClientPage() {
                         // Check if this is a variant with a different price
                         if (item.variantId && item.addOn.hasVariants && item.addOn.variants) {
                           const variant = item.addOn.variants.find(v => v.id === item.variantId)
-                          console.log(`Variant found for ${item.addOn.name}:`, variant);
+
                           
                           if (variant) {
                             // For variants, we need to use the base price + price_modifier
@@ -2557,7 +2460,7 @@ export default function RegisterEventClientPage() {
                               price = parseFloat(String(item.addOn.price)) + modifier;
                             }
                             
-                            console.log(`Calculated variant price for ${item.addOn.name}: ${price}`);
+
                             variantName = ` - ${variant.name}`
                           }
                         }

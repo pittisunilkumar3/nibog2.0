@@ -77,8 +77,29 @@ export default function EditGameTemplate({ params }: Props) {
         setMinAge(gameData.min_age || 0)
         setMaxAge(gameData.max_age || 300)
         setDuration(gameData.duration_minutes || 60)
-        setIsActive(gameData.is_active || false)
-        setCategories(gameData.categories || [])
+        // Normalize is_active to boolean (API may return 0/1 or boolean)
+        setIsActive(Boolean(gameData.is_active))
+
+        // Normalize categories to string[] — handle array, JSON string, or comma-separated string
+        {
+          const catsRaw = gameData.categories
+          let cats: string[] = []
+          if (Array.isArray(catsRaw)) {
+            cats = catsRaw
+          } else if (typeof catsRaw === 'string' && catsRaw.trim()) {
+            try {
+              const parsed = JSON.parse(catsRaw)
+              if (Array.isArray(parsed)) {
+                cats = parsed
+              } else {
+                cats = catsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+              }
+            } catch {
+              cats = catsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+            }
+          }
+          setCategories(cats)
+        }
 
         // Fetch existing images
         fetchExistingImages()
@@ -104,10 +125,10 @@ export default function EditGameTemplate({ params }: Props) {
   const fetchExistingImages = async () => {
     try {
       setIsLoadingImages(true)
-      console.log(`🔍 Fetching existing images for game ID: ${gameId}`)
+      // Fetch existing images (debug logs removed)
 
       const images = await fetchGameImages(gameId)
-      console.log("✅ Raw game images response:", images)
+      // Raw game images response (debug logs removed)
 
       // Enhanced filtering to handle empty objects and invalid data
       const validImages = Array.isArray(images)
@@ -136,21 +157,13 @@ export default function EditGameTemplate({ params }: Props) {
         });
 
         const latestImage = sortedImages[0];
-        console.log(`🎯 Using LATEST image for editing (not first):`, {
-          id: latestImage.id,
-          priority: latestImage.priority,
-          url: latestImage.image_url,
-          created_at: latestImage.created_at,
-          total_images: validImages.length
-        });
 
         if (latestImage.image_url) {
           setGameImage(latestImage.image_url)
           setImagePriority(latestImage.priority?.toString() || "1")
-          console.log(`✅ Priority set to: ${latestImage.priority} (from latest image)`)
         }
       } else {
-        console.log(`ℹ️ No valid images found for game ${gameId}`)
+        // No valid images found
       }
     } catch (error: any) {
       console.error("❌ Failed to fetch existing images:", error)
@@ -212,7 +225,7 @@ export default function EditGameTemplate({ params }: Props) {
 
     setGameImageFile(file)
     setGameImage(file.name) // Store filename for display
-    console.log('Game image selected:', file.name)
+    // Game image selected (debug log removed)
 
     toast({
       title: "Success",
@@ -232,9 +245,8 @@ export default function EditGameTemplate({ params }: Props) {
       // 1. Upload the image first if a new one was selected
       if (gameImageFile) {
         try {
-          console.log("🖼️ Uploading new game image before game update...");
+          // Uploading new game image (debug logs removed)
           const uploadResult = await uploadGameImage(gameImageFile);
-          console.log("✅ Game image uploaded:", uploadResult);
           finalImageUrl = uploadResult.path;
         } catch (imageError: any) {
           console.error("❌ Error uploading image:", imageError);
@@ -256,11 +268,11 @@ export default function EditGameTemplate({ params }: Props) {
         priority: parseInt(imagePriority) || 1
       }
 
-      console.log("Updating baby game with data:", gameData)
+      // Updating baby game (debug logs removed)
 
       // 3. Call the API to update the game
       const result = await updateBabyGame(gameData as any)
-      console.log("Updated game result:", result)
+      // Updated game result (debug logs removed)
 
       toast({
         title: "Success",

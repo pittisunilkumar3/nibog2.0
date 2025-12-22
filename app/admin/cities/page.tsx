@@ -35,9 +35,9 @@ export default function CitiesPage() {
   const fetchCities = async () => {
     try {
       setError(null)
-      console.log("Fetching all cities...")
+      // Fetching all cities (debug log removed)
       const cities = await getAllCities()
-      console.log("Cities data received:", cities)
+      // Cities data received (debug log removed)
       setCitiesList(cities)
     } catch (err: any) {
       console.error("Failed to fetch cities:", err)
@@ -158,7 +158,6 @@ export default function CitiesPage() {
       icon: <Trash className="h-4 w-4" />,
       onClick: (selectedCities) => {
         // Handle bulk delete - would need confirmation dialog
-        console.log("Bulk delete:", selectedCities)
       },
       variant: 'destructive'
     }
@@ -168,19 +167,19 @@ export default function CitiesPage() {
   const handleDeleteCity = async (id: number) => {
     try {
       setIsDeleting(id)
-      console.log(`Initiating delete for city ID: ${id}`)
+      // Initiating delete for city ID (debug log removed)
 
       // Add a delay to ensure UI feedback
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // Call the delete API
       const result = await deleteCity(id)
-      console.log(`Delete result:`, result)
+      // Delete result received (debug log removed)
 
       if (result && result.success) {
         // Always refresh the list from the server to ensure data consistency
         try {
-          console.log("Refreshing city list after deletion...")
+          // Refreshing city list after deletion (debug log removed)
           const refreshedCities = await getAllCities()
           setCitiesList(refreshedCities)
 

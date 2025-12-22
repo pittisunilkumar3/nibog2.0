@@ -85,7 +85,7 @@ export default function NewGameTemplate() {
 
     setGameImageFile(file)
     setGameImage(file.name) // Store filename for display
-    console.log('Game image selected:', file.name)
+    // Game image selected (debug log removed)
 
     toast({
       title: "Success",
@@ -104,9 +104,8 @@ export default function NewGameTemplate() {
       // 1. Upload the image first if a new one was selected
       if (gameImageFile) {
         try {
-          console.log("Uploading game image before game creation...");
+          // Uploading game image (debug logs removed)
           const uploadResult = await uploadGameImage(gameImageFile);
-          console.log("Game image uploaded:", uploadResult);
           finalImageUrl = uploadResult.path;
         } catch (imageError: any) {
           console.error("Error uploading image:", imageError);
@@ -127,11 +126,11 @@ export default function NewGameTemplate() {
         priority: parseInt(imagePriority) || 1
       }
 
-      console.log("Creating baby game with data:", gameData)
+      // Creating baby game (debug logs removed)
 
       // 3. Call the API to create the game
       const result = await createBabyGame(gameData as any)
-      console.log("Created game result:", result)
+      // Created game result (debug logs removed)
 
       toast({
         title: "Success",

@@ -158,8 +158,8 @@ export default function EditAddOnPage({ params }: Props) {
   }
 
   const handleAddImage = async () => {
-    console.log('🔄 Add Image clicked in edit page');
-    console.log('📷 Current images:', images);
+    // Add Image clicked (debug log removed)
+    // Current images (debug log removed)
 
     const input = document.createElement('input')
     input.type = 'file'
@@ -167,24 +167,25 @@ export default function EditAddOnPage({ params }: Props) {
     input.multiple = true
 
     input.onchange = async (e) => {
-      console.log('📁 File input changed');
+      // File input changed (debug log removed)
       const files = (e.target as HTMLInputElement).files
-      console.log('📁 Files selected:', files?.length);
+      // Files selected (debug log removed)
 
       if (files && files.length > 0) {
         try {
           // Show loading state
           const fileArray = Array.from(files)
-          console.log('📄 Processing files:', fileArray.map(f => f.name));
+          // Processing files (debug log removed)
+
 
           // Upload files to server
           const uploadedUrls = await uploadAddOnImages(fileArray)
-          console.log('✅ Files uploaded successfully:', uploadedUrls);
+          // Files uploaded successfully (debug log removed)
 
           // Add the URLs to the images state
           setImages(prev => {
             const newImages = [...prev, ...uploadedUrls];
-            console.log('📷 Updated images array length:', newImages.length);
+            // Updated images array length (debug log removed)
             return newImages;
           })
 

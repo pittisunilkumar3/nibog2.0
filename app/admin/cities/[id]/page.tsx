@@ -14,13 +14,13 @@ import { toast } from "@/components/ui/use-toast"
 // Function to fetch venues for a city
 async function fetchCityVenues(cityId: number) {
   try {
-    console.log(`Fetching venues for city ID: ${cityId}`);
+    // Fetching venues for city (debug logs removed)
     
     // Try different approaches to get the venue data
     
     // Approach 1: Direct API call with full URL - might have CORS issues
     try {
-      console.log('Attempting direct API call');
+      // Attempting direct API call (debug logs removed)
       const apiUrl = 'https://ai.nibog.in/webhook/v1/nibog/venues/get-by-city-new';
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -33,7 +33,7 @@ async function fetchCityVenues(cityId: number) {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Direct API call successful:', data);
+        // Direct API call succeeded (debug log removed)
         return Array.isArray(data) ? data : [data];
       }
       console.warn('Direct API call failed, trying next approach');
@@ -42,7 +42,7 @@ async function fetchCityVenues(cityId: number) {
     }
     
     // Approach 2: Use the example response directly for testing
-    console.log('Using example response for testing');
+    // Using example response for testing (debug log removed)
     return [
       {
         "id": 24,
@@ -65,7 +65,7 @@ async function fetchCityVenues(cityId: number) {
 // Function to fetch events for a city
 async function fetchCityEvents(cityId: number): Promise<EventData[]> {
   try {
-    console.log(`Fetching events for city ID: ${cityId}`);
+    // Fetching events for city (debug logs removed)
     
     const apiUrl = 'https://ai.nibog.in/webhook/v1/nibog/get-upcoming-event/bycity/id';
     const response = await fetch(apiUrl, {
@@ -84,23 +84,23 @@ async function fetchCityEvents(cityId: number): Promise<EventData[]> {
     }
     
     const eventsData = await response.json();
-    console.log('Events data fetched:', eventsData);
+    // Events data fetched (debug log removed)
     
     // Handle various empty responses
     if (!eventsData) {
-      console.log('No events data returned from API');
+      // No events data returned from API (debug log removed)
       return [];
     }
     
     // Handle non-array responses
     if (!Array.isArray(eventsData)) {
-      console.log('API returned non-array response:', eventsData);
+      // API returned non-array response (debug log removed)
       return [];
     }
     
     // Return empty array if array is empty
     if (eventsData.length === 0) {
-      console.log('API returned empty events array');
+      // API returned empty events array (debug log removed)
       return [];
     }
     
@@ -111,7 +111,7 @@ async function fetchCityEvents(cityId: number): Promise<EventData[]> {
     );
     
     if (validEvents.length === 0) {
-      console.log('API returned events but none have valid data');
+      // API returned events but none have valid data (debug log removed)
       return [];
     }
     
@@ -156,10 +156,8 @@ export default function CityDetailsPage({ params }: { params: PageParams }) {
 
         // Fetch venues for this city from the API
         const venuesData = await fetchCityVenues(cityId);
-        console.log('Venue data in component:', JSON.stringify(venuesData));
         
         if (venuesData && Array.isArray(venuesData) && venuesData.length > 0) {
-          console.log(`Setting ${venuesData.length} venues to state`);
           setCityVenues(venuesData);
         } else {
           console.warn('No venues found or empty response');
@@ -169,9 +167,8 @@ export default function CityDetailsPage({ params }: { params: PageParams }) {
         // Fetch events for this city from the API
         const eventsData = await fetchCityEvents(cityId);
         // fetchCityEvents returns valid events or an empty array
-        console.log(`Setting ${eventsData.length} events to state`);
         if (eventsData.length === 0) {
-          console.log('No valid events found for this city');
+          // No valid events found for this city (debug log removed)
         }
         setCityEvents(eventsData);
 
@@ -294,7 +291,7 @@ export default function CityDetailsPage({ params }: { params: PageParams }) {
                 </TableRow>
               ) : (
                 cityVenues.map((venue) => {
-                  console.log('Rendering venue:', venue);
+                  // Rendering venue (debug log removed)
                   return (
                     <TableRow key={venue.id}>
                       <TableCell className="font-medium">

@@ -94,11 +94,7 @@ export default function NewBookingPage() {
     setIsGeneratingPaymentLink(true)
 
     try {
-      console.log("Generating payment link for booking:", {
-        bookingId: createdBookingId,
-        amount: createdBookingAmount,
-        phone: createdBookingPhone
-      })
+      // Generating payment link for booking (debug logs removed)
 
       // Use admin user ID (4) for payment link generation
       const paymentUrl = await initiatePhonePePayment(
@@ -262,25 +258,21 @@ export default function NewBookingPage() {
       const ageInMonths = calculateAge(date, eventDate)
       setChildAgeMonths(ageInMonths)
 
-      console.log(`👶 Child's date of birth: ${date.toDateString()}`);
-      console.log(`📅 Event date: ${eventDate ? eventDate.toDateString() : 'Not selected yet (using current date)'}`);
-      console.log(`📅 Child's age on ${eventDate ? 'event date' : 'current date'}: ${ageInMonths} months`);
-      console.log(`🎯 Selected event type: ${selectedEventType}`);
+      // Child DOB debug logs removed
 
       // If an event is already selected, fetch games for this age
       if (selectedEventType) {
         if (selectedApiEvent) {
-          console.log(`🎮 Fetching games for selected event:`, selectedApiEvent);
+          // Fetching games for selected event (debug logs removed)
           fetchGamesByEventAndAge(selectedApiEvent.event_id, ageInMonths);
         } else {
           console.warn(`⚠️ Selected event type "${selectedEventType}" not found in API events`);
         }
       } else {
-        console.log(`ℹ️ No event selected yet, games will be fetched when event is selected`);
+        // No event selected yet (debug logs removed)
       }
     } else {
       // Reset age if DOB is cleared
-      console.log(`🔄 Date of birth cleared, resetting age`);
       setChildAgeMonths(null)
       setEligibleGames([]);
     }
@@ -311,7 +303,7 @@ export default function NewBookingPage() {
         } else {
           gamePrice = parseFloat(game.price.toString()) || 0;
         }
-        console.log(`💰 Adding game "${game.title}" (slot ${selection.slotId}): ₹${gamePrice}`);
+        // Adding game price (debug log removed)
       } else {
         console.warn(`⚠️ Slot with ID ${selection.slotId} not found in eligible games`);
       }
@@ -319,7 +311,7 @@ export default function NewBookingPage() {
       total += gamePrice;
     }
 
-    console.log(`💰 Total games price: ₹${total}`);
+    // Total games price calculated (debug log removed)
     return total;
   }
 
@@ -334,19 +326,18 @@ export default function NewBookingPage() {
         if (variant && variant.price_modifier) {
           const modifier = parseFloat(variant.price_modifier.toString());
           price = parseFloat(item.addOn.price.toString()) + modifier;
-          console.log(`🛍️ Add-on "${item.addOn.name}" variant "${variant.name}": base ₹${item.addOn.price} + modifier ₹${modifier} = ₹${price}`);
+          // Variant price calculation log removed
         }
       }
 
       // Round to 2 decimal places for each item's total
       const itemTotal = price * item.quantity;
-      console.log(`🛍️ Add-on "${item.addOn.name}" x${item.quantity}: ₹${price} each = ₹${itemTotal}`);
       return sum + parseFloat(itemTotal.toFixed(2));
     }, 0);
 
     // Round final total to 2 decimal places
     const finalTotal = parseFloat(total.toFixed(2));
-    console.log(`🛍️ Total add-ons price: ₹${finalTotal}`);
+    // Total add-ons price calculated (debug log removed)
     return finalTotal;
   }
 
@@ -356,23 +347,19 @@ export default function NewBookingPage() {
     const addOnsTotal = calculateAddOnsTotal();
     const subtotal = gamesTotal + addOnsTotal;
 
-    console.log(`💰 Pricing breakdown:`);
-    console.log(`   Games total: ₹${gamesTotal}`);
-    console.log(`   Add-ons total: ₹${addOnsTotal}`);
-    console.log(`   Subtotal: ₹${subtotal}`);
+    // Pricing breakdown logs removed
 
     // Apply promocode discount if available
     let discountedSubtotal = subtotal;
     if (appliedPromoCode && discountAmount > 0) {
       discountedSubtotal = subtotal - discountAmount;
-      console.log(`   Promo discount (${appliedPromoCode}): -₹${discountAmount}`);
-      console.log(`   After discount: ₹${discountedSubtotal}`);
+      // Promo discount logs removed
     }
 
     // Frontend doesn't add GST - removed GST calculation to match frontend
     // Ensure final total is rounded to 2 decimal places
     const finalTotal = parseFloat(discountedSubtotal.toFixed(2));
-    console.log(`💰 Final total: ₹${finalTotal}`);
+    // Final total calculated (debug log removed)
     return finalTotal;
   }
 
@@ -389,9 +376,7 @@ export default function NewBookingPage() {
         setIsLoadingCities(true)
         setCityError(null)
 
-        console.log("📍 Fetching cities from API...")
         const citiesData = await getAllCities()
-        console.log(`📍 Cities data from API (${citiesData.length} cities):`, citiesData)
 
         // Map the API response to the format expected by the dropdown
         const formattedCities = citiesData.map(city => ({
@@ -399,9 +384,7 @@ export default function NewBookingPage() {
           name: city.city_name
         }))
 
-        console.log("Formatted cities for dropdown:", formattedCities)
         setCities(formattedCities)
-        console.log("✅ Cities loaded successfully")
       } catch (error: any) {
         console.error("❌ Failed to fetch cities:", error)
         setCityError("Failed to load cities. Please try again.")
@@ -423,14 +406,10 @@ export default function NewBookingPage() {
     async function loadAddOns() {
       setIsLoadingData(true);
       try {
-        console.log('🛍️ Fetching add-ons from external API...');
         const addOnData = await getAllAddOns();
-        console.log(`🛍️ Fetched ${addOnData.length} add-ons from external API:`, addOnData);
 
         const activeAddOns = addOnData.filter(addon => addon.is_active);
-        console.log(`🛍️ Filtered to ${activeAddOns.length} active add-ons`);
         setAddOns(activeAddOns);
-        console.log('✅ Add-ons loaded successfully');
       } catch (error) {
         console.error('❌ Failed to load add-ons:', error);
         toast({
@@ -460,9 +439,7 @@ export default function NewBookingPage() {
       setIsLoadingEvents(true);
       setEventError(null);
 
-      console.log(`🎪 Fetching events for city ID: ${cityId}`);
       const eventsData = await getEventsByCityId(Number(cityId));
-      console.log(`🎪 Events data from API (${eventsData?.length || 0} events):`, eventsData);
 
       // Validate API response
       if (!Array.isArray(eventsData)) {
@@ -470,23 +447,34 @@ export default function NewBookingPage() {
       }
 
       if (eventsData.length === 0) {
-        console.log(`ℹ️ No events found for city ID: ${cityId}`);
         setApiEvents([]);
         setEventError("No events available for this city.");
         return;
       }
 
-      // Validate each event has required properties
-      const validEvents = eventsData.filter(event => {
-        const isValid = event.event_id && event.event_title;
-        if (!isValid) {
-          console.warn('⚠️ Invalid event data:', event);
-        }
-        return isValid;
-      });
+      // Normalize API event shapes to `EventListItem` and validate
+      const mappedEvents: EventListItem[] = eventsData
+        .map((eventAny: any) => {
+          // If API already returns full EventListItem shape, use it
+          if (eventAny && typeof eventAny.event_id === 'number' && eventAny.event_title) {
+            return eventAny as EventListItem
+          }
 
-      console.log(`✅ Loaded ${validEvents.length} valid events out of ${eventsData.length} total`);
-      setApiEvents(validEvents);
+          // Handle simplified API response like { id, title }
+          return {
+            event_id: Number(eventAny.id || eventAny.event_id || 0),
+            event_title: eventAny.title || eventAny.event_title || 'Untitled Event',
+            event_description: eventAny.description || eventAny.event_description || '',
+            event_date: eventAny.event_date || eventAny.eventDate || '',
+            event_status: eventAny.status || eventAny.event_status || 'upcoming',
+            city_id: Number(eventAny.city_id || cityId || 0),
+            venue_id: Number(eventAny.venue_id || 0),
+            venue_name: eventAny.venue_name || eventAny.venue || undefined,
+          }
+        })
+        .filter(e => e.event_id && e.event_title) // keep only valid entries
+
+      setApiEvents(mappedEvents);
 
       // No need to filter events by age anymore - games will be fetched separately
       // when both event and DOB are selected
@@ -511,7 +499,6 @@ export default function NewBookingPage() {
 
   // Handle event type selection (matching user panel logic)
   const handleEventTypeChange = (eventType: string) => {
-    console.log(`🎪 Event type selected: ${eventType}`);
     setSelectedEventType(eventType)
     setSelectedGames([]) // Reset selected games
     setEligibleGames([]) // Reset eligible games
@@ -520,9 +507,7 @@ export default function NewBookingPage() {
     const selectedApiEvent = apiEvents.find(event => event.event_title === eventType);
 
     if (selectedApiEvent) {
-      console.log("✅ Selected event found:", selectedApiEvent);
-      console.log(`📅 Event date: ${selectedApiEvent.event_date}`);
-      console.log(`📅 Child DOB: ${childDateOfBirth}`);
+      // Selected event found (debug logs removed)
 
       // If DOB is set, recalculate age based on event date
       if (childDateOfBirth) {
@@ -533,13 +518,12 @@ export default function NewBookingPage() {
         const ageInMonths = calculateAge(birthDate, eventDate);
         setChildAgeMonths(ageInMonths);
         
-        console.log(`📅 Recalculated child's age on ${eventDate ? 'event date' : 'current date'}: ${ageInMonths} months`);
-        console.log(`🎮 Fetching games for event ID ${selectedApiEvent.event_id} and age ${ageInMonths} months`);
+        // Recalculated age and fetching games (debug logs removed)
         
         // Fetch games for this event and child age
         fetchGamesByEventAndAge(selectedApiEvent.event_id, ageInMonths);
       } else {
-        console.log(`⚠️ Child date of birth not set, cannot fetch games yet`);
+        // Child date of birth not set; cannot fetch games yet (debug logs removed)
       }
     } else {
       // If no matching event found, clear eligible games
@@ -551,7 +535,7 @@ export default function NewBookingPage() {
   // Fetch games based on event ID and child age (matching user panel logic)
   const fetchGamesByEventAndAge = async (eventId: number, childAge: number) => {
     if (!eventId || childAge === null || childAge === undefined) {
-      console.log(`⚠️ Skipping games fetch - missing required data:`, { eventId, childAge });
+      // Skipping games fetch - missing required data (debug log removed)
       return;
     }
 
@@ -565,17 +549,14 @@ export default function NewBookingPage() {
     setGameError("");
 
     try {
-      console.log(`🎮 Fetching games for event ID: ${eventId} and child age: ${childAge} months`);
-      console.log(`📡 API endpoint: https://ai.nibog.in/webhook/v1/nibog/events/get-games-by-ageandevent-new`);
-      console.log(`📤 Request payload:`, { event_id: eventId, child_age: childAge });
+      // Fetching games for event (debug logs removed)
 
       // Call the new API to get games by age and event
       const gamesData = await getGamesByAgeAndEvent(eventId, childAge);
-      console.log(`📥 Raw API response:`, gamesData);
+
 
       if (gamesData && gamesData.length > 0) {
-        console.log(`Found ${gamesData.length} games for event ${eventId} and age ${childAge} months`);
-        console.log('Game data from API:', gamesData);
+        // Games found; raw data logged (debug logs removed)
 
         // Format games data to match the expected structure - API returns games with slots array
         const formattedGames: EligibleGame[] = [];
@@ -622,13 +603,11 @@ export default function NewBookingPage() {
           }
         });
 
-        console.log(`Formatted ${formattedGames.length} game slots from ${gamesData.length} games`);
-        console.log('Formatted games:', formattedGames);
+        // Formatted games (debug logs removed)
 
         // Set the formatted games (this is separate from eligibleEvents which contains event details)
         setEligibleGames(formattedGames);
       } else {
-        console.log(`No games found for event ${eventId} and age ${childAge} months`);
         setEligibleGames([]);
       }
     } catch (error) {
@@ -678,24 +657,19 @@ export default function NewBookingPage() {
       if (isCurrentlySelected) {
         // If clicking the same slot that's already selected, deselect it
         newSelectedGames = [];
-        console.log(`🎮 Deselected slot ID: ${slotId} for game ID: ${gameId}`);
       } else {
         // Replace any existing selection with this new selection (SINGLE SELECTION)
         newSelectedGames = [{ gameId, slotId }];
-        console.log(`🎮 Selected slot ID: ${slotId} for game ID: ${gameId} (SINGLE SELECTION)`);
       }
 
       // Clear promo code when games selection changes (matching frontend)
       if (appliedPromoCode) {
-        console.log("🏷️ Clearing promo code due to games selection change");
         setAppliedPromoCode("");
         setDiscountAmount(0);
         setPromoCodeInput("");
       }
 
-      // Log selection details for debugging
-      console.log("🎮 New selected games:", newSelectedGames);
-      console.log("🎮 Selected slot details:", selectedSlot);
+      // Selection details updated (debug logs removed)
 
       return newSelectedGames;
     });
@@ -744,12 +718,7 @@ export default function NewBookingPage() {
         throw new Error('No valid games selected for promo code validation');
       }
 
-      console.log('Validating promo code:', {
-        code: promoCodeInput.trim(),
-        eventId: selectedApiEvent.event_id,
-        gameIds: gameIds,
-        subtotal: subtotal
-      });
+      // Validating promo code (debug logs removed); payload prepared for validation.
 
       // Use the same API endpoint as frontend
       const response = await fetch('/api/promo-codes/validate-preview', {
@@ -771,7 +740,7 @@ export default function NewBookingPage() {
       }
 
       const result = await response.json();
-      console.log('Promo code validation result:', result);
+
 
       if (result.isValid && result.discountAmount > 0) {
         setAppliedPromoCode(promoCodeInput.trim())
@@ -898,7 +867,7 @@ export default function NewBookingPage() {
           if (!game) {
             console.error(`❌ Game slot with ID ${selection.slotId} not found in eligible games!`)
           } else {
-            console.log(`✅ Found game slot: Slot ID ${selection.slotId}, Game ID ${game.game_id}, Title: ${game.title}`)
+            // Found game slot (debug log removed)
           }
           return game
         })
@@ -987,7 +956,7 @@ export default function NewBookingPage() {
         ...(appliedPromoCode && { promo_code: appliedPromoCode })
       }
 
-      console.log("Creating booking with data:", bookingData)
+      // Creating booking with data (debug log removed)
 
       // Call the booking creation API (using the same endpoint as user panel)
       const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/bookingsevents/create', {
@@ -1005,7 +974,7 @@ export default function NewBookingPage() {
       }
 
       const result = await response.json()
-      console.log("Booking created successfully:", result)
+      // Booking created successfully (debug log removed)
 
       // Extract booking ID from the response (webhook returns an array)
       const bookingId = Array.isArray(result) ? result[0]?.booking_id : result.booking_id
@@ -1026,7 +995,7 @@ export default function NewBookingPage() {
           : "Manual booking - Online payment pending"
       }
 
-      console.log("Creating payment record:", paymentData)
+      // Creating payment record (debug log removed)
 
       // Create payment record
       const paymentResponse = await fetch(PAYMENT_API.CREATE, {
@@ -1042,7 +1011,7 @@ export default function NewBookingPage() {
         // Don't throw error here as booking was successful
       } else {
         const paymentResult = await paymentResponse.json()
-        console.log("Payment record created:", paymentResult)
+
       }
 
       // Store booking details for payment management
@@ -1088,10 +1057,9 @@ export default function NewBookingPage() {
 
       // Send booking confirmation email
       try {
-        console.log("📧 Sending booking confirmation email for manual booking...");
+        // Sending booking confirmation email (debug log removed)
 
-        const confirmationData: BookingConfirmationData = {
-          bookingId: bookingId,
+        const confirmationData: BookingConfirmationData = {          bookingId: bookingId,
           bookingRef: bookingData.booking.booking_ref,
           parentName: parentName,
           parentEmail: email,
@@ -1109,17 +1077,16 @@ export default function NewBookingPage() {
         const emailResult = await sendBookingConfirmationFromServer(confirmationData);
 
         if (emailResult.success) {
-          console.log("✅ Booking confirmation email sent successfully");
+          // Booking confirmation email sent successfully (debug log removed)
 
           // Send admin notification email for manual booking
           try {
-            console.log("📧 Sending admin notification email for manual booking...");
             const { sendAdminNotificationEmail } = await import('@/services/emailNotificationService');
 
             const adminNotificationResult = await sendAdminNotificationEmail(confirmationData);
 
             if (adminNotificationResult.success) {
-              console.log("✅ Admin notification email sent successfully");
+              // Admin notification success (debug log removed)
             } else {
               console.error("❌ Admin notification email failed:", adminNotificationResult.error);
             }
@@ -1151,24 +1118,19 @@ export default function NewBookingPage() {
 
       // Send WhatsApp booking confirmation message (matching frontend implementation)
       try {
-        console.log("📱 Sending WhatsApp booking confirmation message...");
+        // Sending WhatsApp booking confirmation message (debug logs removed)
 
         // Validate phone number is provided
         if (!phoneDigits || phoneDigits.trim() === '') {
-          console.log("⚠️ No phone number provided, skipping WhatsApp notification");
+          // No phone number provided, skipping WhatsApp notification (debug log removed)
         } else {
           // Format phone number for WhatsApp (use phoneDigits which is already validated)
           const formattedPhone = `+91${phoneDigits}`;
 
-          console.log("📱 Formatting phone for WhatsApp:", {
-            original: phone,
-            phoneDigits: phoneDigits,
-            formatted: formattedPhone
-          });
+          // WhatsApp phone formatting/debug logs removed
 
           // Prepare WhatsApp message data (matching frontend structure exactly)
-          const whatsappData = {
-            bookingId: bookingId,
+          const whatsappData = {            bookingId: bookingId,
             bookingRef: bookingData.booking.booking_ref,
             parentName: parentName,
             parentPhone: formattedPhone, // Customer's WhatsApp number (formatted)
@@ -1184,20 +1146,7 @@ export default function NewBookingPage() {
             addOns: addOnDetails.length > 0 ? addOnDetails : []
           };
 
-          console.log("📱 WhatsApp data prepared:", {
-            bookingId: whatsappData.bookingId,
-            parentName: whatsappData.parentName,
-            parentPhone: whatsappData.parentPhone,
-            eventTitle: whatsappData.eventTitle,
-            eventDate: whatsappData.eventDate,
-            eventVenue: whatsappData.eventVenue,
-            totalAmount: whatsappData.totalAmount,
-            paymentMethod: whatsappData.paymentMethod,
-            transactionId: whatsappData.transactionId
-          });
-
-          // Debug: Log the complete WhatsApp data structure
-          console.log("📱 Complete WhatsApp data structure:", JSON.stringify(whatsappData, null, 2));
+          // WhatsApp data prepared (debug logs removed)
 
           // Debug: Check for any undefined or null values
           const undefinedFields = Object.entries(whatsappData).filter(([key, value]) => value === undefined || value === null);
@@ -1217,12 +1166,10 @@ export default function NewBookingPage() {
           const whatsappResult = await whatsappResponse.json();
 
           if (whatsappResult.success) {
-            console.log("✅ WhatsApp booking confirmation sent successfully");
-            console.log(`📱 Message ID: ${whatsappResult.messageId}`);
-            console.log(`📱 Zaptra response:`, whatsappResult.zaptraResponse);
+            // WhatsApp booking confirmation sent successfully (debug logs removed)
             toast({
               title: "WhatsApp Sent",
-              description: `Booking confirmation sent via WhatsApp (ID: ${whatsappResult.messageId})`,
+              description: `Booking confirmation sent via WhatsApp`,
             });
           } else {
             console.error("❌ Failed to send WhatsApp booking confirmation:", whatsappResult.error);
@@ -1253,10 +1200,9 @@ export default function NewBookingPage() {
 
       // Send tickets for all manual bookings (consistent with frontend behavior)
       try {
-        console.log("🎫 Starting ticket email process for manual booking...");
+        // Starting ticket email process (debug logs removed)
 
         // Add a delay to ensure booking is fully processed in the database
-        console.log("🎫 Waiting 5 seconds for booking to be fully processed...");
         await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Fetch ticket details from database with retry logic (same as frontend approach)
@@ -1268,18 +1214,16 @@ export default function NewBookingPage() {
         // Retry logic to handle database timing issues
         while (retryCount < maxRetries && (!ticketDetails || ticketDetails.length === 0)) {
           try {
-            console.log(`🎫 Attempting to fetch ticket details (attempt ${retryCount + 1}/${maxRetries})`);
-            console.log(`🎫 Booking reference: ${bookingData.booking.booking_ref}`);
-            console.log(`🎫 Reference format: ${bookingData.booking.booking_ref.startsWith('MAN') ? 'MAN (Manual)' : 'Other'}`);
+            // Attempting to fetch ticket details (debug logs removed)
             ticketDetails = await getTicketDetails(bookingData.booking.booking_ref);
 
             if (ticketDetails && ticketDetails.length > 0) {
-              console.log(`🎫 Successfully retrieved ${ticketDetails.length} ticket details`);
+              // Successfully retrieved ticket details (debug log removed)
               break;
             }
 
             if (retryCount < maxRetries - 1) {
-              console.log(`🎫 No ticket details found, waiting 3 seconds before retry...`);
+              // No ticket details found, waiting before retry (debug log removed)
               await new Promise(resolve => setTimeout(resolve, 3000));
             }
           } catch (error) {
@@ -1292,7 +1236,7 @@ export default function NewBookingPage() {
         }
 
         if (ticketDetails && ticketDetails.length > 0) {
-          console.log(`🎫 Retrieved ${ticketDetails.length} ticket details from database`);
+          // Retrieved ticket details (debug log removed)
 
           // Prepare QR code data (matching frontend format exactly)
           const firstTicket = ticketDetails[0];
@@ -1303,9 +1247,6 @@ export default function NewBookingPage() {
             game: firstTicket.custom_title || firstTicket.event_title || firstTicket.game_name || selectedApiEvent.event_title,
             slot_id: firstTicket.event_game_slot_id || firstTicket.booking_game_id || 0
           });
-
-          console.log("🎫 QR code data prepared:", qrCodeData);
-
           // Prepare ticket email data (matching frontend structure exactly)
           const ticketEmailData: TicketEmailData = {
             bookingId: bookingId,
@@ -1321,19 +1262,13 @@ export default function NewBookingPage() {
             qrCodeData: qrCodeData
           };
 
-          console.log("🎫 Sending ticket email with data:", {
-            bookingId: ticketEmailData.bookingId,
-            bookingRef: ticketEmailData.bookingRef,
-            parentEmail: ticketEmailData.parentEmail,
-            ticketDetailsCount: ticketEmailData.ticketDetails.length,
-            qrCodeDataLength: ticketEmailData.qrCodeData.length
-          });
+          // Sending ticket email with data (debug logs removed)
 
           // Send ticket email using direct service call (same as frontend)
           const ticketResult = await sendTicketEmail(ticketEmailData);
 
           if (ticketResult.success) {
-            console.log("✅ Tickets sent successfully for cash payment");
+            // Tickets sent successfully (debug logs removed)
             toast({
               title: "Tickets Sent",
               description: "Event tickets with QR codes have been sent to the customer's email",
@@ -1347,8 +1282,7 @@ export default function NewBookingPage() {
             });
           }
         } else {
-          console.log(`🎫 No ticket details found for booking reference: ${bookingData.booking.booking_ref}`);
-          console.log(`🎫 Creating fallback ticket details from booking data...`);
+          // No ticket details found; creating fallback ticket details (debug logs removed)
 
           // Create fallback ticket details from the booking data
           const fallbackTicketDetails = selectedGamesObj.map((game, index) => ({
@@ -1383,11 +1317,10 @@ export default function NewBookingPage() {
             slot_id: firstTicket.event_game_slot_id || 0
           });
 
-          console.log("🎫 Fallback QR code data prepared:", qrCodeData);
+          // Fallback QR code data prepared (debug logs removed)
 
           // Prepare ticket email data using fallback details
-          const ticketEmailData: TicketEmailData = {
-            bookingId: bookingId,
+          const ticketEmailData: TicketEmailData = {            bookingId: bookingId,
             bookingRef: bookingData.booking.booking_ref,
             parentName: parentName,
             parentEmail: email,
@@ -1400,19 +1333,13 @@ export default function NewBookingPage() {
             qrCodeData: qrCodeData
           };
 
-          console.log("🎫 Sending ticket email with fallback data:", {
-            bookingId: ticketEmailData.bookingId,
-            bookingRef: ticketEmailData.bookingRef,
-            parentEmail: ticketEmailData.parentEmail,
-            ticketDetailsCount: ticketEmailData.ticketDetails.length,
-            qrCodeDataLength: ticketEmailData.qrCodeData.length
-          });
+          // Sending ticket email with fallback data (debug logs removed)
 
           // Send ticket email using fallback data
           const ticketResult = await sendTicketEmail(ticketEmailData);
 
           if (ticketResult.success) {
-            console.log("✅ Tickets sent successfully using fallback data");
+
             toast({
               title: "Tickets Sent",
               description: "Event tickets with QR codes have been sent to the customer's email (using fallback data)",

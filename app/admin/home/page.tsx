@@ -39,7 +39,7 @@ export default function HomeSection() {
         })
       )
 
-      console.log("Refreshed images:", validItems.length, "Meta array length:", validItems.length)
+      // Refreshed images (debug logs removed)
     } catch (error) {
       console.error("Failed to fetch images:", error)
       setImageMeta([])
@@ -54,7 +54,7 @@ export default function HomeSection() {
 
   // Comprehensive cache cleanup and frontend notification function
   const performCacheCleanupAndNotification = async () => {
-    console.log("Starting comprehensive cache cleanup...")
+    // Starting comprehensive cache cleanup (debug logs removed)
 
     // 1. Refresh data from server to ensure arrays stay synchronized
     await refreshImages()
@@ -69,7 +69,7 @@ export default function HomeSection() {
         }
       }
       keysToRemove.forEach(key => {
-        console.log(`Clearing localStorage key: ${key}`)
+        // Clearing localStorage key (debug logs removed)
         localStorage.removeItem(key)
       })
     } catch (error) {
@@ -84,7 +84,7 @@ export default function HomeSection() {
     // 4. Trigger browser cache invalidation by setting cache-busting flags
     localStorage.setItem('homeSlideCacheBust', timestamp.toString())
 
-    console.log("Cache cleanup and notification complete")
+    // Cache cleanup complete (debug logs removed)
   }
 
   useEffect(() => {
