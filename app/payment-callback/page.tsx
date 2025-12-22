@@ -45,7 +45,7 @@ function PaymentCallbackContent() {
         setTransactionId(txnId)
 
         // Check the payment status
-        console.log(`Checking payment status (attempt ${currentRetryCount + 1})...`)
+        // removed debug log
         
         // Retrieve booking data from localStorage to send to API
         let bookingDataFromStorage = null;
@@ -53,7 +53,7 @@ function PaymentCallbackContent() {
           const storedData = localStorage.getItem('nibog_booking_data');
           if (storedData) {
             bookingDataFromStorage = JSON.parse(storedData);
-            console.log('Retrieved booking data from localStorage for payment verification:', bookingDataFromStorage);
+            // removed debug log
           } else {
             console.warn('No booking data found in localStorage for payment verification');
           }
@@ -63,12 +63,12 @@ function PaymentCallbackContent() {
         
         // Pass the booking data to the payment status check
         const status = await checkPhonePePaymentStatus(txnId, bookingDataFromStorage)
-        console.log(`Payment status received: ${status}`)
+        // removed debug log
         setPaymentStatus(status)
 
         // Handle different payment statuses
         if (status === 'SUCCESS') {
-          console.log('✅ Payment successful - checking if booking was created by server callback')
+          // removed debug log
 
           try {
             // In the server-first approach, the booking should already be created by the server callback
@@ -77,15 +77,12 @@ function PaymentCallbackContent() {
             if (txnId) {
               // Get booking data from localStorage and call the payment status API to create the booking
               try {
-                console.log(`📋 Getting booking data and creating booking for transaction: ${txnId}`);
-
-                // Retrieve booking data from localStorage
-                let bookingDataFromStorage = null;
+                    // removed debug log;
                 try {
                   const storedData = localStorage.getItem('nibog_booking_data');
                   if (storedData) {
                     bookingDataFromStorage = JSON.parse(storedData);
-                    console.log('Retrieved booking data from localStorage for booking creation:', bookingDataFromStorage);
+                    // removed debug log
                   }
                 } catch (error) {
                   console.error('Error retrieving booking data from localStorage:', error);
@@ -103,21 +100,21 @@ function PaymentCallbackContent() {
                 });
 
                 const statusData = await statusResponse.json();
-                console.log('Payment status response:', statusData);
-                console.log('Status data bookingCreated:', statusData.bookingCreated);
-                console.log('Status data bookingData:', statusData.bookingData);
-                console.log('Status data bookingData.booking_ref:', statusData.bookingData?.booking_ref);
+                // removed debug log
+                // removed debug log
+                // removed debug log
+                // removed debug log
 
                 // Extract the actual booking reference from the response
                 let actualBookingRef = null;
                 if (statusData.bookingCreated && statusData.bookingData && statusData.bookingData.booking_ref) {
                   actualBookingRef = statusData.bookingData.booking_ref;
-                  console.log(`📋 Found actual booking reference from database: ${actualBookingRef}`);
+                  // removed debug log
                 } else {
                   // Fallback: generate consistent booking reference from transaction ID
                   actualBookingRef = generateConsistentBookingRef(txnId);
-                  console.log(`📋 Generated fallback booking reference: ${actualBookingRef}`);
-                  console.log(`📋 Fallback reason - bookingCreated: ${statusData.bookingCreated}, bookingData exists: ${!!statusData.bookingData}, booking_ref exists: ${!!statusData.bookingData?.booking_ref}`);
+                  // removed debug log
+                  // removed debug log
                 }
 
                 // Update state with the actual booking reference
@@ -144,19 +141,19 @@ function PaymentCallbackContent() {
 
             // Retrieve booking data from localStorage
             try {
-              console.log('🔍 Retrieving booking data from localStorage...')
+              // removed debug log
               const storedData = localStorage.getItem('nibog_booking_data')
               
               if (storedData) {
                 const bookingData = JSON.parse(storedData)
-                console.log('✅ Retrieved booking data from localStorage:', JSON.stringify(bookingData, null, 2))
+                // removed debug log
                 
                 if (bookingRef) {
-                  console.log('📧 Preparing to send confirmation email with complete data...');
+                  // removed debug log
                   
                   // Use the booking reference from state
                   const emailBookingRef = bookingRef;
-                  console.log(`📧 Using booking reference for email: ${emailBookingRef}`);
+                  // removed debug log;
                   
                   // Store the reference in localStorage for consistency
                   try {
@@ -171,16 +168,16 @@ function PaymentCallbackContent() {
                     
                     if (bookingVerifyResponse.ok) {
                       const bookingVerifyData = await bookingVerifyResponse.json()
-                      console.log('✅ Booking verification successful:', bookingVerifyData)
+                      // removed debug log
                       
                       // Send confirmation email as backup (server should have already sent it)
-                      console.log('📧 Sending backup confirmation email from client...');
+                      // removed debug log
                       try {
                         await sendBookingConfirmationFromClient({
                           ...bookingData,
                           bookingRef: emailBookingRef
                         })
-                        console.log('📧 Backup confirmation email sent successfully from client')
+                        // removed debug log
                       } catch (emailError) {
                         console.error('📧 Failed to send backup confirmation email:', emailError)
                         // Don't fail the process if backup email fails
@@ -188,7 +185,7 @@ function PaymentCallbackContent() {
 
                       // Send WhatsApp notification as backup
                       try {
-                        console.log('📱 Sending backup WhatsApp notification from client...');
+                        // removed debug log
 
                         // Check if we have booking data with phone number
                         if (bookingDataFromStorage && bookingDataFromStorage.phone) {
@@ -216,13 +213,13 @@ function PaymentCallbackContent() {
                           });
 
                           if (whatsappResponse.ok) {
-                            console.log('📱 Backup WhatsApp notification sent successfully from client');
+                            // removed debug log
                           } else {
                             const whatsappError = await whatsappResponse.json();
                             console.error('📱 Failed to send backup WhatsApp notification:', whatsappError);
                           }
                         } else {
-                          console.log('📱 No phone number available for WhatsApp notification');
+                          // removed debug log
                         }
                       } catch (whatsappError) {
                         console.error('📱 Failed to send backup WhatsApp notification:', whatsappError);
@@ -245,7 +242,7 @@ function PaymentCallbackContent() {
                     setError('An error occurred while verifying your booking. Please contact support.')
                   }
                 } else {
-                  console.log('⚠️ No booking ID available for email')
+                  // removed debug log
                 }
                 
                 // Clear localStorage after successful payment and email
@@ -254,16 +251,16 @@ function PaymentCallbackContent() {
                 } catch (error) {
                   console.error('Error clearing booking data from localStorage:', error);
                 }
-                console.log('🧹 Cleared booking data from localStorage')
+                // removed debug log
               } else {
-                console.log('⚠️ No booking data found in localStorage')
+                // removed debug log
                 
                 // Fall back to minimal email if needed
                 if (bookingRef) {
-                  console.log('📧 Sending minimal confirmation email...')
+                  // removed debug log
                   // Create booking reference in B0000123 format
                   const minimalBookingRef = `B${String(bookingRef).padStart(7, '0')}`;
-                  console.log(`📝 Generated minimal booking reference: ${minimalBookingRef}`);
+                  // removed debug log
                   
                   const minimalEmailResult = await sendBookingConfirmationFromClient({
                     bookingId: parseInt(bookingRef),
@@ -282,7 +279,7 @@ function PaymentCallbackContent() {
                   })
                   
                   if (minimalEmailResult.success) {
-                    console.log('✅ Minimal confirmation email sent successfully')
+                    // removed debug log
                   } else {
                     console.error('❌ Failed to send minimal confirmation email:', minimalEmailResult.error)
                   }
@@ -311,10 +308,10 @@ function PaymentCallbackContent() {
                 // Use the booking reference from state (which should be the correct database reference)
                 if (bookingRef) {
                   bookingRefForRedirect = bookingRef;
-                  console.log(`Using booking reference from state for redirect: ${bookingRefForRedirect}`);
+                  // removed debug log
                 } else if (txnId) {
                   // Only use transaction ID as last resort if no booking reference is available
-                  console.log(`No booking reference in state, using transaction ID as fallback: ${txnId}`);
+                  // removed debug log
                   bookingRefForRedirect = txnId;
                 }
               } catch (e) {
@@ -326,7 +323,7 @@ function PaymentCallbackContent() {
                 // If we have a booking reference in state, use that
                 if (bookingRef) {
                   bookingRefForRedirect = bookingRef;
-                  console.log(`Using booking reference from state for redirect: ${bookingRefForRedirect}`);
+                  // removed debug log
                 } else {
                   // Last resort: generate a timestamp-based reference
                   const timestamp = Date.now().toString();
@@ -338,7 +335,7 @@ function PaymentCallbackContent() {
               // Always store the booking reference and ID in localStorage as plain strings (not as JSON)
               // This helps with retrieving booking details if redirect fails
               if (bookingRefForRedirect) {
-                console.log(`Storing booking reference in localStorage: ${bookingRefForRedirect}`);
+                // removed debug log
                 try {
                   localStorage.setItem('lastBookingRef', bookingRefForRedirect); // Store as plain string, not JSON
                 } catch (error) {
@@ -366,7 +363,7 @@ function PaymentCallbackContent() {
                     if (response.ok) {
                       return response.json().then(data => {
                         if (data && data.length > 0) {
-                          console.log('✅ Final API check successful - booking found:', data);
+                          // removed debug log
                           // Store complete booking data for the confirmation page
                           try {
                             localStorage.setItem('verifiedBookingData', JSON.stringify(data));
@@ -390,7 +387,7 @@ function PaymentCallbackContent() {
               }
               
               if (bookingRefForRedirect) {
-                console.log(`Redirecting to booking confirmation: /booking-confirmation?ref=${bookingRefForRedirect}`);
+                // removed debug log
                 router.push(`/booking-confirmation?ref=${bookingRefForRedirect}`);
               } else {
                 console.error('No booking reference available for redirect');
@@ -409,7 +406,7 @@ function PaymentCallbackContent() {
           // Handle pending payments with retry logic
           const maxRetries = 6 // Maximum 6 retries (about 30 seconds total)
           if (currentRetryCount < maxRetries) {
-            console.log(`Payment is pending, retrying in 5 seconds... (${currentRetryCount + 1}/${maxRetries})`)
+            // removed debug log
             setRetryCount(currentRetryCount + 1)
 
             // Retry after 5 seconds
@@ -419,7 +416,7 @@ function PaymentCallbackContent() {
             return // Don't set loading to false yet
           } else {
             // Max retries reached, show pending status
-            console.log('Max retries reached, payment still pending')
+            // removed debug log
             setError('Payment is taking longer than expected. Please check your payment status or contact support.')
           }
         }

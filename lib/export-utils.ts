@@ -454,14 +454,14 @@ export const createPaymentExportColumns = () => [
   { key: 'created_at' as const, label: 'Created At', width: 120, format: (value: any) => new Date(value).toLocaleDateString() },
 ]
 
-export const createVenueExportColumns = () => [
+export const createVenueExportColumns = (): ExportColumn<any>[] => [
   { key: 'venue_id' as const, label: 'Venue ID', width: 80 },
   { key: 'venue_name' as const, label: 'Venue Name', width: 200 },
   { key: 'address' as const, label: 'Address', width: 250 },
   { key: 'city_name' as const, label: 'City', width: 100 },
   { key: 'capacity' as const, label: 'Capacity', width: 80, align: 'right' as const },
-  { key: 'is_active' as const, label: 'Status', width: 80, format: (value: any) => value ? 'Active' : 'Inactive' },
-  { key: 'created_at' as const, label: 'Created At', width: 120, format: (value: any) => new Date(value).toLocaleDateString() },
+  { key: 'venue_is_active' as const, label: 'Status', width: 80, format: (value: any) => value ? 'Active' : 'Inactive' },
+  { key: 'venue_created_at' as const, label: 'Created At', width: 120, format: (value: any) => new Date(value).toLocaleDateString() },
 ]
 
 export const createCityExportColumns = () => [
@@ -475,16 +475,15 @@ export const createCityExportColumns = () => [
 ]
 
 export const createGameExportColumns = () => [
-  { key: 'game_id' as const, label: 'Game ID', width: 80 },
+  { key: 'id' as const, label: 'Game ID', width: 80 },
   { key: 'game_name' as const, label: 'Game Name', width: 200 },
   { key: 'description' as const, label: 'Description', width: 300 },
   { key: 'min_age' as const, label: 'Min Age', width: 80, align: 'right' as const },
   { key: 'max_age' as const, label: 'Max Age', width: 80, align: 'right' as const },
   { key: 'duration_minutes' as const, label: 'Duration (min)', width: 100, align: 'right' as const },
-  { key: 'max_participants' as const, label: 'Max Participants', width: 120, align: 'right' as const },
-  { key: 'price' as const, label: 'Price', width: 80, format: (value: any) => `₹${value}`, align: 'right' as const },
+  { key: 'categories' as const, label: 'Categories', width: 150, format: (value: any) => Array.isArray(value) ? value.join(', ') : String(value) },
   { key: 'is_active' as const, label: 'Status', width: 80, format: (value: any) => value ? 'Active' : 'Inactive' },
-  { key: 'created_at' as const, label: 'Created At', width: 120, format: (value: any) => new Date(value).toLocaleDateString() },
+  { key: 'created_at' as const, label: 'Created At', width: 120, format: (value: any) => value ? new Date(value).toLocaleDateString() : '' },
 ]
 
 export const createAttendanceExportColumns = () => [

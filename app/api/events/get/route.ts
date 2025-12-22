@@ -16,11 +16,11 @@ export async function POST(request: Request) {
       );
     }
     
-    console.log(`Server API route: Fetching event with ID: ${id}`);
+    // removed debug log
 
     // Forward the request to the external API with the correct URL
     const apiUrl = EVENT_API.GET;
-    console.log("Server API route: Calling API URL:", apiUrl);
+    // removed debug log
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -31,15 +31,15 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Get event response status: ${response.status}`);
+    // removed debug log
 
     if (!response.ok) {
       // If the first attempt fails, try with a different URL format
-      console.log("Server API route: First attempt failed, trying with alternative URL format");
+      // removed debug log
 
       // Try with webhook-test instead of webhook
       const alternativeUrl = "https://ai.nibog.in/webhook-test/v1/nibog/event-game-slots/get";
-      console.log("Server API route: Trying alternative URL:", alternativeUrl);
+      // removed debug log
 
       const alternativeResponse = await fetch(alternativeUrl, {
         method: "POST",
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
         cache: "no-store",
       });
 
-      console.log(`Server API route: Get event response status from alternative URL: ${alternativeResponse.status}`);
+      // removed debug log
 
       if (!alternativeResponse.ok) {
         // If both attempts fail, return an error
@@ -62,12 +62,12 @@ export async function POST(request: Request) {
 
       // Get the response data from the alternative URL
       const responseText = await alternativeResponse.text();
-      console.log(`Server API route: Raw response from alternative URL: ${responseText}`);
+      // removed debug log
 
       try {
         // Try to parse the response as JSON
         const responseData = JSON.parse(responseText);
-        console.log("Server API route: Retrieved event:", responseData);
+        // removed debug log
 
         return NextResponse.json(responseData, { status: 200 });
       } catch (parseError) {
@@ -85,13 +85,13 @@ export async function POST(request: Request) {
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
+    // removed debug log
 
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: Retrieved event:", responseData);
-      console.log("Server API route: Games data structure:", responseData.games || (Array.isArray(responseData) && responseData[0] ? responseData[0].games : 'No games found'));
+      // removed debug log
+      // removed debug log
 
       return NextResponse.json(responseData, { status: 200 });
     } catch (parseError) {

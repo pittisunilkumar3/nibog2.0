@@ -71,12 +71,10 @@ export default function UserDetailPage({ params }: Props) {
     setIsProcessing("delete")
 
     try {
-      console.log(`Attempting to delete user with ID: ${userId}`);
 
       // Call the API to delete the user
       const result = await deleteUser(userId)
 
-      console.log(`Delete user result:`, result);
 
       toast({
         title: "Success",
@@ -109,7 +107,6 @@ export default function UserDetailPage({ params }: Props) {
     // This is still a placeholder - we'll need to implement the real API call
     // when the API endpoint is available
     setTimeout(() => {
-      console.log(`Toggling status for user ${userId} from ${user.is_active ? "active" : "inactive"} to ${user.is_active ? "inactive" : "active"}`)
       setIsProcessing(null)
 
       // Update the local state

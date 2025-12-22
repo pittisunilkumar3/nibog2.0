@@ -25,7 +25,16 @@ interface ValidatedTicketData {
 
 export async function POST(request: Request) {
   try {
-    const { to, subject, html, settings, qrCodeBuffer, bookingRef, ticketDetails } = await request.json()
+    const body = await request.json() as {
+      to: string,
+      subject: string,
+      html: string,
+      settings: any,
+      qrCodeBuffer?: number[] | null,
+      bookingRef?: string,
+      ticketDetails?: any[]
+    };
+    const { to, subject, html, settings, qrCodeBuffer, bookingRef, ticketDetails } = body;
 
     // Validate required fields
     if (!to || !subject || !html || !settings) {
@@ -35,28 +44,13 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log('🎫 Sending ticket email with QR code attachment to:', to);
-    console.log('🎫 Booking Ref:', bookingRef);
-    console.log('🎫 Ticket Details received:', ticketDetails ? `${ticketDetails.length} tickets` : 'No ticket details');
-    if (ticketDetails && ticketDetails.length > 0) {
-      console.log('🎫 First ticket sample:', {
-        parent_name: ticketDetails[0].parent_name,
-        child_name: ticketDetails[0].child_name,
-        event_title: ticketDetails[0].event_title,
-        start_time: ticketDetails[0].start_time,
-        end_time: ticketDetails[0].end_time,
-        slot_title: ticketDetails[0].slot_title,
-        custom_title: ticketDetails[0].custom_title
-      });
-    }
+    // removed debug logs for request info
 
     // Enhanced SMTP configuration with better error handling and fallbacks
-    console.log('🔧 SMTP Configuration:', {
-      host: settings.smtp_host,
-      port: settings.smtp_port,
-      secure: settings.smtp_port === 465,
-      user: settings.smtp_username ? '***SET***' : 'NOT_SET'
-    });
+    // removed debug log for SMTP configuration
+
+    // typed attachments array and configured transporter
+    const attachments: Array<{ filename: string; content: Buffer; contentType?: string; cid?: string }> = [];
 
     const transporter = nodemailer.createTransport({
       host: settings.smtp_host,
@@ -82,13 +76,12 @@ export async function POST(request: Request) {
         delay: 1000,
         max: 3
       }
-    })
+    } as any); // cast to any to satisfy overloads
 
     // Enhanced SMTP verification with detailed error reporting
     try {
-      console.log('🔍 Verifying SMTP connection...');
+      // removed debug log
       await transporter.verify()
-      console.log('✅ SMTP verification successful');
     } catch (verifyError: any) {
       console.error('❌ SMTP verification failed:', {
         error: verifyError.message,
@@ -126,20 +119,13 @@ export async function POST(request: Request) {
       )
     }
 
-    // Prepare attachments
-    const attachments = []
+    // Prepare attachments (typed above)
     
     // Generate PDF ticket and add as attachment
     try {
-      console.log('📄 Generating PDF ticket for booking:', bookingRef);
-      console.log('📄 PDF generation inputs:', {
-        bookingRef,
-        qrCodeBufferSize: qrCodeBuffer?.length || 0,
-        ticketDetailsCount: ticketDetails?.length || 0,
-        htmlContentLength: html?.length || 0
-      });
+      // removed debug log
 
-      const pdfBuffer = await generateTicketPDF(html, bookingRef, qrCodeBuffer, ticketDetails);
+      const pdfBuffer = await generateTicketPDF(html, bookingRef ?? '', qrCodeBuffer ?? undefined, ticketDetails);
 
       if (!pdfBuffer || pdfBuffer.length === 0) {
         throw new Error('PDF generation returned empty buffer');
@@ -150,12 +136,12 @@ export async function POST(request: Request) {
         content: pdfBuffer,
         contentType: 'application/pdf'
       });
-      console.log('✅ PDF ticket attachment added successfully, size:', pdfBuffer.length, 'bytes');
+      // removed debug log
     } catch (pdfError) {
       console.error('❌ Error generating PDF ticket:', pdfError);
       console.error('❌ PDF error details:', pdfError instanceof Error ? pdfError.stack : pdfError);
       // Continue without PDF attachment - at least send email with QR code
-      console.log('⚠️ Continuing without PDF attachment - email will still be sent with QR code');
+      // removed debug log
     }
     
     // Add QR code as attachment if provided
@@ -167,17 +153,16 @@ export async function POST(request: Request) {
         contentType: 'image/png',
         cid: 'qrcode' // Content ID for embedding in HTML
       })
-      console.log('🎫 QR code attachment added, size:', qrBuffer.length);
+      // removed debug log
     }
 
     // Update HTML to reference the attached QR code instead of inline base64
-    console.log('🎫 Original HTML contains QR placeholder:', html.includes('data:image/png;base64,placeholder'));
+    // removed debug log
     const updatedHtml = html.replace(
       /src="data:image\/png;base64,[^"]*"/g,
       'src="cid:qrcode"'
     );
-    console.log('🎫 HTML replacement completed, contains cid:qrcode:', updatedHtml.includes('cid:qrcode'));
-
+    // removed debug log
     // Email options
     const mailOptions = {
       from: `"${settings.sender_name}" <${settings.sender_email}>`,
@@ -187,12 +172,12 @@ export async function POST(request: Request) {
       attachments: attachments
     }
 
-    console.log('🎫 Sending email with', attachments.length, 'attachments');
+    // removed debug log
 
     // Send email
     const info = await transporter.sendMail(mailOptions)
 
-    console.log('🎫 Ticket email sent successfully, messageId:', info.messageId);
+    // removed debug log
 
     return NextResponse.json({
       success: true,
@@ -215,33 +200,24 @@ export async function POST(request: Request) {
  * Exactly mirrors the booking confirmation page layout shown in the email image
  * Uses only half of the A4 page to match the exact ticket design
  */
-async function generateTicketPDF(htmlContent: string, bookingRef: string, qrCodeBuffer?: number[], ticketDetails?: any[]): Promise<Buffer> {
+async function generateTicketPDF(htmlContent: string, bookingRef?: string, qrCodeBuffer?: number[], ticketDetails?: any[]): Promise<Buffer> {
   try {
-    console.log('📄 Starting PDF generation process...');
-    console.log('📄 Input validation:', {
-      htmlContentLength: htmlContent?.length || 0,
-      bookingRef,
-      qrCodeBufferLength: qrCodeBuffer?.length || 0,
-      ticketDetailsCount: ticketDetails?.length || 0
-    });
+    // removed debug log
+    // removed debug log
 
     const ticketData = validateAndExtractTicketData(ticketDetails, bookingRef);
-    console.log('📄 Ticket data validated:', {
-      hasCompleteData: ticketData.hasCompleteData,
-      missingFields: ticketData.missingFields
-    });
+    // removed debug log
 
     const ticket = ticketDetails && ticketDetails[0] ? ticketDetails[0] : {};
 
     // PDF setup - using A4 dimensions (595.28 x 841.89 points)
-    console.log('📄 Initializing jsPDF...');
+    // removed debug log
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'pt',
       format: 'a4'
     });
-    console.log('📄 jsPDF initialized successfully');
-    
+    // removed debug log    
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     
@@ -498,14 +474,14 @@ function validateAndExtractTicketData(ticketDetails?: any[], bookingRef?: string
   }
 
   const ticket = ticketDetails[0];
-  console.log('📄 Raw ticket data received:', ticket);
+  // removed debug log
 
   // Extract and validate all fields with fallbacks
   if (ticket.event_title?.trim()) {
     result.eventTitle = ticket.event_title.trim();
   } else if (ticket.custom_title?.trim()) {
     result.eventTitle = ticket.custom_title.trim();
-    console.log('📄 Using custom_title as event_title fallback:', result.eventTitle);
+    // removed debug log
   } else {
     result.eventTitle = 'NIBOG Event'; // Keep default
     missingFields.push('event_title');
@@ -579,7 +555,7 @@ function validateAndExtractTicketData(ticketDetails?: any[], bookingRef?: string
   result.hasCompleteData = missingFields.length === 0;
   result.missingFields = missingFields;
 
-  console.log('📄 Validated data:', result);
+  // removed debug log
 
   return result;
 }

@@ -128,7 +128,6 @@ export default function BookingReceiptPage({ params }: Props) {
     
     // Simulate download
     setTimeout(() => {
-      console.log(`Downloading receipt for booking ${bookingId}`)
       setIsLoading({ ...isLoading, download: false })
       // In a real app, this would trigger a download of a PDF file
     }, 1000)
@@ -140,7 +139,6 @@ export default function BookingReceiptPage({ params }: Props) {
     
     // Simulate sending email
     setTimeout(() => {
-      console.log(`Emailing receipt for booking ${bookingId} to ${booking?.email}`)
       setIsLoading({ ...isLoading, email: false })
       // In a real app, this would send an email with the receipt
     }, 1500)

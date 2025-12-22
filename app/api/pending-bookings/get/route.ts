@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log(`=== RETRIEVING PENDING BOOKING ===`);
+    // removed debug log
     
     // Parse the request body to get transaction ID
     const { transaction_id } = await request.json();
-    console.log(`Transaction ID: ${transaction_id}`);
+    // removed debug log
 
     if (!transaction_id) {
       console.error('❌ Missing transaction_id in request body');
@@ -17,8 +17,8 @@ export async function POST(request: Request) {
     }
 
     // Retrieve from database via external API
-    console.log(`📡 Calling external API: https://ai.nibog.in/webhook/v1/nibog/pending-bookings/get`);
-    console.log(`📋 Request payload:`, JSON.stringify({ transaction_id: transaction_id }, null, 2));
+    // removed debug log
+    // removed debug log
 
     try {
       const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/pending-bookings/get', {
@@ -33,11 +33,11 @@ export async function POST(request: Request) {
         signal: AbortSignal.timeout(10000) // 10 second timeout
       });
 
-      console.log(`📡 External API response status: ${response.status}`);
+      // removed debug log
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log(`📭 Pending booking not found for transaction: ${transaction_id}`);
+          // removed debug log
           // Don't clean up in case of 404, it might be a valid state
           return NextResponse.json(
             { error: "Pending booking not found", status: response.status, transaction_id },
@@ -79,10 +79,10 @@ export async function POST(request: Request) {
       let result;
       try {
         result = await response.json();
-        console.log(`📋 Raw external API response structure:`, Object.keys(result));
-        console.log(`📋 Transaction ID from response: ${result.transaction_id}`);
-        console.log(`📋 Booking data type: ${typeof result.booking_data}`);
-        console.log(`📋 Expires at: ${result.expires_at}`);
+        // removed debug log
+        // removed debug log
+        // removed debug log
+        // removed debug log
       } catch (jsonError) {
         console.error('❌ Failed to parse JSON response:', jsonError);
         const rawText = await response.text();
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         const now = new Date();
         
         if (now > expiresAt) {
-          console.log(`⏰ Pending booking expired for transaction: ${transaction_id}`);
+          // removed debug log
           return NextResponse.json(
             { error: "Pending booking has expired", transaction_id, expiresAt: result.expires_at },
             { status: 410 } // Gone
@@ -172,13 +172,12 @@ export async function POST(request: Request) {
         );
       }
 
-      console.log("✅ Pending booking retrieved successfully");
+      // removed debug log
 
       // Track DOB specifically in retrieval
-      console.log("=== DOB TRACKING IN PENDING BOOKING RETRIEVAL ===");
-      console.log("Retrieved childDob:", bookingData.childDob);
-      console.log("childDob type:", typeof bookingData.childDob);
-      console.log("DOB format validation:", /^\d{4}-\d{2}-\d{2}$/.test(bookingData.childDob) ? "✅ Valid YYYY-MM-DD" : "❌ Invalid format");
+      // removed debug log
+      // removed debug log
+      // removed debug log
 
       // Return success with complete booking data
       return NextResponse.json({

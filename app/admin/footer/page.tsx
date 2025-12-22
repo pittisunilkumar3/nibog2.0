@@ -21,7 +21,6 @@ import {
   Phone,
   Mail,
   Globe,
-  Link as LinkIcon,
   FileText
 } from "lucide-react"
 import { PageTransition, FadeIn } from "@/components/ui/animated-components"
@@ -141,11 +140,9 @@ export default function FooterManagement() {
           copyrightText: footerSettings.copyright_text
         }
         setFooterContent(convertedContent)
-        console.log('✅ Footer settings loaded successfully:', footerSettings)
       } else {
         // Use default content if no settings found
         setFooterContent(defaultFooterContent)
-        console.log('⚠️ No footer settings found, using defaults')
       }
       setHasChanges(false)
     } catch (error) {
@@ -273,9 +270,7 @@ export default function FooterManagement() {
         copyright_text: footerContent.copyrightText
       }
 
-      console.log('📤 Sending footer update:', payload)
       const result = await updateFooterSetting(payload)
-      console.log('✅ Footer update result:', result)
 
       toast({
         title: "Success",

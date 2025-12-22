@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     // Parse the request body
     const emailSettingData = await request.json();
     
-    console.log("Server API route: Creating email settings:", emailSettingData);
+    // removed debug log
 
     // Validate required fields
     if (!emailSettingData.smtp_host) {
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     // Forward the request to the external API with the correct URL
     const apiUrl = EMAIL_SETTING_API.CREATE;
-    console.log("Server API route: Calling API URL:", apiUrl);
+    // removed debug log
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -64,15 +64,15 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Create email settings response status: ${response.status}`);
+    // removed debug log
 
     if (!response.ok) {
       // If the first attempt fails, try with a different URL format
-      console.log("Server API route: First attempt failed, trying with alternative URL format");
+      // removed debug log
 
       // Try with webhook-test instead of webhook
       const alternativeUrl = apiUrl.replace("webhook/v1", "webhook-test/v1");
-      console.log("Server API route: Trying alternative URL:", alternativeUrl);
+      // removed debug log
 
       const alternativeResponse = await fetch(alternativeUrl, {
         method: "POST",
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
         cache: "no-store",
       });
 
-      console.log(`Server API route: Alternative create email settings response status: ${alternativeResponse.status}`);
+      // removed debug log
 
       if (!alternativeResponse.ok) {
         const errorText = await alternativeResponse.text();
@@ -96,12 +96,11 @@ export async function POST(request: Request) {
 
       // Get the response data from the alternative URL
       const responseText = await alternativeResponse.text();
-      console.log(`Server API route: Raw response from alternative URL: ${responseText}`);
+      // removed debug log
       
       try {
         // Try to parse the response as JSON
         const responseData = JSON.parse(responseText);
-        console.log("Server API route: Created email settings:", responseData);
         
         return NextResponse.json(responseData, { status: 201 });
       } catch (parseError) {
@@ -119,12 +118,11 @@ export async function POST(request: Request) {
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
+    // removed debug log
     
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: Created email settings:", responseData);
       
       return NextResponse.json(responseData, { status: 201 });
     } catch (parseError) {

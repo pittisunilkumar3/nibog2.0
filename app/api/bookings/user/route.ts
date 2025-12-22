@@ -3,11 +3,9 @@ import { BOOKING_API } from '@/config/api';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Starting user bookings request");
 
     // Parse the request body
     const requestData = await request.json();
-    console.log(`Server API route: Received request body: ${JSON.stringify(requestData)}`);
 
     // Validate user_id
     if (!requestData.user_id) {
@@ -19,8 +17,6 @@ export async function POST(request: Request) {
 
     // Forward the request to the external API
     const apiUrl = BOOKING_API.GET_USER_BOOKINGS;
-    console.log("Server API route: Calling API URL:", apiUrl);
-    console.log(`Server API route: Request method: POST`);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -30,8 +26,6 @@ export async function POST(request: Request) {
       body: JSON.stringify(requestData),
       cache: "no-store",
     });
-
-    console.log(`Server API route: User bookings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -43,7 +37,6 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log(`Server API route: User bookings response data length: ${Array.isArray(data) ? data.length : 'Not an array'}`);
 
     return NextResponse.json(data);
   } catch (error) {

@@ -28,8 +28,6 @@ export interface TicketEmailData {
  */
 export async function sendTicketEmail(ticketData: TicketEmailData): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`🎫 Starting ticket email process for booking ID: ${ticketData.bookingId}`);
-    console.log(`🎫 Recipient: ${ticketData.parentEmail}`);
 
     // Get email settings by calling the API function directly (same as booking email service)
     const { GET: getEmailSettings } = await import('@/app/api/emailsetting/get/route');
@@ -53,30 +51,17 @@ export async function sendTicketEmail(ticketData: TicketEmailData): Promise<{ su
     }
 
     const settings = emailSettings[0];
-    console.log('🎫 Email settings retrieved successfully');
 
     // Generate ticket HTML content
     const htmlContent = await generateTicketHTML(ticketData);
-    console.log(`🎫 HTML content generated successfully`);
 
     // Generate QR code as buffer for attachment
-    console.log('🎫 Generating QR code buffer for data:', ticketData.qrCodeData);
     const qrCodeBuffer = await generateQRCodeBuffer(ticketData.qrCodeData);
-    console.log('🎫 QR code buffer generated successfully, size:', qrCodeBuffer.length, 'bytes');
 
     // Validate QR code buffer
     if (!qrCodeBuffer || qrCodeBuffer.length === 0) {
       throw new Error('QR code buffer generation failed - buffer is empty');
     }
-
-    // Debug: Log ticket details being sent to API
-    console.log('🎫 Ticket details summary:', {
-      bookingId: ticketData.bookingId,
-      bookingRef: ticketData.bookingRef,
-      childName: ticketData.childName,
-      eventTitle: ticketData.eventTitle,
-      ticketsCount: ticketData.ticketDetails?.length || 0
-    });
 
     // Get the app URL from the same helper used in PhonePe config
     const { getAppUrl } = await import('@/config/phonepe');
@@ -92,15 +77,6 @@ export async function sendTicketEmail(ticketData: TicketEmailData): Promise<{ su
       bookingRef: ticketData.bookingRef,
       ticketDetails: ticketData.ticketDetails
     };
-    
-    // Log all URL options we'll try for sending email
-    console.log('🎫 Environment details:', {
-      appUrl,
-      nodeEnv: process.env.NODE_ENV,
-      vercelUrl: process.env.VERCEL_URL || 'not set',
-      vercelEnv: process.env.VERCEL_ENV || 'not set',
-      baseUrl: typeof window !== 'undefined' ? window.location.origin : 'server-side'
-    });
     
     // Create a list of URLs to try in order
     const apiUrls = [];
@@ -128,7 +104,6 @@ export async function sendTicketEmail(ticketData: TicketEmailData): Promise<{ su
     
     // Remove duplicates from the URL list
     const uniqueApiUrls = [...new Set(apiUrls)];
-    console.log('🎫 Will try these base URLs in order:', uniqueApiUrls);
     
     // Try each URL in sequence until one works
     let succeeded = false;
@@ -140,8 +115,6 @@ export async function sendTicketEmail(ticketData: TicketEmailData): Promise<{ su
       const fullApiUrl = `${baseUrl}/api/send-ticket-email-with-attachment`;
       
       try {
-        console.log(`🎫 [ATTEMPT ${i+1}] Trying: ${fullApiUrl}`);
-        
         const response = await fetch(fullApiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -149,19 +122,16 @@ export async function sendTicketEmail(ticketData: TicketEmailData): Promise<{ su
         });
         
         lastResponse = response;
-        console.log(`🎫 [ATTEMPT ${i+1}] Response status:`, response.status);
         
         let responseData;
         try {
           responseData = await response.json();
-          console.log(`🎫 [ATTEMPT ${i+1}] Response data:`, responseData);
         } catch (parseError) {
           console.error(`🎫 [ATTEMPT ${i+1}] Could not parse JSON response:`, parseError);
           responseData = { error: 'Could not parse response' };
         }
         
         if (response.ok) {
-          console.log(`🎫 Success! Email sent via ${fullApiUrl}`);
           succeeded = true;
           break; // Exit the loop on success
         } else {
@@ -171,13 +141,10 @@ export async function sendTicketEmail(ticketData: TicketEmailData): Promise<{ su
         console.error(`🎫 [ATTEMPT ${i+1}] Network error:`, error);
         lastError = error instanceof Error ? error.message : 'Network error';
       }
-      
-      console.log(`🎫 [ATTEMPT ${i+1}] Failed, trying next URL if available...`);
     }
     
     // Return final result
     if (succeeded) {
-      console.log(`🎫 Ticket email sent successfully to ${ticketData.parentEmail}`);
       return { success: true };
     } else {
       console.error('🎫 All attempts failed to send ticket email');
@@ -200,7 +167,6 @@ export async function sendTicketEmail(ticketData: TicketEmailData): Promise<{ su
  */
 async function generateTicketHTML(ticketData: TicketEmailData): Promise<string> {
   // Use placeholder for QR code that will be replaced with CID reference for attachment
-  console.log('🎫 Generating ticket HTML with QR code placeholder');
   const qrCodePlaceholder = 'data:image/png;base64,placeholder';
   
   // Generate ticket details HTML
@@ -352,11 +318,9 @@ async function generateTicketHTML(ticketData: TicketEmailData): Promise<string> 
  */
 async function generateQRCodeBuffer(data: string): Promise<Buffer> {
   try {
-    console.log('🎫 Generating QR code buffer for data:', data);
 
     // Check if we're in a browser environment
     if (typeof window !== 'undefined') {
-      console.log('🎫 Browser environment detected, using data URL approach');
 
       // In browser, generate as data URL first, then convert to buffer
       const qrCodeDataURL = await QRCode.toDataURL(data, {
@@ -372,11 +336,9 @@ async function generateQRCodeBuffer(data: string): Promise<Buffer> {
       // Convert data URL to buffer
       const base64Data = qrCodeDataURL.replace(/^data:image\/png;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
-      console.log('🎫 QR code buffer generated successfully from data URL, size:', buffer.length);
       return buffer;
     } else {
       // In Node.js environment, use toBuffer directly
-      console.log('🎫 Node.js environment detected, using toBuffer');
       const qrCodeBuffer = await QRCode.toBuffer(data, {
         width: 200,
         margin: 2,
@@ -386,7 +348,6 @@ async function generateQRCodeBuffer(data: string): Promise<Buffer> {
         },
         errorCorrectionLevel: 'M'
       });
-      console.log('🎫 QR code buffer generated successfully, size:', qrCodeBuffer.length);
       return qrCodeBuffer;
     }
   } catch (error) {
@@ -396,7 +357,6 @@ async function generateQRCodeBuffer(data: string): Promise<Buffer> {
 
     // Try with simpler data as fallback
     try {
-      console.log('🎫 Attempting QR code buffer generation with simpler data...');
       const simpleData = `NIBOG-${Date.now()}`;
 
       if (typeof window !== 'undefined') {
@@ -408,7 +368,6 @@ async function generateQRCodeBuffer(data: string): Promise<Buffer> {
         });
         const base64Data = fallbackDataURL.replace(/^data:image\/png;base64,/, '');
         const fallbackBuffer = Buffer.from(base64Data, 'base64');
-        console.log('🎫 Fallback QR code buffer generated successfully (browser)');
         return fallbackBuffer;
       } else {
         // Node.js fallback
@@ -417,7 +376,6 @@ async function generateQRCodeBuffer(data: string): Promise<Buffer> {
           margin: 2,
           errorCorrectionLevel: 'L'
         });
-        console.log('🎫 Fallback QR code buffer generated successfully (Node.js)');
         return fallbackBuffer;
       }
     } catch (fallbackError) {
@@ -430,7 +388,6 @@ async function generateQRCodeBuffer(data: string): Promise<Buffer> {
         0x00, 0x00, 0x00, 0xC8, 0x00, 0x00, 0x00, 0xC8, // 200x200 dimensions
         0x08, 0x02, 0x00, 0x00, 0x00, 0x4C, 0x8D, 0x87, 0x29 // rest of minimal PNG
       ]);
-      console.log('🎫 Using minimal PNG buffer as final fallback');
       return fallbackPng;
     }
   }
@@ -441,7 +398,6 @@ async function generateQRCodeBuffer(data: string): Promise<Buffer> {
  */
 async function generateQRCodeDataURL(data: string): Promise<string> {
   try {
-    console.log('🎫 Generating QR code for data:', data);
     const qrCodeDataURL = await QRCode.toDataURL(data, {
       width: 200,
       margin: 2,
@@ -451,8 +407,6 @@ async function generateQRCodeDataURL(data: string): Promise<string> {
       },
       errorCorrectionLevel: 'M'
     });
-    console.log('🎫 QR code generated successfully, length:', qrCodeDataURL.length);
-    console.log('🎫 QR code starts with:', qrCodeDataURL.substring(0, 50));
     return qrCodeDataURL;
   } catch (error) {
     console.error('🎫 Error generating QR code:', error);
@@ -461,15 +415,13 @@ async function generateQRCodeDataURL(data: string): Promise<string> {
 
     // Try with simpler data as fallback
     try {
-      console.log('🎫 Attempting QR code generation with simpler data...');
       const simpleData = `NIBOG-${Date.now()}`;
       const fallbackQR = await QRCode.toDataURL(simpleData, {
         width: 200,
         margin: 2,
         errorCorrectionLevel: 'L'
       });
-      console.log('🎫 Fallback QR code generated successfully');
-      return fallbackQR;
+      return fallbackQR; 
     } catch (fallbackError) {
       console.error('🎫 Fallback QR code also failed:', fallbackError);
 
@@ -481,7 +433,6 @@ async function generateQRCodeDataURL(data: string): Promise<string> {
           <text x="100" y="115" text-anchor="middle" font-size="12" fill="#666">PLACEHOLDER</text>
         </svg>`;
       const fallbackDataURL = 'data:image/svg+xml;base64,' + Buffer.from(fallbackSvg).toString('base64');
-      console.log('🎫 Using SVG fallback QR code placeholder');
       return fallbackDataURL;
     }
   }

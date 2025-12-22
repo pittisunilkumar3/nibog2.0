@@ -369,7 +369,6 @@ export default function NewTestimonialPage() {
                   value={selectedCityId?.toString() || ""}
                   onValueChange={(value) => {
                     const cityId = parseInt(value)
-                    console.log('City selection changed:', { cityId })
 
                     setSelectedCityId(cityId)
                     

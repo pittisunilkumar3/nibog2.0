@@ -9,7 +9,7 @@ const CACHE_DURATION = 30000; // 30 seconds cache
 
 export async function GET(request: Request) {
   try {
-    console.log("Server API route: Fetching all bookings...");
+    // Fetching all bookings
 
     // Extract pagination parameters from URL
     const { searchParams } = new URL(request.url);
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '100', 10);
     const offset = (page - 1) * limit;
 
-    console.log(`Server API route: Pagination - page: ${page}, limit: ${limit}, offset: ${offset}`);
+    // Pagination parameters computed
 
     // Create cache key that includes pagination parameters
     const cacheKey = `bookings_${page}_${limit}`;
@@ -25,13 +25,12 @@ export async function GET(request: Request) {
     // Check if we have cached data that's still valid
     const now = Date.now();
     if (cachedData && cachedData.cacheKey === cacheKey && (now - cacheTimestamp) < CACHE_DURATION) {
-      console.log("Server API route: Returning cached paginated bookings data");
+      // Returning cached paginated bookings data
       return NextResponse.json(cachedData.data, { status: 200 });
     }
 
     // Forward the request to the external API with the correct URL (active events only)
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get-all-active-event";
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     // Set a timeout for the fetch request
     const controller = new AbortController();
@@ -48,7 +47,6 @@ export async function GET(request: Request) {
       });
 
       clearTimeout(timeoutId);
-      console.log(`Server API route: Get all bookings response status: ${response.status}`);
 
       if (!response.ok) {
         throw new Error(`API returned error status: ${response.status}`);
@@ -57,9 +55,8 @@ export async function GET(request: Request) {
       // Get the response data with a size limit
       const responseText = await response.text();
       
-      // Log the size of the response
+      // Check the size of the response
       const responseSize = new TextEncoder().encode(responseText).length;
-      console.log(`Server API route: Raw response size: ${responseSize} bytes`);
       
       // If the response is too large, return a limited subset
       if (responseSize > 10 * 1024 * 1024) { // 10MB limit
@@ -115,16 +112,13 @@ export async function GET(request: Request) {
           flattenedData = responseData;
         }
         if (Array.isArray(flattenedData) && flattenedData.length > 0) {
-          console.log("Sample flattened booking object keys:", Object.keys(flattenedData[0]));
-          console.log("Sample flattened booking object:", JSON.stringify(flattenedData[0], null, 2));
+          // Sample flattened booking object available
         }
-        console.log(`Server API route: Retrieved ${totalBookings} total bookings from API`);
+        // Retrieved total bookings from API
 
         // Apply pagination to the data
         const paginatedData = Array.isArray(flattenedData) ? flattenedData.slice(offset, offset + limit) : [];
         const totalPages = Math.ceil(totalBookings / limit);
-
-        console.log(`Server API route: Returning ${paginatedData.length} bookings for page ${page} of ${totalPages}`);
 
         // Prepare paginated response
         const paginatedResponse = {
@@ -145,7 +139,6 @@ export async function GET(request: Request) {
           data: paginatedResponse
         };
         cacheTimestamp = Date.now();
-        console.log("Server API route: Cached paginated bookings data");
 
         return NextResponse.json(paginatedResponse, { status: 200 });
       } catch (parseError) {

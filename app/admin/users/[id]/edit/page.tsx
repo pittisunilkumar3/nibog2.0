@@ -70,11 +70,6 @@ export default function EditUserPage({ params }: Props) {
         const adminToken = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         
-        console.log('Available tokens:', {
-          superadmin: !!superadminToken,
-          admin: !!adminToken,
-          token: !!token
-        });
 
         if (!superadminToken && !adminToken && !token) {
           setError("No authentication token found. Please log in again.");
@@ -89,16 +84,13 @@ export default function EditUserPage({ params }: Props) {
         }
 
         // Fetch user data from API
-        console.log(`Fetching user with ID: ${userId}`);
         const userData = await getUserById(userId)
-        console.log('Fetched user data:', userData);
 
         if (userData) {
           setUser(userData)
           setFullName(userData.full_name || '')
           setEmail(userData.email || '')
           setPhone(userData.phone || '')
-          console.log('Setting cityId from user data:', userData.city_id);
           setCityId(userData.city_id !== undefined ? userData.city_id : null)
           setIsActive(userData.is_active || false)
           setIsLocked(userData.is_locked || false)
@@ -153,11 +145,9 @@ export default function EditUserPage({ params }: Props) {
     setIsSubmitting(true)
     setError(null)
     
-    console.log('Form submitted with cityId:', cityId, 'type:', typeof cityId)
 
     try {
       // Prepare user data for update
-      console.log('Preparing user data - cityId:', cityId, 'type:', typeof cityId);
       
       const userData: UpdateUserData = {
         user_id: userId,
@@ -171,8 +161,6 @@ export default function EditUserPage({ params }: Props) {
       // Ensure accept_terms is always true as required by API
       userData.accept_terms = true;
       
-      console.log("User data being sent:", JSON.stringify(userData, null, 2));
-
       // Only include password if it's provided
       if (password.trim() !== "") {
         userData.password = password
@@ -187,12 +175,8 @@ export default function EditUserPage({ params }: Props) {
         }
       }
 
-      console.log("Submitting user data:", userData);
-
       // Call the API to update the user
       const updatedUser = await updateUser(userData)
-
-      console.log("API response:", updatedUser);
 
       setIsSaved(true)
       toast({
@@ -312,7 +296,6 @@ export default function EditUserPage({ params }: Props) {
                   value={cityId ? cityId.toString() : 'none'}
                   onValueChange={(value) => {
                     const newValue = value === 'none' ? null : Number(value);
-                    console.log('City selection changed:', { value, newValue });
                     setCityId(newValue);
                   }}
                 >

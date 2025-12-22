@@ -269,7 +269,6 @@ export default function UsersPage() {
       icon: <Trash className="h-4 w-4" />,
       onClick: (selectedUsers) => {
         // Handle bulk delete - would need confirmation dialog
-        console.log("Bulk delete:", selectedUsers)
       },
       variant: 'destructive'
     }

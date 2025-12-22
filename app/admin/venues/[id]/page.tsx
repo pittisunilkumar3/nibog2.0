@@ -27,7 +27,6 @@ import { useToast } from "@/components/ui/use-toast"
 // Function to fetch events data for a venue
 const fetchVenueEvents = async (venueId: number) => {
   try {
-    console.log(`Making API request for venue ID: ${venueId}`)
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/get-upcoming-events/venues-id', {
       method: 'POST',
       headers: {
@@ -43,7 +42,6 @@ const fetchVenueEvents = async (venueId: number) => {
     }
     
     const data = await response.json()
-    console.log('Raw API response:', JSON.stringify(data))
     return data
   } catch (error) {
     console.error('Error fetching events data:', error)
@@ -77,16 +75,12 @@ export default function VenueDetailPage({ params }: Props) {
         setIsLoading(true)
         setError(null)
 
-        console.log(`Fetching venue with ID: ${venueId}`)
-
         // First try to get all venues with city details and find the one we need
         // This is more reliable than the individual venue endpoint
         try {
-          console.log("Trying to fetch all venues with city details...")
           const allVenuesWithCity = await fetch('/api/venues/getall-with-city').then(res => res.json())
 
           if (Array.isArray(allVenuesWithCity) && allVenuesWithCity.length > 0) {
-            console.log(`Retrieved ${allVenuesWithCity.length} venues with city details`)
 
             // Find the venue with the matching ID (could be venue_id or id)
             const foundVenue = allVenuesWithCity.find(v =>
@@ -97,7 +91,6 @@ export default function VenueDetailPage({ params }: Props) {
             )
 
             if (foundVenue) {
-              console.log("Found venue in all venues list:", foundVenue)
               setVenue(foundVenue)
 
               // City data is already included in the venue data
@@ -159,14 +152,11 @@ export default function VenueDetailPage({ params }: Props) {
         // Use the correct venue ID (could be venue_id or id)
         const actualVenueId = venue.venue_id || venue.id
         
-        console.log(`Fetching events for venue ID: ${actualVenueId}`)
         const data = await fetchVenueEvents(actualVenueId)
         
         // Log the full structure to debug
-        console.log('Events data structure:', JSON.stringify(data, null, 2))
         
         if (Array.isArray(data) && data.length > 0) {
-          console.log(`Found ${data[0].upcoming_events?.length || 0} upcoming events`)
           setEventsData(data[0]) // API returns an array with one object
         } else {
           console.error('Unexpected data format from API', data)
@@ -197,8 +187,6 @@ export default function VenueDetailPage({ params }: Props) {
 
       // Get the correct venue ID (could be venue_id or id)
       const actualVenueId = venue.venue_id || venue.id
-
-      console.log(`Deleting venue with ID: ${actualVenueId}`)
 
       // Call the API to delete the venue
       const result = await deleteVenue(actualVenueId)
@@ -270,9 +258,6 @@ export default function VenueDetailPage({ params }: Props) {
   
   // Get event statistics from the API data or use fallbacks
   const eventStats = eventsData?.summary || { total_events: 0, upcoming_events: 0, past_events: 0 }
-  
-  console.log('Upcoming events count:', upcomingEvents.length)
-  console.log('Upcoming events data:', JSON.stringify(upcomingEvents, null, 2))
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -438,7 +423,6 @@ export default function VenueDetailPage({ params }: Props) {
                 </TableRow>
               ) : (
                 upcomingEvents.map((event: Event) => {
-                  console.log('Rendering event:', event)
                   return (
                     <TableRow key={event.event_id}>
                       <TableCell className="font-medium">{event.title || 'Unnamed Event'}</TableCell>

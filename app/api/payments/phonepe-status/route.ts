@@ -41,7 +41,7 @@ function generateDefinitiveBookingRef(transactionId: string): string {
   // Ensure the reference is exactly 12 characters long
   reference = reference.substring(0, 12);
   
-  console.log(`✅ Generated consistent booking reference: ${reference}`);
+  // removed debug log
   return reference;
 }
 
@@ -53,7 +53,7 @@ function mapGenderToAllowedValue(gender?: string): string {
   if (!gender) return 'Other';
   
   // Debug the incoming gender value
-  console.log(`Server API route: Mapping gender value: '${gender}'`);
+  // removed debug log
   
   // Normalize the gender value by converting to lowercase
   const normalizedGender = gender.toLowerCase().trim();
@@ -80,27 +80,27 @@ function mapGenderToAllowedValue(gender?: string): string {
       mappedGender = 'Other';
   }
   
-  console.log(`Server API route: Mapped gender from '${gender}' to '${mappedGender}'`);
+  // removed debug log
   return mappedGender;
 }
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Starting PhonePe payment status check request");
+    // removed debug log
 
     // Log and validate configuration
     logPhonePeConfig();
 
     // Parse the request body
     const { transactionId, bookingData } = await request.json();
-    console.log("Server API route: Received booking data:", bookingData ? "Yes" : "No");
-    console.log(`Server API route: Checking status for transaction ID: ${transactionId}`);
+    // removed debug log
+    // removed debug log
 
     // Use the API endpoints from the configuration
     const apiUrl = `${PHONEPE_CONFIG.API_ENDPOINTS.STATUS}/${PHONEPE_CONFIG.MERCHANT_ID}/${transactionId}`;
 
-    console.log(`Server API route: Using ${PHONEPE_CONFIG.ENVIRONMENT} environment`);
-    console.log("Server API route: Calling PhonePe API URL:", apiUrl);
+    // removed debug log
+    // removed debug log
 
     // Generate the X-VERIFY header
     const dataToHash = `/pg/v1/status/${PHONEPE_CONFIG.MERCHANT_ID}/${transactionId}` + PHONEPE_CONFIG.SALT_KEY;
@@ -116,16 +116,16 @@ export async function POST(request: Request) {
       },
     });
 
-    console.log(`Server API route: PhonePe payment status response status: ${response.status}`);
+    // removed debug log
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
+    // removed debug log
 
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: PhonePe payment status response:", responseData);
+      // removed debug log
 
       // Update the transaction status in your database here
       // Example: await updateTransactionStatus(transactionId, responseData.data.paymentState);
@@ -144,12 +144,12 @@ export async function POST(request: Request) {
         ))
       );
       
-      console.log("Server API route: Payment success check result:", isSuccess);
-      console.log("Server API route: Response code:", responseData.code);
-      console.log("Server API route: Payment state:", responseData.data?.paymentState || responseData.data?.state);
+      // removed debug log
+      // removed debug log
+      // removed debug log
       
       if (isSuccess) {
-        console.log("Server API route: Payment was successful, creating booking and payment records");
+        // removed debug log
 
         try {
           // Extract transaction info
@@ -158,11 +158,11 @@ export async function POST(request: Request) {
           const amount = responseData.data.amount;
           const paymentState = responseData.data.state;
 
-          console.log(`Server API route: Processing payment success for transaction: ${transactionId}`);
+          // removed debug log
 
           // Check if booking already exists for this transaction ID to prevent duplicates
           const bookingRef = generateConsistentBookingRef(transactionId);
-          console.log(`Server API route: ⚠️ IDEMPOTENCY CHECK: Checking for existing booking with reference: ${bookingRef}`);
+          // removed debug log
 
           try {
             const existingBookingResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/tickect/booking_ref/details', {
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
             if (existingBookingResponse.ok) {
               const existingBookings = await existingBookingResponse.json();
               if (existingBookings && existingBookings.length > 0) {
-                console.log(`Server API route: ✅ IDEMPOTENCY CHECK: Booking already exists for transaction ${transactionId}, returning existing booking`);
+                // removed debug log
                 const existingBooking = existingBookings[0];
                 return NextResponse.json({
                   ...responseData,
@@ -193,10 +193,10 @@ export async function POST(request: Request) {
               }
             }
           } catch (error) {
-            console.log(`Server API route: ⚠️ IDEMPOTENCY CHECK: Could not check for existing booking, proceeding with creation:`, error);
+            // removed debug log
           }
 
-          console.log(`Server API route: No existing booking found, proceeding with new booking creation`);
+          // removed debug log
 
           // Extract user ID from transaction ID if it follows our new format: NIBOG_<userId>_<timestamp>
           const bookingMatch = merchantTransactionId.match(/NIBOG_(\d+)_/);
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
             }, { status: 200 });
           }
 
-          console.log(`Server API route: Extracted User ID from transaction: ${userId}`);
+          // removed debug log
 
           // Get current date for booking date
           const currentDate = new Date();
@@ -247,15 +247,14 @@ export async function POST(request: Request) {
           };
           
           if (bookingData) {
-            console.log("Server API route: Using booking data from client localStorage");
-            console.log("=== DEBUGGING BOOKING DATA FIELD MAPPING ===");
-            console.log("bookingData.childDob:", bookingData.childDob);
-            console.log("bookingData.childName:", bookingData.childName);
-            console.log("bookingData.gender:", bookingData.gender);
-            console.log("bookingData.schoolName:", bookingData.schoolName);
-            console.log("bookingData.gameId:", bookingData.gameId);
-            console.log("bookingData.slotId:", bookingData.slotId);
-            console.log("bookingData.gamePrice:", bookingData.gamePrice);
+            // removed debug log
+            // removed debug log
+            // removed debug log
+            // removed debug log
+            // removed debug log
+            // removed debug log
+            // removed debug log
+            // removed debug log
 
             // Prepare booking games array - supporting multiple games for the child
             const gameIds = Array.isArray(bookingData.gameId) ? bookingData.gameId : [bookingData.gameId];
@@ -269,9 +268,9 @@ export async function POST(request: Request) {
               game_price: gamePrices[index] || gamePrices[0] || 0
             }));
 
-            console.log("=== PREPARED BOOKING GAMES FOR CHILD ===");
-            console.log("Total games:", bookingGamesForChild.length);
-            console.log("Booking games array:", JSON.stringify(bookingGamesForChild, null, 2));
+            // removed debug log
+            // removed debug log
+            // removed debug log
 
             newBookingData = {
               parent_name: bookingData.parentName || "PhonePe Customer",
@@ -298,8 +297,8 @@ export async function POST(request: Request) {
               }
             };
           } else {
-            console.log("Server API route: Using fallback booking data");
-            console.log("⚠️ WARNING: Using fallback booking data - actual user data not found!");
+            // removed debug log
+            // removed debug log
 
             newBookingData = {
               parent_name: "PhonePe Customer",
@@ -333,10 +332,10 @@ export async function POST(request: Request) {
             };
           }
           
-          console.log(`Server API route: Creating booking with NEW API structure:`, JSON.stringify(newBookingData, null, 2));
+          // removed debug log
           
           // Create booking using NEW API endpoint
-          console.log(`Server API route: Calling NEW booking creation API at: ${BOOKING_CREATE_API}`);
+          // removed debug log
           const bookingResponse = await fetch(BOOKING_CREATE_API, {
             method: 'POST',
             headers: {
@@ -345,7 +344,7 @@ export async function POST(request: Request) {
             body: JSON.stringify(newBookingData),
           });
           
-          console.log(`Server API route: Booking creation response status: ${bookingResponse.status}`);
+          // removed debug log
           
           // Handle booking response
           if (!bookingResponse.ok) {
@@ -360,7 +359,7 @@ export async function POST(request: Request) {
           }
           
           const bookingResult = await bookingResponse.json();
-          console.log(`Server API route: Booking created successfully:`, bookingResult);
+          // removed debug log
 
           // Extract booking ID from the new API response
           const bookingId = bookingResult.booking_id;
@@ -375,22 +374,22 @@ export async function POST(request: Request) {
             }, { status: 200 });
           }
           
-          console.log(`Server API route: Booking created with ID: ${bookingId}, payment already recorded in new API`);
+          // removed debug log
           
           // The new API creates payment record automatically, so we don't need a separate payment API call
           const paymentId = bookingResult.payment_id;
 
           // Send booking confirmation email immediately after successful booking and payment creation
-          console.log(`📧 STARTING EMAIL PROCESS for booking ID: ${bookingId}`);
-          console.log(`📧 Email parameters - bookingId: ${bookingId}, transactionId: ${transactionId}, amount: ${amount / 100}, bookingRef: ${bookingRef}`);
-          console.log(`📧 Booking data for email:`, JSON.stringify(bookingData, null, 2));
-          console.log(`📧 Available booking data keys:`, Object.keys(bookingData || {}));
+          // removed debug log
+          // removed debug log
+          // removed debug log
+          // removed debug log
 
           // Send WhatsApp notification immediately after successful booking and payment creation
-          console.log(`📱 STARTING WHATSAPP PROCESS for booking ID: ${bookingId}`);
+          // removed debug log
           try {
             if (bookingData && bookingData.phone) {
-              console.log(`📱 Sending WhatsApp notification to: ${bookingData.phone}`);
+              // removed debug log
 
               const whatsappData = {
                 bookingId: parseInt(bookingId.toString()),
@@ -412,12 +411,12 @@ export async function POST(request: Request) {
               const whatsappResult = await sendBookingConfirmationWhatsApp(whatsappData);
 
               if (whatsappResult.success) {
-                console.log(`📱 WhatsApp notification sent successfully from server! Message ID: ${whatsappResult.messageId}`);
+                // removed debug log
               } else {
                 console.error(`📱 Failed to send WhatsApp notification from server: ${whatsappResult.error}`);
               }
             } else {
-              console.log(`📱 No phone number available for WhatsApp notification`);
+              // removed debug log
             }
           } catch (whatsappError) {
             console.error(`📱 Error sending WhatsApp notification from server:`, whatsappError);
@@ -425,7 +424,7 @@ export async function POST(request: Request) {
           }
 
           try {
-            console.log(`📧 Getting email settings...`);
+            // removed debug log
 
             // Get email settings by calling the API function directly
             const { GET: getEmailSettings } = await import('@/app/api/emailsetting/get/route');
@@ -443,18 +442,17 @@ export async function POST(request: Request) {
             }
 
             const settings = emailSettings[0];
-            console.log('📧 Email settings retrieved successfully');
+            // removed debug log
 
             // Generate booking confirmation HTML using the existing function
             // Prepare game details from booking data
-            console.log(`📧 Preparing game details from booking data...`);
-            console.log(`📧 selectedGamesObj:`, bookingData?.selectedGamesObj);
-            console.log(`📧 gameId:`, bookingData?.gameId);
-            console.log(`📧 gamePrice:`, bookingData?.gamePrice);
+            // removed debug log
+            // removed debug log
+            // removed debug log
 
             const gameDetails: GameDetail[] = [];
             if (bookingData?.selectedGamesObj && Array.isArray(bookingData.selectedGamesObj)) {
-              console.log(`📧 Using selectedGamesObj with ${bookingData.selectedGamesObj.length} games`);
+              // removed debug log
               bookingData.selectedGamesObj.forEach((game: any, index: number) => {
                 const gamePrice = bookingData.gamePrice?.[index] || game.slot_price || game.custom_price || 0;
                 gameDetails.push({
@@ -469,13 +467,14 @@ export async function POST(request: Request) {
                 });
               });
             } else if (bookingData?.gameId && bookingData?.gamePrice) {
-              console.log(`📧 Using fallback gameId/gamePrice data`);
+              // removed debug log
               // Fallback for simple game data
               const gameIds = Array.isArray(bookingData.gameId) ? bookingData.gameId : [bookingData.gameId];
               const gamePrices = Array.isArray(bookingData.gamePrice) ? bookingData.gamePrice : [bookingData.gamePrice];
 
               gameIds.forEach((gameId: number, index: number) => {
                 gameDetails.push({
+
                   gameName: `Game ${gameId}`,
                   gameDescription: '',
                   gamePrice: gamePrices[index] || 0,
@@ -487,10 +486,10 @@ export async function POST(request: Request) {
                 });
               });
             } else {
-              console.log(`📧 No game data found, using empty gameDetails array`);
+              // removed debug log
             }
 
-            console.log(`📧 Final gameDetails:`, gameDetails);
+            // removed debug log
 
             const htmlContent = generateBookingConfirmationHTML({
               bookingId: parseInt(bookingId.toString()),
@@ -506,7 +505,7 @@ export async function POST(request: Request) {
               gameDetails: gameDetails // Add properly formatted gameDetails array
             });
 
-            console.log(`📧 HTML content generated, sending email...`);
+            // removed debug log
 
             // Send email using existing send-receipt-email API function directly
             const { POST: sendReceiptEmail } = await import('@/app/api/send-receipt-email/route');
@@ -530,11 +529,11 @@ export async function POST(request: Request) {
             const emailResponse = await sendReceiptEmail(emailRequest);
 
             if (emailResponse.ok) {
-              console.log(`📧 Booking confirmation email sent successfully`);
+              // removed debug log
 
               // Send admin notification email
               try {
-                console.log(`📧 Sending admin notification email...`);
+                // removed debug log
                 const { sendAdminNotificationEmail } = await import('@/services/emailNotificationService');
 
                 const adminNotificationResult = await sendAdminNotificationEmail({
@@ -553,7 +552,7 @@ export async function POST(request: Request) {
                 });
 
                 if (adminNotificationResult.success) {
-                  console.log(`📧 Admin notification email sent successfully`);
+                  // removed debug log
                 } else {
                   console.error(`📧 Admin notification email failed:`, adminNotificationResult.error);
                 }
@@ -563,13 +562,13 @@ export async function POST(request: Request) {
               }
 
               // After successful booking confirmation email, send ticket email separately
-              console.log(`🎫 Starting ticket email process...`);
+              // removed debug log
               try {
                 // Fetch ticket details using the booking reference
                 const ticketDetails = await getTicketDetails(bookingRef);
 
                 if (ticketDetails && ticketDetails.length > 0) {
-                  console.log(`🎫 Retrieved ${ticketDetails.length} ticket details`);
+                  // removed debug log
 
                   // Prepare QR code data (same format as booking confirmation page)
                   const firstTicket = ticketDetails[0];
@@ -600,12 +599,12 @@ export async function POST(request: Request) {
                   const ticketEmailResult = await sendTicketEmail(ticketEmailData);
 
                   if (ticketEmailResult.success) {
-                    console.log(`🎫 Ticket email sent successfully`);
+                    // removed debug log
                   } else {
                     console.error(`🎫 Ticket email failed:`, ticketEmailResult.error);
                   }
                 } else {
-                  console.log(`🎫 No ticket details found for booking reference: ${bookingRef}`);
+                  // removed debug log
                 }
               } catch (ticketEmailError) {
                 console.error(`🎫 Failed to send ticket email:`, ticketEmailError);
@@ -623,7 +622,7 @@ export async function POST(request: Request) {
             // Don't fail the entire process if email fails - booking and payment were successful
           }
 
-          console.log(`Server API route: Booking and payment process completed successfully`);
+          // removed debug log
 
           return NextResponse.json({
             ...responseData,
@@ -684,8 +683,8 @@ async function sendBookingConfirmationWithExistingData(
   bookingRef: string
 ) {
   try {
-    console.log(`📧 Preparing booking confirmation email with existing data...`);
-    console.log(`📧 Booking data available:`, JSON.stringify(bookingData, null, 2));
+    // removed debug log
+    // removed debug log
 
     // Use the event and venue data we already have from the booking process
     // No need to make additional API calls - we have everything we need!
@@ -694,9 +693,8 @@ async function sendBookingConfirmationWithExistingData(
     // Extract game details from the rich booking data - no API calls needed!
     const gameDetails: GameDetail[] = [];
 
-    console.log(`📧 Available booking data keys:`, Object.keys(bookingData || {}));
-    console.log(`📧 Selected games objects:`, bookingData?.selectedGamesObj);
-
+    // removed debug log
+    // removed debug log
     // Use the rich game data we now have
     if (bookingData?.selectedGamesObj && Array.isArray(bookingData.selectedGamesObj)) {
       bookingData.selectedGamesObj.forEach((game: any, index: number) => {
@@ -713,7 +711,7 @@ async function sendBookingConfirmationWithExistingData(
           customPrice: game.custom_price || 0
         });
       });
-      console.log(`📧 Extracted ${gameDetails.length} rich games from booking data`);
+      // removed debug log
     } else {
       // Fallback to basic game data if rich data not available
       const gameIds = bookingData?.gameId || [];
@@ -732,7 +730,7 @@ async function sendBookingConfirmationWithExistingData(
           customPrice: gamePrice
         });
       });
-      console.log(`📧 Used fallback game data for ${gameDetails.length} games`);
+      // removed debug log
     }
 
     // Prepare email data using the rich booking data - now with real event and game details!
@@ -755,7 +753,7 @@ async function sendBookingConfirmationWithExistingData(
       paymentStatus: 'Paid'
     };
 
-    console.log(`📧 Prepared email data:`, JSON.stringify(emailData, null, 2));
+    // removed debug log
 
     // Get email settings by calling the API function directly
     const { GET: getEmailSettings } = await import('@/app/api/emailsetting/get/route');
@@ -801,7 +799,7 @@ async function sendBookingConfirmationWithExistingData(
       throw new Error(errorData.error || 'Failed to send email');
     }
 
-    console.log(`📧 Booking confirmation email sent successfully to ${emailData.parentEmail}`);
+    // removed debug log
     return { success: true };
 
   } catch (error) {

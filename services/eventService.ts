@@ -85,10 +85,6 @@ export interface EventGameListItem {
  * @returns The created event
  */
 export async function createEvent(eventData: Event): Promise<Event> {
-  console.log("Creating event:", eventData);
-  console.log("Event has event_games_with_slots:", eventData.event_games_with_slots);
-  console.log("event_games_with_slots length:", eventData.event_games_with_slots?.length);
-  console.log("event_games_with_slots is array:", Array.isArray(eventData.event_games_with_slots));
 
   try {
     // Get authentication token
@@ -135,8 +131,6 @@ export async function createEvent(eventData: Event): Promise<Event> {
       body: JSON.stringify(eventData),
     });
 
-    console.log(`Create event response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -150,10 +144,9 @@ export async function createEvent(eventData: Event): Promise<Event> {
     }
 
     const data = await response.json();
-    console.log("Created event:", data);
 
     // Return the data (the response should contain event_id)
-    return data;
+    return data; 
   } catch (error) {
     console.error("Error creating event:", error);
     throw error;
@@ -197,15 +190,12 @@ export function formatEventDataForAPI(formData: {
   const now = new Date();
   const formattedNow = now.toISOString();
 
-  console.log("formatEventDataForAPI - Input games:", formData.games);
-  console.log("formatEventDataForAPI - Number of games:", formData.games.length);
 
   // Format games data
   const formattedGames: EventGame[] = [];
 
   // Process each game and its slots
   formData.games.forEach(game => {
-    console.log("Processing game:", game.templateId, "with", game.slots.length, "slots");
     game.slots.forEach(slot => {
       formattedGames.push({
         game_id: parseInt(game.templateId),
@@ -242,9 +232,6 @@ export function formatEventDataForAPI(formData: {
     event_games_with_slots: formattedGames
   };
 
-  console.log("formatEventDataForAPI - Formatted event:", formattedEvent);
-  console.log("formatEventDataForAPI - event_games_with_slots length:", formattedEvent.event_games_with_slots.length);
-
   return formattedEvent;
 }
 
@@ -265,7 +252,6 @@ export async function getAllEvents(forceRefresh: boolean = false): Promise<Event
     // Return cached data if available and not expired
     const cached = eventsCache.get(cacheKey);
     if (!forceRefresh && cached && (now - cached.timestamp < CACHE_TTL)) {
-      console.log('Returning cached events data');
       return cached.data;
     }
     
@@ -303,7 +289,6 @@ export async function getAllEvents(forceRefresh: boolean = false): Promise<Event
  * @returns Promise with the event data
  */
 export async function getEventById(id: number): Promise<EventListItem> {
-  console.log(`Fetching event with ID: ${id}`);
 
   if (!id || isNaN(Number(id)) || Number(id) <= 0) {
     throw new Error("Invalid event ID. ID must be a positive number.");
@@ -319,8 +304,6 @@ export async function getEventById(id: number): Promise<EventListItem> {
       body: JSON.stringify({ id: Number(id) }),
     });
 
-    console.log(`Get event response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -328,8 +311,6 @@ export async function getEventById(id: number): Promise<EventListItem> {
     }
 
     const data = await response.json();
-    console.log("Retrieved event:", data);
-    console.log("Event games structure:", data.games || (Array.isArray(data) && data[0] ? data[0].games : 'No games found'));
 
     // The API returns an array with a single event, so we need to extract it
     if (Array.isArray(data) && data.length > 0) {
@@ -351,7 +332,6 @@ export async function getEventById(id: number): Promise<EventListItem> {
  * @returns The event data with games and slots
  */
 export async function getEventWithGames(id: string | number): Promise<any> {
-  console.log(`Getting event with games for ID: ${id}`);
 
   if (!id || (typeof id === 'string' && id.trim() === '')) {
     throw new Error("Event ID is required");
@@ -369,8 +349,6 @@ export async function getEventWithGames(id: string | number): Promise<any> {
       cache: "no-store", // Disable caching to get fresh data
     });
 
-    console.log(`Get event with games response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -378,7 +356,6 @@ export async function getEventWithGames(id: string | number): Promise<any> {
     }
 
     const data = await response.json();
-    console.log("Retrieved event with games:", data);
 
     return data;
   } catch (error) {
@@ -403,7 +380,6 @@ export async function createEventGameSlot(slotData: {
   slot_price?: number;
   max_participants: number;
 }): Promise<any> {
-  console.log(`Creating event game slot:`, slotData);
 
   try {
     // Use our internal API route to avoid CORS issues
@@ -415,8 +391,6 @@ export async function createEventGameSlot(slotData: {
       body: JSON.stringify(slotData),
     });
 
-    console.log(`Create event game slot response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -424,9 +398,8 @@ export async function createEventGameSlot(slotData: {
     }
 
     const data = await response.json();
-    console.log("Created event game slot:", data);
 
-    return data;
+    return data; 
   } catch (error) {
     console.error("Error creating event game slot:", error);
     throw error;
@@ -451,7 +424,6 @@ export async function updateEventGameSlot(slotData: {
   max_participants: number;
   status?: string;
 }): Promise<any> {
-  console.log(`Updating event game slot:`, slotData);
 
   try {
     // Use our internal API route to avoid CORS issues
@@ -463,8 +435,6 @@ export async function updateEventGameSlot(slotData: {
       body: JSON.stringify(slotData),
     });
 
-    console.log(`Update event game slot response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -472,9 +442,8 @@ export async function updateEventGameSlot(slotData: {
     }
 
     const data = await response.json();
-    console.log("Updated event game slot:", data);
 
-    return data;
+    return data; 
   } catch (error) {
     console.error("Error updating event game slot:", error);
     throw error;
@@ -487,7 +456,6 @@ export async function updateEventGameSlot(slotData: {
  * @returns Promise with the deletion result
  */
 export async function deleteEventGameSlot(id: number): Promise<any> {
-  console.log(`Deleting event game slot with ID: ${id}`);
 
   try {
     // Use our internal API route to avoid CORS issues
@@ -499,8 +467,6 @@ export async function deleteEventGameSlot(id: number): Promise<any> {
       body: JSON.stringify({ id }),
     });
 
-    console.log(`Delete event game slot response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -508,9 +474,8 @@ export async function deleteEventGameSlot(id: number): Promise<any> {
     }
 
     const data = await response.json();
-    console.log("Deleted event game slot:", data);
 
-    return data;
+    return data; 
   } catch (error) {
     console.error("Error deleting event game slot:", error);
     throw error;
@@ -523,7 +488,6 @@ export async function deleteEventGameSlot(id: number): Promise<any> {
  * @returns Promise with the slot status
  */
 export async function getSlotStatus(slotId: string): Promise<string> {
-  console.log(`Getting status for slot: ${slotId}`);
 
   try {
     const response = await fetch(`/api/event-game-slots/status?slotId=${slotId}`, {
@@ -553,7 +517,6 @@ export async function getSlotStatus(slotId: string): Promise<string> {
  * @returns Promise with the update result
  */
 export async function updateSlotStatus(slotId: string, status: string): Promise<any> {
-  console.log(`Updating slot ${slotId} status to: ${status}`);
 
   try {
     const response = await fetch('/api/event-game-slots/status', {
@@ -571,9 +534,8 @@ export async function updateSlotStatus(slotId: string, status: string): Promise<
     }
 
     const data = await response.json();
-    console.log("Slot status updated:", data);
 
-    return data;
+    return data; 
   } catch (error) {
     console.error("Error updating slot status:", error);
     throw error;
@@ -585,7 +547,6 @@ export async function updateSlotStatus(slotId: string, status: string): Promise<
  * @returns Promise with all slot statuses
  */
 export async function getAllSlotStatuses(): Promise<Record<string, string>> {
-  console.log("Getting all slot statuses");
 
   try {
     const response = await fetch('/api/event-game-slots/status', {
@@ -614,8 +575,6 @@ export async function getAllSlotStatuses(): Promise<Record<string, string>> {
  * @returns Promise with the updated event or success status
  */
 export async function updateEvent(eventData: any): Promise<{ success: boolean; event_id?: number }> {
-  console.log("=== updateEvent ===");
-  console.log("Event data:", JSON.stringify(eventData, null, 2));
 
   // Ensure the event has an ID
   if (!eventData.id) {
@@ -630,13 +589,11 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
     // Try to get token from localStorage
     if (typeof window !== 'undefined') {
       token = localStorage.getItem('token') || localStorage.getItem('auth-token');
-      console.log("Token from localStorage:", token ? "Found" : "Not found");
     }
 
     // Try to get token from sessionStorage
     if (!token && typeof window !== 'undefined') {
       token = sessionStorage.getItem('token') || sessionStorage.getItem('auth-token');
-      console.log("Token from sessionStorage:", token ? "Found" : "Not found");
     }
 
     // Try to get token from cookies
@@ -646,7 +603,6 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
         .find(row => row.startsWith('auth-token='));
       if (authTokenCookie) {
         token = authTokenCookie.split('=')[1];
-        console.log("Token from auth-token cookie:", token ? "Found" : "Not found");
       }
 
       // Try superadmin-token as fallback
@@ -656,7 +612,6 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
           .find(row => row.startsWith('superadmin-token='));
         if (superadminTokenCookie) {
           token = superadminTokenCookie.split('=')[1];
-          console.log("Token from superadmin-token cookie:", token ? "Found" : "Not found");
         }
       }
     }
@@ -677,17 +632,13 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
     delete eventData.id; // Remove id from body as it's in the URL
 
     // Use our internal API route to update the event
-    const apiUrl = `/api/events/${eventId}/edit`;
-    console.log("Calling PUT:", apiUrl);
-    console.log("Request body:", JSON.stringify(eventData, null, 2));
+    const apiUrl = `/api/events/${eventId}/edit`; 
 
     const response = await fetch(apiUrl, {
       method: "PUT",
       headers,
       body: JSON.stringify(eventData),
     });
-
-    console.log(`Update event response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -696,7 +647,6 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
     }
 
     const data = await response.json();
-    console.log("Updated event response:", data);
 
     // Return success
     return {
@@ -748,9 +698,6 @@ export function formatEventDataForUpdate(
     slotsToDelete?: number[]; // Array of slot IDs to delete
   }
 ): any {
-  console.log("=== formatEventDataForUpdate ===");
-  console.log("Event ID:", eventId);
-  console.log("Form data:", JSON.stringify(formData, null, 2));
 
   // Format games data using event_games_with_slots structure
   const eventGamesWithSlots: any[] = [];
@@ -782,8 +729,6 @@ export function formatEventDataForUpdate(
     });
   });
 
-  console.log("Formatted event_games_with_slots:", JSON.stringify(eventGamesWithSlots, null, 2));
-
   // Create the formatted event data
   const formattedEvent: any = {
     title: formData.title,
@@ -809,9 +754,7 @@ export function formatEventDataForUpdate(
     formattedEvent.event_games_with_slots_to_delete = formData.slotsToDelete;
   }
 
-  console.log("Final formatted event data:", JSON.stringify(formattedEvent, null, 2));
-
-  return formattedEvent;
+  return formattedEvent; 
 }
 
 /**
@@ -835,7 +778,6 @@ export async function getUpcomingEventsByCityId(
   // Retry loop
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`[Events API] Attempt ${attempt}/${maxRetries} to fetch events for city ID: ${cityId}`);
 
       // Create AbortController for timeout handling
       const controller = new AbortController();
@@ -866,11 +808,8 @@ export async function getUpcomingEventsByCityId(
         throw new Error('Invalid response format: expected an array of events');
       }
 
-      console.log(`[Events API] Successfully fetched ${events.length} upcoming events for city ${cityId} on attempt ${attempt}`);
-
       if (events.length > 0) {
         const firstEvent = events[0];
-        console.log(`[Events API] First event venue fields: venue_name="${firstEvent.venue_name}", venue="${firstEvent.venue}", venue_id="${firstEvent.venue_id}"`);
       }
 
       // Helper function to fetch venue name by venue_id
@@ -889,9 +828,6 @@ export async function getUpcomingEventsByCityId(
           if (response.ok) {
             const venueData = await response.json();
             const venueName = venueData.venue_name || venueData.name || 'Event Venue';
-            if (venueName !== 'Event Venue') {
-              console.log(`[Events API] Fetched venue ${venueId}: "${venueName}"`);
-            }
             return venueName;
           }
         } catch (error) {
@@ -916,9 +852,6 @@ export async function getUpcomingEventsByCityId(
           venueName = 'Event Venue';
         }
 
-        if (venueName !== 'Event Venue') {
-          console.log(`[Events API] Event ${event.id}: Found venue "${venueName}"`);
-        }
 
         return {
           event_id: event.id,
@@ -951,7 +884,6 @@ export async function getUpcomingEventsByCityId(
       console.error(`[Events API] Attempt ${attempt}/${maxRetries} failed:`, error.message);
 
       if (attempt < maxRetries) {
-        console.log(`[Events API] Retrying in ${retryDelay}ms...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
@@ -977,7 +909,6 @@ export async function getGamesByAgeAndEvent(eventId: number, childAge: number): 
   }
 
   try {
-    console.log(`Fetching games for event ID: ${eventId} and child age: ${childAge} months`);
     
     // Use the new games by age and event API endpoint with slot grouping
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/events/get-games-by-ageandevent-new', {
@@ -1004,11 +935,8 @@ export async function getGamesByAgeAndEvent(eventId: number, childAge: number): 
       throw new Error('Invalid response format: expected an array of games');
     }
 
-    console.log(`Found ${games.length} games for event ${eventId} and age ${childAge} months`);
-
     if (games.length > 0) {
       const firstGame = games[0];
-      console.log(`Games API venue fields: venue_name="${firstGame.venue_name}", venue="${firstGame.venue}", venue_id="${firstGame.venue_id}"`);
     }
 
     return games;
@@ -1251,7 +1179,6 @@ export async function uploadEventImage(file: File): Promise<{
   originalName: string;
   size: number;
 }> {
-  console.log("Uploading event image:", file.name);
 
   try {
     const formData = new FormData();
@@ -1262,8 +1189,6 @@ export async function uploadEventImage(file: File): Promise<{
       body: formData,
     });
 
-    console.log(`Upload event image response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -1271,9 +1196,8 @@ export async function uploadEventImage(file: File): Promise<{
     }
 
     const data = await response.json();
-    console.log("Event image uploaded:", data);
 
-    return data;
+    return data; 
   } catch (error) {
     console.error("Error uploading event image:", error);
     throw error;
@@ -1281,8 +1205,6 @@ export async function uploadEventImage(file: File): Promise<{
 }
 
 export async function deleteEvent(id: number): Promise<{ success: boolean } | Array<{ success: boolean }>> {
-  console.log("=== deleteEvent ===");
-  console.log(`Attempting to delete event with ID: ${id}`);
 
   // Ensure id is a number
   const numericId = Number(id);
@@ -1299,13 +1221,11 @@ export async function deleteEvent(id: number): Promise<{ success: boolean } | Ar
     // Try to get token from localStorage
     if (typeof window !== 'undefined') {
       token = localStorage.getItem('token') || localStorage.getItem('auth-token');
-      console.log("Token from localStorage:", token ? "Found" : "Not found");
     }
 
     // Try to get token from sessionStorage
     if (!token && typeof window !== 'undefined') {
       token = sessionStorage.getItem('token') || sessionStorage.getItem('auth-token');
-      console.log("Token from sessionStorage:", token ? "Found" : "Not found");
     }
 
     // Try to get token from cookies
@@ -1315,7 +1235,6 @@ export async function deleteEvent(id: number): Promise<{ success: boolean } | Ar
         .find(row => row.startsWith('auth-token='));
       if (authTokenCookie) {
         token = authTokenCookie.split('=')[1];
-        console.log("Token from auth-token cookie:", token ? "Found" : "Not found");
       }
 
       // Try superadmin-token as fallback
@@ -1325,7 +1244,6 @@ export async function deleteEvent(id: number): Promise<{ success: boolean } | Ar
           .find(row => row.startsWith('superadmin-token='));
         if (superadminTokenCookie) {
           token = superadminTokenCookie.split('=')[1];
-          console.log("Token from superadmin-token cookie:", token ? "Found" : "Not found");
         }
       }
     }
@@ -1342,17 +1260,13 @@ export async function deleteEvent(id: number): Promise<{ success: boolean } | Ar
     };
 
     // Use our internal API route to avoid CORS issues
-    console.log(`Sending POST request to /api/events/delete with ID: ${numericId}`);
     const requestBody = { id: numericId };
-    console.log(`Request body: ${JSON.stringify(requestBody)}`);
 
     const response = await fetch('/api/events/delete', {
       method: "POST",
       headers,
       body: JSON.stringify(requestBody),
     });
-
-    console.log(`Delete event response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1371,7 +1285,6 @@ export async function deleteEvent(id: number): Promise<{ success: boolean } | Ar
     // Try to parse the response
     try {
       const data = await response.json();
-      console.log("Delete event response:", data);
 
       // If the response is an array with a success property, return it directly
       if (Array.isArray(data) && data[0]?.success === true) {
@@ -1412,7 +1325,6 @@ export async function sendEventImageToWebhook(
   priority: number,
   isActive: boolean = true
 ): Promise<any> {
-  console.log("Sending event image to webhook:", { eventId, imageUrl, priority, isActive });
 
   try {
     const response = await fetch('/api/eventimages/webhook', {
@@ -1428,7 +1340,11 @@ export async function sendEventImageToWebhook(
       }),
     });
 
-    console.log(`Event image webhook response status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error response: ${errorText}`);
+      throw new Error(`Webhook failed: ${response.status}`);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1437,7 +1353,6 @@ export async function sendEventImageToWebhook(
     }
 
     const data = await response.json();
-    console.log("Event image webhook success:", data);
 
     return data;
   } catch (error) {
@@ -1452,14 +1367,12 @@ export async function sendEventImageToWebhook(
  * @returns Promise with array of event images
  */
 export async function fetchEventImages(eventId: number): Promise<any[]> {
-  console.log("Fetching event images for event ID:", eventId);
 
   try {
     // Import the mapping function dynamically to avoid circular dependencies
     const { fetchEventImagesWithMapping } = await import('@/lib/eventImageMapping');
 
     const images = await fetchEventImagesWithMapping(eventId);
-    console.log("Event images fetched with mapping:", images);
 
     return images;
   } catch (error) {
@@ -1467,7 +1380,6 @@ export async function fetchEventImages(eventId: number): Promise<any[]> {
 
     // Fallback to direct API call if mapping fails
     try {
-      console.log("Falling back to direct API call...");
 
       const response = await fetch('/api/eventimages/get', {
         method: 'POST',
@@ -1492,7 +1404,6 @@ export async function fetchEventImages(eventId: number): Promise<any[]> {
           img.id !== undefined &&
           img.image_url !== undefined
         );
-        console.log("Fallback fetch successful:", validImages);
         return validImages;
       }
 
@@ -1518,7 +1429,6 @@ export async function updateEventImage(
   priority: number,
   isActive: boolean = true
 ): Promise<any> {
-  console.log("Updating event image:", { eventId, imageUrl, priority, isActive });
 
   try {
     const response = await fetch('/api/eventimages/update', {
@@ -1534,8 +1444,6 @@ export async function updateEventImage(
       }),
     });
 
-    console.log(`Update event image response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -1543,9 +1451,8 @@ export async function updateEventImage(
     }
 
     const data = await response.json();
-    console.log("Event image update success:", data);
 
-    return data;
+    return data; 
   } catch (error) {
     console.error("Error updating event image:", error);
     throw error;
@@ -1561,7 +1468,6 @@ import { apiUrl } from './apiClient';
 
 export async function getAllEventsWithDetails(): Promise<any[]> {
   try {
-    console.log('Fetching all events with details from new API');
 
     const response = await fetch(apiUrl('/api/events/list'), {
       method: 'GET',
@@ -1578,14 +1484,13 @@ export async function getAllEventsWithDetails(): Promise<any[]> {
     }
 
     const events = await response.json();
-    console.log(`Fetched ${events.length} events with details`);
     
     return events;
   } catch (error: any) {
     console.error('Error in getAllEventsWithDetails:', error);
     throw error;
   }
-}
+} 
 
 /**
  * Get event with details by ID (new API structure)
@@ -1595,7 +1500,6 @@ export async function getAllEventsWithDetails(): Promise<any[]> {
  */
 export async function getEventWithDetails(eventId: number): Promise<any> {
   try {
-    console.log(`Fetching event ${eventId} with details from new API`);
 
     const response = await fetch(`/api/events/${eventId}/details`, {
       method: 'GET',
@@ -1615,14 +1519,13 @@ export async function getEventWithDetails(eventId: number): Promise<any> {
     }
 
     const event = await response.json();
-    console.log(`Fetched event ${eventId} with details`);
     
     return event;
   } catch (error: any) {
     console.error(`Error in getEventWithDetails(${eventId}):`, error);
     throw error;
   }
-}
+} 
 
 /**
  * Get all events for a specific city (simplified for forms/dropdowns)
@@ -1632,7 +1535,6 @@ export async function getEventWithDetails(eventId: number): Promise<any> {
  */
 export async function getEventsByCityId(cityId: number): Promise<Array<{ id: number; title: string }>> {
   try {
-    console.log(`Fetching events for city ${cityId}`);
 
     const response = await fetch(`/api/city/${cityId}/events`, {
       method: 'GET',
@@ -1649,8 +1551,16 @@ export async function getEventsByCityId(cityId: number): Promise<Array<{ id: num
     }
 
     const result = await response.json();
-    console.log(`Fetched ${result.data?.length || 0} events for city ${cityId}`);
     
+    return events.map((event: any) => ({
+      id: event.id || event.event_id,
+      title: event.title || event.event_title
+    }));
+  } catch (error: any) {
+    console.error(`Error in getEventsByCityId(${cityId}):`, error);
+    throw error;
+  }
+}    
     // Return the data array, ensuring it has id and title fields
     const events = result.success && result.data ? result.data : [];
     

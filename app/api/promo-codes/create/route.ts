@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Starting promo code creation request");
+    // removed debug log
 
     // Parse the request body
     const requestData = await request.json();
-    console.log("Server API route: Received request body:", JSON.stringify(requestData, null, 2));
+    // removed debug log
 
     // Validate required fields
     const requiredFields = ['promo_code', 'type', 'value', 'valid_from', 'valid_to', 'usage_limit', 'minimum_purchase_amount'];
@@ -49,21 +49,21 @@ export async function POST(request: Request) {
       is_active: requestData.is_active !== undefined ? requestData.is_active : true // Include is_active with default value of true
     };
 
-    console.log("Server API route: Prepared payload:", JSON.stringify(payload, null, 2));
+    // removed debug log
 
     // Validate payload structure
     if (!payload.events || payload.events.length === 0) {
       console.warn("Server API route: No events provided in payload");
     } else {
       payload.events.forEach((event: any, index: number) => {
-        console.log(`Server API route: Event ${index + 1}: ID=${event.id}, Games=[${event.games_id.join(', ')}]`);
+        // removed debug log
       });
     }
 
     // Call the external API
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/promocode/create";
-    console.log("Server API route: Calling API URL:", apiUrl);
-    console.log("Server API route: Payload being sent:", JSON.stringify(payload, null, 2));
+    // removed debug log
+    // removed debug log
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -73,13 +73,13 @@ export async function POST(request: Request) {
       body: JSON.stringify(payload),
     });
 
-    console.log(`Server API route: Promo code creation response status: ${response.status}`);
+    // removed debug log
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
-    console.log(`Server API route: Response headers:`, Object.fromEntries(response.headers.entries()));
-    console.log(`Server API route: Response content-type:`, response.headers.get('content-type'));
+    // removed debug log
+    // removed debug log
+    // removed debug log
 
     // Try to parse the response as JSON first
     let responseData = null;
@@ -88,9 +88,9 @@ export async function POST(request: Request) {
     try {
       responseData = JSON.parse(responseText);
       isValidJson = true;
-      console.log("Server API route: Parsed response data:", responseData);
+      // removed debug log
     } catch (parseError: any) {
-      console.log("Server API route: Response is not valid JSON:", parseError.message);
+      // removed debug log
       responseData = { raw_response: responseText };
     }
 
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
     );
 
     if (isSuccessfulCreation) {
-      console.log("Server API route: Treating as successful creation");
+      // removed debug log
       return NextResponse.json({
         success: true,
         message: "Promo code created successfully",
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
 
     // If we reach here, it's likely an error, but let's verify if the promo code was actually created
     console.error(`Server API route: Error response - Status: ${response.status}, Body: ${responseText}`);
-    console.log("Server API route: Attempting to verify if promo code was created despite error response...");
+    // removed debug log
 
     // Try to verify if the promo code was actually created by checking if it exists
     try {
@@ -139,28 +139,28 @@ export async function POST(request: Request) {
         body: JSON.stringify({ promo_code: payload.promo_code }),
       });
 
-      console.log(`Server API route: Verification response status: ${verifyResponse.status}`);
+      // removed debug log
 
       if (verifyResponse.ok) {
         const verifyData = await verifyResponse.json();
-        console.log("Server API route: Verification response data:", verifyData);
+        // removed debug log
 
         if (verifyData && verifyData.length > 0) {
-          console.log("Server API route: Verification successful - promo code was created despite error response");
+          // removed debug log
           return NextResponse.json({
             success: true,
             message: "Promo code created successfully (verified)",
             data: verifyData[0]
           }, { status: 200 });
         } else {
-          console.log("Server API route: Verification returned empty result - promo code not found");
+          // removed debug log
         }
       } else {
         const verifyErrorText = await verifyResponse.text();
-        console.log("Server API route: Verification failed with status:", verifyResponse.status, "Response:", verifyErrorText);
+        // removed debug log
       }
     } catch (verifyError) {
-      console.log("Server API route: Verification failed with exception:", verifyError);
+      // removed debug log
     }
 
     // Extract error message from response if possible

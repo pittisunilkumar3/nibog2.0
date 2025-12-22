@@ -41,9 +41,7 @@ export interface PendingBookingData {
    */
   export async function createPendingBooking(bookingData: PendingBookingData): Promise<PendingBookingResponse> {
     try {
-      console.log("=== CREATING PENDING BOOKING ===");
-      console.log("Booking data:", JSON.stringify(bookingData, null, 2));
-  
+
       const response = await fetch('/api/pending-bookings/create', {
         method: 'POST',
         headers: {
@@ -74,14 +72,13 @@ export interface PendingBookingData {
       }
   
       const result = await response.json();
-      console.log("✅ Pending booking created successfully:", result);
   
       return {
         success: true,
         transactionId: result.transactionId,
         pendingBookingId: result.pendingBookingId,
         expiresAt: result.expiresAt
-      };
+      }; 
   
     } catch (error: any) {
       console.error("Error creating pending booking:", error);
@@ -99,8 +96,7 @@ export interface PendingBookingData {
    */
   export async function getPendingBooking(transactionId: string): Promise<PendingBookingData | null> {
     try {
-      console.log(`🔍 Retrieving pending booking for transaction: ${transactionId}`);
-  
+
       // Retry logic with exponential backoff
       let retryCount = 0;
       const maxRetries = 3;
@@ -109,7 +105,6 @@ export interface PendingBookingData {
         try {
           if (retryCount > 0) {
             const delay = Math.pow(2, retryCount) * 500; // Exponential backoff: 1s, 2s, 4s
-            console.log(`⏱️ Retry #${retryCount} after ${delay}ms delay for transaction: ${transactionId}`);
             await new Promise(resolve => setTimeout(resolve, delay));
           }
           
@@ -132,21 +127,17 @@ export interface PendingBookingData {
   
           if (response.ok) {
             const result = await response.json();
-            console.log(`✅ Found pending booking for transaction: ${transactionId}`);
-            return result.bookingData;
+            return result.bookingData; 
           } else if (response.status === 404) {
-            console.log(`📭 No pending booking found for transaction: ${transactionId}`);
             return null;
           } else if (response.status === 410) {
-            console.log(`⏰ Pending booking expired for transaction: ${transactionId}`);
-            return null;
+            return null; 
           } else if (response.status === 207) {
             // Partial content - attempt to use what we have
             const result = await response.json();
             console.warn(`⚠️ Partial pending booking data for transaction: ${transactionId}`);
             
             if (result.needsCleanup) {
-              console.log(`🧹 Cleaning up corrupted pending booking in background`);
               deletePendingBooking(transactionId).catch(err => 
                 console.error(`Failed to clean up corrupted booking: ${err}`))
             }
@@ -155,7 +146,6 @@ export interface PendingBookingData {
             if (result.rawBookingData) {
               try {
                 const parsedData = JSON.parse(result.rawBookingData);
-                console.log(`✅ Successfully parsed raw booking data from partial response`);
                 return parsedData;
               } catch (parseError) {
                 console.error(`❌ Failed to parse raw booking data: ${parseError}`);
@@ -166,7 +156,6 @@ export interface PendingBookingData {
             if (result.partialData && result.partialData.booking_data) {
               try {
                 const parsedData = JSON.parse(result.partialData.booking_data);
-                console.log(`✅ Successfully parsed booking data from partial response`);
                 return parsedData;
               } catch (parseError) {
                 console.error(`❌ Failed to parse partial booking data: ${parseError}`);
@@ -225,8 +214,7 @@ export interface PendingBookingData {
    */
   export async function deletePendingBooking(transactionId: string): Promise<boolean> {
     try {
-      console.log(`🗑️ Deleting pending booking for transaction: ${transactionId}`);
-  
+
       const response = await fetch('/api/pending-bookings/delete', {
         method: 'POST',
         headers: {
@@ -238,7 +226,6 @@ export interface PendingBookingData {
       });
   
       if (response.ok) {
-        console.log(`✅ Pending booking deleted for transaction: ${transactionId}`);
         return true;
       } else {
         console.error(`❌ Failed to delete pending booking: ${response.status}`);
@@ -261,8 +248,6 @@ export interface PendingBookingData {
       const result = await createPendingBooking(bookingData);
       
       if (result.success && result.transactionId) {
-        console.log(`📦 Booking data stored with transaction ID: ${result.transactionId}`);
-        console.log(`⏰ Expires at: ${result.expiresAt}`);
         return result.transactionId;
       } else {
         console.error('Failed to store pending booking:', result.error);
@@ -280,11 +265,9 @@ export interface PendingBookingData {
    */
   export async function cleanupExpiredPendingBookings(): Promise<void> {
     try {
-      console.log("🧹 Cleaning up expired pending bookings...");
       
       // This would typically be handled by the backend
       // For now, we'll just log that cleanup should happen
-      console.log("Note: Expired pending bookings cleanup should be handled by backend cron job");
       
     } catch (error) {
       console.error('Error cleaning up expired pending bookings:', error);

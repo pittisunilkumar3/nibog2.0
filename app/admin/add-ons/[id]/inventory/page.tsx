@@ -147,12 +147,7 @@ export default function AddOnInventoryPage({ params }: Props) {
 
   const handleSaveInventory = () => {
     // In a real app, this would be an API call to update inventory
-    console.log("Saving inventory changes:", {
-      addOnId,
-      hasVariants: addOnData?.hasVariants || addOnData?.has_variants,
-      stockQuantity,
-      variantStocks
-    })
+ 
     
     // Show saved state
     setIsSaved(true)

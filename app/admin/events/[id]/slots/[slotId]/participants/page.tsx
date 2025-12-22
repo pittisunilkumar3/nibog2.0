@@ -242,21 +242,19 @@ export default function SlotParticipantsPage({ params }: Props) {
   // Mark selected bookings as attended
   const markAsAttended = () => {
     // In a real app, this would be an API call
-    console.log("Mark as attended:", selectedBookings)
     setSelectedBookings([])
   }
 
   // Mark selected bookings as no-show
   const markAsNoShow = () => {
     // In a real app, this would be an API call
-    console.log("Mark as no-show:", selectedBookings)
     setSelectedBookings([])
   }
 
   // Export participants list
   const exportParticipants = () => {
     // In a real app, this would generate and download a CSV file
-    console.log("Export participants")
+    // TODO: implement CSV export
   }
 
   return (
@@ -394,11 +392,11 @@ export default function SlotParticipantsPage({ params }: Props) {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => console.log("Mark as attended:", booking.id)}>
+                            <DropdownMenuItem onClick={() => { /* Mark single booking as attended: implement API call */ }}>
                               <Check className="mr-2 h-4 w-4" />
                               Mark as Attended
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => console.log("Mark as no-show:", booking.id)}>
+                            <DropdownMenuItem onClick={() => { /* Mark single booking as no-show: implement API call */ }}>
                               <X className="mr-2 h-4 w-4" />
                               Mark as No-Show
                             </DropdownMenuItem>
@@ -427,7 +425,7 @@ export default function SlotParticipantsPage({ params }: Props) {
                               <AlertDialogCancel>No, Keep Booking</AlertDialogCancel>
                               <AlertDialogAction
                                 className="bg-red-500 hover:bg-red-600"
-                                onClick={() => console.log("Cancel booking:", booking.id)}
+                                onClick={() => { /* Cancel booking: implement API call */ }}
                               >
                                 Yes, Cancel Booking
                               </AlertDialogAction>

@@ -117,10 +117,6 @@ export async function initiatePhonePePayment(
 ): Promise<string> {
   try {
     // Log and validate PhonePe configuration
-    console.log('=== PAYMENT INITIATION DEBUG ===');
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('PhonePe Environment:', process.env.PHONEPE_ENVIRONMENT);
-    console.log('NEXT_PUBLIC_PHONEPE_ENVIRONMENT:', process.env.NEXT_PUBLIC_PHONEPE_ENVIRONMENT);
 
     logPhonePeConfig();
 
@@ -130,14 +126,7 @@ export async function initiatePhonePePayment(
       throw new Error(`PhonePe configuration is invalid: ${validation.errors.join(', ')}`);
     }
 
-    console.log('✅ PhonePe configuration validation passed');
-
     // Validate input parameters
-    console.log("=== INPUT VALIDATION ===")
-    console.log("Booking ID:", bookingId, typeof bookingId)
-    console.log("User ID:", userId, typeof userId)
-    console.log("Amount (₹):", amount, typeof amount)
-    console.log("Mobile Number:", mobileNumber, typeof mobileNumber)
 
     if (!bookingId) {
       console.error('❌ Booking ID is missing');
@@ -156,28 +145,18 @@ export async function initiatePhonePePayment(
       throw new Error('Mobile number is required');
     }
 
-    console.log('✅ Input validation passed');
 
-    console.log(`Initiating PhonePe payment for booking ID: ${bookingId}`);
-    console.log(`Amount in rupees: ₹${amount}`);
-    console.log(`Original amount in paise (before rounding): ${amount * 100}`);
-    console.log(`Final amount in paise (after rounding): ${Math.round(amount * 100)}`);
-    console.log(`Using environment: ${PHONEPE_CONFIG.ENVIRONMENT}`);
-    console.log(`Merchant ID: ${PHONEPE_CONFIG.MERCHANT_ID}`);
-    console.log(`Test Mode: ${PHONEPE_CONFIG.IS_TEST_MODE}`);
 
-    // Generate a unique merchant transaction ID (required by PhonePe)
+    // Generate a unique merchant transaction ID (required by PhonePe) 
     // If bookingId is already a transaction ID (starts with NIBOG_), use it directly
     // Otherwise, generate a new one
     let merchantTransactionId: string;
     if (typeof bookingId === 'string' && bookingId.startsWith('NIBOG_')) {
       // This is already a transaction ID from pending booking, use it directly
       merchantTransactionId = bookingId;
-      console.log(`Using existing transaction ID: ${merchantTransactionId}`);
     } else {
       // This is a regular booking ID, generate a new transaction ID
       merchantTransactionId = generateTransactionId(bookingId);
-      console.log(`Generated new merchant transaction ID: ${merchantTransactionId}`);
     }
 
     // Validate transaction ID length (PhonePe requires max 38 characters)
@@ -209,17 +188,10 @@ export async function initiatePhonePePayment(
     // Generate the X-VERIFY header with mobile-specific error handling
     const dataToHash = base64Payload + '/pg/v1/pay' + PHONEPE_CONFIG.SALT_KEY;
 
-    console.log('=== MOBILE PAYMENT DEBUG ===');
-    console.log('User Agent:', typeof window !== 'undefined' ? navigator.userAgent : 'Server');
-    console.log('Crypto API available:', typeof window !== 'undefined' && window.crypto && window.crypto.subtle ? 'Yes' : 'No');
-    console.log('Data to hash length:', dataToHash.length);
-
     let xVerify: string;
     try {
       const hashResult = await generateSHA256Hash(dataToHash);
       xVerify = hashResult + '###' + PHONEPE_CONFIG.SALT_INDEX;
-      console.log('✅ Hash generation successful');
-      console.log('Hash length:', hashResult.length);
     } catch (error) {
       console.error('❌ Hash generation failed:', error);
       throw new Error(`Payment hash generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -230,18 +202,6 @@ export async function initiatePhonePePayment(
     if (typeof window === 'undefined') {
       throw new Error('Payment service should only be called from client-side');
     }
-
-    console.log('=== MAKING API CALL ===');
-    console.log('API URL: /api/payments/phonepe-initiate');
-    console.log('Request payload keys:', Object.keys({
-      request: base64Payload,
-      xVerify: xVerify,
-      transactionId: merchantTransactionId,
-      bookingId: bookingId,
-    }));
-    console.log('Base64 payload length:', base64Payload.length);
-    console.log('X-Verify length:', xVerify.length);
-
     const response = await fetch('/api/payments/phonepe-initiate', {
       method: 'POST',
       headers: {
@@ -255,9 +215,6 @@ export async function initiatePhonePePayment(
       }),
     });
 
-    console.log('API Response status:', response.status);
-    console.log('API Response headers:', Object.fromEntries(response.headers.entries()));
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ API Error response: ${errorText}`);
@@ -267,7 +224,6 @@ export async function initiatePhonePePayment(
     }
 
     const data = await response.json();
-    console.log('PhonePe payment initiation response:', data);
 
     if (data.success) {
       // Return the payment URL
@@ -290,9 +246,6 @@ export async function initiatePhonePePayment(
  */
 export async function checkPhonePePaymentStatus(merchantTransactionId: string, bookingData?: any): Promise<PaymentStatus> {
   try {
-    console.log(`Checking PhonePe payment status for transaction ID: ${merchantTransactionId}`);
-    console.log(`Using environment: ${PHONEPE_CONFIG.ENVIRONMENT}`);
-    console.log(`Merchant ID: ${PHONEPE_CONFIG.MERCHANT_ID}`);
 
     // Use our internal API route to avoid CORS issues
     const response = await fetch('/api/payments/phonepe-status', {
@@ -315,21 +268,16 @@ export async function checkPhonePePaymentStatus(merchantTransactionId: string, b
     }
 
     const data = await response.json();
-    console.log('PhonePe payment status response:', data);
 
     if (data.success) {
       // Map PhonePe status to our payment status
       // Handle both 'paymentState' and 'state' fields (PhonePe API inconsistency)
-      const paymentState = data.data?.paymentState || data.data?.state;
-      console.log('Payment state from PhonePe:', paymentState);
-      console.log('PhonePe response code:', data.code);
-      
+      const paymentState = data.data?.paymentState || data.data?.state;      
       // For test environment, be more flexible with status handling
       // Check both the server response status and also what PhonePe directly returned
       
       // First, check if the server already determined this was a success
       if (data.bookingCreated || data.paymentCreated) {
-        console.log('Server reported successful booking/payment creation');
         return 'SUCCESS';
       }
       
@@ -403,7 +351,6 @@ export async function getAllPayments(filters?: {
     // Return cached data if available and not expired
     const cached = paymentsCache.get(cacheKey);
     if (!forceRefresh && cached && (now - cached.timestamp < CACHE_TTL)) {
-      console.log('Returning cached payments data');
       return cached.data;
     }
 
@@ -506,8 +453,6 @@ export async function updatePaymentStatus(
       ...refundData,
     };
 
-    console.log('Updating payment status with payload:', payload);
-
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/update-status', {
       method: 'POST',
       headers: {
@@ -521,7 +466,6 @@ export async function updatePaymentStatus(
     }
 
     const data = await response.json();
-    console.log('Payment status update response:', data);
 
     // API returns array with single object, extract it
     if (Array.isArray(data) && data.length > 0) {
@@ -567,7 +511,6 @@ export async function getPaymentAnalytics(filters?: {
     }
 
     const data = await response.json();
-    console.log('Analytics API response:', data);
 
     // Handle different response formats
     if (Array.isArray(data) && data.length > 0) {
@@ -626,10 +569,7 @@ export async function exportPayments(filters: {
 
     const url = `https://ai.nibog.in/webhook/v1/nibog/payments/export?${queryParams.toString()}`;
 
-    console.log('Export filters received:', filters);
-    console.log('Query parameters built:', queryParams.toString());
-    console.log('Exporting payments from:', url);
-
+    
     // Fetch the file from server
     const response = await fetch(url, {
       method: 'GET',
@@ -644,18 +584,14 @@ export async function exportPayments(filters: {
 
     // Check response content type to handle both CSV and JSON
     const contentType = response.headers.get('content-type') || '';
-    console.log('Export API content type:', contentType);
-
     if (contentType.includes('text/csv') || contentType.includes('application/csv')) {
       // API returned CSV file directly
       const csvContent = await response.text();
-      console.log('Export API returned CSV content');
       downloadCSV(csvContent, `payments-export-${new Date().toISOString().split('T')[0]}.csv`);
       return 'Payments exported successfully!';
     } else {
       // API returned JSON data, convert to CSV
       const data = await response.json();
-      console.log('Export API returned JSON data:', data);
 
       if (Array.isArray(data) && data.length > 0) {
         // Convert server data to CSV and download
@@ -703,7 +639,6 @@ export async function createManualPayment(paymentData: ManualPaymentData): Promi
   error?: string;
 }> {
   try {
-    console.log('📝 Creating manual payment record:', paymentData);
 
     // Generate transaction ID if not provided
     const transactionId = paymentData.transaction_id || generateUniqueTransactionId("MANUAL");
@@ -729,8 +664,6 @@ export async function createManualPayment(paymentData: ManualPaymentData): Promi
       }
     };
 
-    console.log('💳 Creating manual payment with payload:', JSON.stringify(paymentPayload, null, 2));
-
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/create', {
       method: 'POST',
       headers: {
@@ -750,18 +683,15 @@ export async function createManualPayment(paymentData: ManualPaymentData): Promi
     }
 
     const result = await response.json();
-    console.log('✅ Manual payment created successfully:', result);
 
     // Extract payment ID from response (API might return array or object)
     const paymentId = Array.isArray(result) ? result[0]?.payment_id : result.payment_id;
 
     // Now update the booking payment status
     try {
-      console.log('📋 Updating booking payment status...');
       const { updateBookingPaymentStatus } = await import('./bookingService');
 
       await updateBookingPaymentStatus(paymentData.booking_id, paymentData.payment_status);
-      console.log('✅ Booking payment status updated successfully');
     } catch (bookingUpdateError) {
       console.error('⚠️ Failed to update booking payment status:', bookingUpdateError);
       // Don't fail the entire operation if booking update fails
@@ -771,7 +701,6 @@ export async function createManualPayment(paymentData: ManualPaymentData): Promi
     // Send WhatsApp notification for successful payments
     if (paymentData.payment_status === 'successful') {
       try {
-        console.log('📱 Sending WhatsApp notification for successful manual payment...');
         await sendWhatsAppNotificationForManualPayment(paymentData.booking_id, transactionId);
       } catch (whatsappError) {
         console.error('⚠️ Failed to send WhatsApp notification for manual payment:', whatsappError);
@@ -802,8 +731,6 @@ export async function createManualPayment(paymentData: ManualPaymentData): Promi
  */
 async function sendWhatsAppNotificationForManualPayment(bookingId: number, transactionId: string): Promise<void> {
   try {
-    console.log(`📱 Fetching booking details for WhatsApp notification: ${bookingId}`);
-
     // Fetch booking details from the API
     const bookingResponse = await fetch(`https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get/${bookingId}`);
 
@@ -817,8 +744,6 @@ async function sendWhatsAppNotificationForManualPayment(bookingId: number, trans
     if (!booking) {
       throw new Error('Booking not found');
     }
-
-    console.log(`📱 Booking details fetched for ID: ${bookingId}`);
 
     // Format phone number for WhatsApp
     const formattedPhone = booking.phone?.startsWith('+') ? booking.phone : `+91${booking.phone}`;
@@ -854,22 +779,6 @@ async function sendWhatsAppNotificationForManualPayment(bookingId: number, trans
       addOns: addOnDetails
     };
 
-    // Enhanced validation for WhatsApp template parameters
-    console.log('📱 WhatsApp data validation for manual payment:');
-    console.log('   bookingId:', whatsappData.bookingId, '(type:', typeof whatsappData.bookingId, ')');
-    console.log('   bookingRef:', whatsappData.bookingRef, '(length:', whatsappData.bookingRef.length, ')');
-    console.log('   parentName:', whatsappData.parentName, '(length:', whatsappData.parentName.length, ')');
-    console.log('   parentPhone:', whatsappData.parentPhone, '(length:', whatsappData.parentPhone.length, ')');
-    console.log('   childName:', whatsappData.childName, '(length:', whatsappData.childName.length, ')');
-    console.log('   eventTitle:', whatsappData.eventTitle, '(length:', whatsappData.eventTitle.length, ')');
-    console.log('   eventDate:', whatsappData.eventDate, '(length:', whatsappData.eventDate.length, ')');
-    console.log('   eventVenue:', whatsappData.eventVenue, '(length:', whatsappData.eventVenue.length, ')');
-    console.log('   totalAmount:', whatsappData.totalAmount, '(type:', typeof whatsappData.totalAmount, ')');
-    console.log('   paymentMethod:', whatsappData.paymentMethod, '(length:', whatsappData.paymentMethod.length, ')');
-    console.log('   transactionId:', whatsappData.transactionId, '(length:', whatsappData.transactionId.length, ')');
-    console.log('   gameDetails:', whatsappData.gameDetails.length, 'items');
-    console.log('   addOns:', whatsappData.addOns.length, 'items');
-
     // Validate required fields for WhatsApp template
     const requiredFields = ['bookingId', 'parentName', 'parentPhone', 'childName', 'eventTitle'];
     const missingFields = requiredFields.filter(field => !whatsappData[field as keyof typeof whatsappData]);
@@ -878,17 +787,8 @@ async function sendWhatsAppNotificationForManualPayment(bookingId: number, trans
       throw new Error(`Missing required WhatsApp fields: ${missingFields.join(', ')}`);
     }
 
-    console.log(`📱 Sending WhatsApp notification for manual payment:`, {
-      bookingId: whatsappData.bookingId,
-      parentName: whatsappData.parentName,
-      parentPhone: whatsappData.parentPhone,
-      eventTitle: whatsappData.eventTitle
-    });
-
     // Send WhatsApp notification via API endpoint with enhanced error handling
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    console.log(`📱 Using base URL for WhatsApp API: ${baseUrl}`);
-
     const whatsappResponse = await fetch(`${baseUrl}/api/whatsapp/send-booking-confirmation`, {
       method: 'POST',
       headers: {
@@ -896,8 +796,6 @@ async function sendWhatsAppNotificationForManualPayment(bookingId: number, trans
       },
       body: JSON.stringify(whatsappData),
     });
-
-    console.log(`📱 WhatsApp API response status: ${whatsappResponse.status}`);
 
     if (!whatsappResponse.ok) {
       const errorData = await whatsappResponse.json().catch(() => ({ error: 'Unknown error' }));
@@ -911,11 +809,8 @@ async function sendWhatsAppNotificationForManualPayment(bookingId: number, trans
     }
 
     const whatsappResult = await whatsappResponse.json();
-    console.log(`📱 WhatsApp API result:`, whatsappResult);
 
-    if (whatsappResult.success) {
-      console.log(`✅ WhatsApp notification sent successfully for manual payment. Message ID: ${whatsappResult.messageId}`);
-    } else {
+    if (!whatsappResult.success) {
       console.error(`❌ WhatsApp service failed:`, {
         error: whatsappResult.error,
         zaptraResponse: whatsappResult.zaptraResponse
@@ -957,9 +852,6 @@ function convertToCSV(payments: any[]): string {
   if (payments.length === 0) {
     return 'No data to export';
   }
-
-  // Debug: Log available fields for first payment
-  console.log('Available payment fields:', Object.keys(payments[0]));
 
   // CSV headers
   const headers = [

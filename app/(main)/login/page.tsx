@@ -215,9 +215,6 @@ function LoginContent() {
       // Store user data in auth context (this also calls setSession)
       login(userDataForStorage, token);
 
-      console.log('[Login] Auth context updated, preparing redirect');
-      console.log('[Login] Redirect URL:', callbackUrl || returnUrl);
-
       // Small delay to ensure cookie is set before redirect
       await new Promise(resolve => setTimeout(resolve, 300));
 

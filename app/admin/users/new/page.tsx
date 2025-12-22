@@ -54,8 +54,7 @@ export default function NewUserPage() {
 
         // Fetch cities from the API
         const citiesData = await getAllCities()
-        console.log("Cities data from API:", citiesData)
-
+       
         setCities(citiesData)
       } catch (error: any) {
         console.error("Failed to fetch cities:", error)
@@ -114,12 +113,8 @@ export default function NewUserPage() {
         accept_terms: acceptTerms
       }
 
-      console.log("Submitting user data:", userData)
-
       // Call the API to create the user
       const createdUser = await createUser(userData)
-
-      console.log("API response:", createdUser)
 
       toast({
         title: "Success",

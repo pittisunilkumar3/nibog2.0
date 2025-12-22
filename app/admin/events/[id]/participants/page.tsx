@@ -61,7 +61,6 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
           throw new Error('Event ID is required');
         }
 
-        console.log('Fetching data for event:', params.id);
         const response = await fetch(`https://ai.nibog.in/webhook/v1/nibog/events/participants`, {
           method: 'POST',
           headers: {
@@ -78,7 +77,6 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         }
 
         const data = await response.json();
-        console.log('Received data:', data);
         
         // Check if data is an array and has items
         if (Array.isArray(data) && data.length > 0) {
@@ -162,14 +160,12 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
   // Mark selected bookings as attended
   const markAsAttended = () => {
     // TODO: Implement API call to mark bookings as attended
-    console.log("Mark as attended:", selectedBookings)
     setSelectedBookings([])
   }
 
   // Mark selected bookings as no-show
   const markAsNoShow = () => {
     // TODO: Implement API call to mark bookings as no-show
-    console.log("Mark as no-show:", selectedBookings)
     setSelectedBookings([])
   }
 
@@ -343,16 +339,16 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Manage Booking</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => console.log("View booking:", participant.booking_id)}>
+                            <DropdownMenuItem onClick={() => { /* View booking: implement modal or navigation */ }}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Booking
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => console.log("Mark as attended:", participant.booking_id)}>
+                            <DropdownMenuItem onClick={() => { /* Mark as attended: implement API call */ }}>
                               <Check className="mr-2 h-4 w-4" />
                               Mark as Attended
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => console.log("Mark as no-show:", participant.booking_id)}>
+                            <DropdownMenuItem onClick={() => { /* Mark as no-show: implement API call */ }}>
                               <X className="mr-2 h-4 w-4" />
                               Mark as No-Show
                             </DropdownMenuItem>

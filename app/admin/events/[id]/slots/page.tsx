@@ -152,13 +152,11 @@ export default function EventSlotsPage({ params }: Props) {
         return updated
       })
 
-      console.log(`${newStatus === 'paused' ? 'Pausing' : 'Resuming'} slot ${slotId}`)
 
       try {
         // Call our status API to update the slot status
         const result = await updateSlotStatus(slotId, newStatus)
 
-        console.log("Slot status updated successfully:", result)
 
         toast({
           title: "Success",

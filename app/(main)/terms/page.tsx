@@ -31,7 +31,6 @@ export default function TermsPage() {
         }
 
         const data = await response.json()
-        console.log('Fetched terms & conditions data:', data)
 
         // Expected shape: { success: true, terms: { html_content, updated_at } }
         // Backend stores in html_content field

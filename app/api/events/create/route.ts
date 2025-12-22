@@ -5,11 +5,7 @@ export async function POST(request: Request) {
     // Parse the request body
     const eventData = await request.json();
 
-    console.log("Server API route: Creating event:", eventData);
-    console.log("Server API route: event_games_with_slots:", eventData.event_games_with_slots);
-    console.log("Server API route: event_games_with_slots type:", typeof eventData.event_games_with_slots);
-    console.log("Server API route: event_games_with_slots is array:", Array.isArray(eventData.event_games_with_slots));
-    console.log("Server API route: event_games_with_slots length:", eventData.event_games_with_slots?.length);
+    // removed debug logs
 
     // Validate required fields
     if (!eventData.title) {
@@ -46,7 +42,7 @@ export async function POST(request: Request) {
     // Forward the request to the backend API
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
     const apiUrl = `${backendUrl}/api/events/create`;
-    console.log("Server API route: Calling backend API:", apiUrl);
+    // removed debug log
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -58,7 +54,7 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Create event response status: ${response.status}`);
+    // removed debug log
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -77,12 +73,11 @@ export async function POST(request: Request) {
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
+    // removed debug log
 
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: Created event:", responseData);
 
       return NextResponse.json(responseData, { status: 201 });
     } catch (parseError) {

@@ -222,12 +222,12 @@ export type BookingAddOn = {
 export type BabyGame = {
   id?: number
   game_name: string
-  description: string
-  min_age: number
-  max_age: number
-  duration_minutes: number
-  categories: string[]
-  is_active: boolean
+  description?: string
+  min_age?: number
+  max_age?: number
+  duration_minutes?: number
+  categories: string[] | string
+  is_active: boolean | number
   created_at?: string
   updated_at?: string
 }

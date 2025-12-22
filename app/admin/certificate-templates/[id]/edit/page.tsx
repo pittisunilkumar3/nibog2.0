@@ -1351,7 +1351,6 @@ export default function EditCertificateTemplatePage() {
                                   e.currentTarget.style.display = 'none';
                                 }}
                                 onLoad={(e) => {
-                                  console.log('Background image loaded successfully:', e.currentTarget.src);
                                 }}
                               />
                             </div>

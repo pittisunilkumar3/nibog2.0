@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Starting booking payment status update request");
 
     // Parse the request body
     const { bookingId, paymentStatus } = await request.json();
-    console.log(`Server API route: Updating booking ID: ${bookingId}, payment status: ${paymentStatus}`);
 
     // Validate required fields
     if (!bookingId || !paymentStatus) {
@@ -18,7 +16,6 @@ export async function POST(request: Request) {
 
     // Try to update the booking using the general update endpoint
     const updateUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/update";
-    console.log("Server API route: Calling external API:", updateUrl);
 
     const response = await fetch(updateUrl, {
       method: "POST",
@@ -32,14 +29,11 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`External API response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`External API error: ${errorText}`);
       
       // If the payment status update fails, try updating the booking status instead
-      console.log("Payment status update failed, trying booking status update...");
       
       const statusMapping = {
         'successful': 'Confirmed',
@@ -69,7 +63,6 @@ export async function POST(request: Request) {
       }
 
       const statusData = await statusResponse.json();
-      console.log("Booking status updated successfully:", statusData);
       
       return NextResponse.json({
         ...statusData,
@@ -78,7 +71,6 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log("External API response data:", data);
 
     // Return the response from the external API
     return NextResponse.json(data, { status: 200 });

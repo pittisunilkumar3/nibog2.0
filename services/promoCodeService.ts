@@ -118,7 +118,6 @@ export interface PromoCodeDetail {
  * @returns Promise with the creation response
  */
 export async function createPromoCode(promoCodeData: CreatePromoCodeRequest): Promise<CreatePromoCodeResponse> {
-  console.log("Creating promo code:", promoCodeData);
 
   try {
     // Use our internal API route to avoid CORS issues
@@ -130,12 +129,9 @@ export async function createPromoCode(promoCodeData: CreatePromoCodeRequest): Pr
       body: JSON.stringify(promoCodeData),
     });
 
-    console.log(`Create promo code response status: ${response.status}`);
-
     let data;
     try {
       data = await response.json();
-      console.log("Promo code creation response:", data);
     } catch (parseError) {
       console.error("Failed to parse response as JSON:", parseError);
       throw new Error(`Invalid response from server. Status: ${response.status}`);
@@ -251,16 +247,8 @@ export function transformFormDataToAPI(
     is_active: formData.status ? formData.status === "active" : true
   };
 
-  console.log("=== TRANSFORMATION DEBUG ===");
-  console.log("Selected Events:", selectedEvents);
-  console.log("Selected Games:", selectedGames);
-  console.log("Apply to All:", applyToAll);
-  console.log("All Events:", allEvents.map(e => ({ id: e.id, name: e.name, games: e.games })));
-  console.log("Transformed Events:", events);
-  console.log("Final API Data:", apiData);
-  console.log("=============================");
 
-  return apiData;
+  return apiData; 
 }
 
 /**
@@ -374,14 +362,6 @@ export function transformFormDataToUpdateAPI(
     maximum_discount_amount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined
   };
 
-  console.log("=== UPDATE TRANSFORMATION DEBUG ===");
-  console.log("Selected Events:", selectedEvents);
-  console.log("Selected Games:", selectedGames);
-  console.log("Apply to All:", applyToAll);
-  console.log("Applicable Events:", applicableEvents);
-  console.log("Applicable Games:", applicableGames);
-  console.log("Final Update Data:", updateData);
-  console.log("====================================");
 
   return updateData;
 }
@@ -392,7 +372,6 @@ export function transformFormDataToUpdateAPI(
  * @returns Promo code details
  */
 export async function getPromoCodeById(id: number): Promise<PromoCodeDetail> {
-  console.log(`Fetching promo code with ID: ${id}`);
 
   try {
     // Use our internal API route to avoid CORS issues
@@ -404,8 +383,6 @@ export async function getPromoCodeById(id: number): Promise<PromoCodeDetail> {
       body: JSON.stringify({ id }),
     });
 
-    console.log(`Get promo code response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -413,7 +390,6 @@ export async function getPromoCodeById(id: number): Promise<PromoCodeDetail> {
     }
 
     const data = await response.json();
-    console.log("Retrieved promo code:", data);
 
     // The API returns an array with a single promo code, so we need to extract it
     if (Array.isArray(data) && data.length > 0) {
@@ -435,7 +411,6 @@ export async function getPromoCodeById(id: number): Promise<PromoCodeDetail> {
  * @returns Update response
  */
 export async function updatePromoCode(promoCodeData: UpdatePromoCodeRequest): Promise<UpdatePromoCodeResponse> {
-  console.log("Updating promo code:", promoCodeData);
 
   try {
     // Use our internal API route to avoid CORS issues
@@ -447,12 +422,9 @@ export async function updatePromoCode(promoCodeData: UpdatePromoCodeRequest): Pr
       body: JSON.stringify(promoCodeData),
     });
 
-    console.log(`Update promo code response status: ${response.status}`);
-
     let data;
     try {
       data = await response.json();
-      console.log("Promo code update response:", data);
     } catch (parseError) {
       console.error("Failed to parse response as JSON:", parseError);
       throw new Error(`Invalid response from server. Status: ${response.status}`);
@@ -494,23 +466,19 @@ export function transformAPIDataToForm(apiData: PromoCodeDetail) {
   
   // Get the promo details - either from the nested structure or from the top level
   const promoDetails = apiData.promo_data?.promo_details || apiData;
-  console.log("Using promo details:", promoDetails);
 
   if (apiData.promo_data?.events) {
-    console.log("Processing promo data events:", apiData.promo_data.events);
     
     // Safely map event IDs with null checks - extract from event_details.id
     selectedEvents = apiData.promo_data.events
       .filter(event => event && event.event_details && event.event_details.id !== undefined)
       .map(event => event.event_details.id.toString());
-    
-    console.log("Selected events after mapping:", selectedEvents);
 
     // Extract games in the format "eventId-gameId" with null checks
     apiData.promo_data.events.forEach(event => {
       if (event && event.event_details && event.event_details.id !== undefined && Array.isArray(event.games)) {
         const eventId = event.event_details.id;
-        
+
         event.games.forEach(game => {
           if (game && game.id !== undefined) {
             selectedGames.push(`${eventId}-${game.id}`);
@@ -518,8 +486,6 @@ export function transformAPIDataToForm(apiData: PromoCodeDetail) {
         });
       }
     });
-    
-    console.log("Selected games after mapping:", selectedGames);
   }
 
   // If no specific events are selected, assume apply to all
@@ -556,7 +522,6 @@ export function transformAPIDataToForm(apiData: PromoCodeDetail) {
  * @returns Delete response
  */
 export async function deletePromoCode(id: number): Promise<DeletePromoCodeResponse> {
-  console.log(`Deleting promo code with ID: ${id}`);
 
   try {
     // Use our internal API route to avoid CORS issues
@@ -568,12 +533,9 @@ export async function deletePromoCode(id: number): Promise<DeletePromoCodeRespon
       body: JSON.stringify({ id }),
     });
 
-    console.log(`Delete promo code response status: ${response.status}`);
-
     let data;
     try {
       data = await response.json();
-      console.log("Promo code delete response:", data);
     } catch (parseError) {
       console.error("Failed to parse response as JSON:", parseError);
       throw new Error(`Invalid response from server. Status: ${response.status}`);
@@ -626,7 +588,6 @@ export async function getPromoCodesByEventAndGames(eventId: number, gameIds: num
  * @returns Array of active promo codes
  */
 export async function getAllActivePromoCodes(): Promise<PromoCodeDetail[]> {
-  console.log("Fetching all active promo codes");
 
   try {
     const response = await fetch(apiUrl('/api/promo-codes/get-all'), {
@@ -636,8 +597,6 @@ export async function getAllActivePromoCodes(): Promise<PromoCodeDetail[]> {
       },
     });
 
-    console.log(`Get all promo codes response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -645,8 +604,6 @@ export async function getAllActivePromoCodes(): Promise<PromoCodeDetail[]> {
     }
 
     const data = await response.json();
-    console.log("Retrieved all promo codes:", data);
-
     // Filter only active promo codes
     const activePromoCodes = Array.isArray(data) ? data.filter((promo: any) => promo.is_active !== false) : [];
     return activePromoCodes;

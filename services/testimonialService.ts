@@ -78,7 +78,6 @@ export function getAuthToken(): string | null {
  */
 export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
   try {
-    console.log("Fetching all testimonials from API");
 
     // Use the new RESTful API endpoint
     const response = await fetch(apiUrl('/api/testimonials'), {
@@ -89,7 +88,6 @@ export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
       cache: "no-store",
     });
 
-    console.log(`Get all testimonials response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -105,7 +103,6 @@ export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
     }
 
     const result = await response.json();
-    console.log("Testimonials retrieved successfully:", result);
 
     // New API returns { success, data, meta }
     if (result.success && Array.isArray(result.data)) {
@@ -134,7 +131,6 @@ export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
  */
 export async function getTestimonialById(testimonialId: string | number): Promise<Testimonial> {
   try {
-    console.log(`Fetching testimonial with ID: ${testimonialId}`);
 
     // Use the new RESTful API endpoint
     const response = await fetch(apiUrl(`/api/testimonials/${testimonialId}`), {
@@ -145,7 +141,6 @@ export async function getTestimonialById(testimonialId: string | number): Promis
       cache: "no-store",
     });
 
-    console.log(`Get testimonial by ID response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -154,7 +149,6 @@ export async function getTestimonialById(testimonialId: string | number): Promis
     }
 
     const result = await response.json();
-    console.log("Testimonial retrieved successfully:", result);
 
     // New API returns { success, data }
     if (result.success && result.data) {
@@ -176,7 +170,6 @@ export async function getTestimonialById(testimonialId: string | number): Promis
  */
 export async function createTestimonial(testimonialData: CreateTestimonialPayload): Promise<Testimonial> {
   try {
-    console.log("Creating testimonial with data:", testimonialData);
 
     // Get auth token (check localStorage for adminToken, then fallback to generic token)
     const token = getAuthToken();
@@ -190,8 +183,6 @@ export async function createTestimonial(testimonialData: CreateTestimonialPayloa
       },
       body: JSON.stringify(testimonialData),
     });
-
-    console.log(`Create testimonial response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -222,7 +213,6 @@ export async function createTestimonial(testimonialData: CreateTestimonialPayloa
     }
 
     const result = await response.json();
-    console.log("Testimonial created successfully:", result);
 
     // New API returns { success, message, id, data }
     if (result.success && result.data) {
@@ -245,7 +235,6 @@ export async function createTestimonial(testimonialData: CreateTestimonialPayloa
  */
 export async function updateTestimonial(testimonialId: number, testimonialData: UpdateTestimonialPayload): Promise<Testimonial> {
   try {
-    console.log("Updating testimonial with data:", testimonialData);
 
     // Get auth token (check localStorage for adminToken, then fallback to generic token)
     const token = getAuthToken();
@@ -259,8 +248,6 @@ export async function updateTestimonial(testimonialId: number, testimonialData: 
       },
       body: JSON.stringify(testimonialData),
     });
-
-    console.log(`Update testimonial response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -291,14 +278,12 @@ export async function updateTestimonial(testimonialId: number, testimonialData: 
     }
 
     const result = await response.json();
-    console.log("Testimonial updated successfully:", result);
 
     // New API returns { success, message }
     // Fetch updated testimonial to return complete data
     if (result.success) {
       return await getTestimonialById(testimonialId);
     }
-
     // Fallback for backward compatibility
     return Array.isArray(result) ? result[0] : result;
   } catch (error: any) {
@@ -314,7 +299,6 @@ export async function updateTestimonial(testimonialId: number, testimonialData: 
  */
 export async function deleteTestimonial(testimonialId: number): Promise<{ success: boolean }> {
   try {
-    console.log(`Deleting testimonial with ID: ${testimonialId}`);
 
     // Get auth token (check localStorage for adminToken, then fallback to generic token)
     const token = getAuthToken();
@@ -327,8 +311,6 @@ export async function deleteTestimonial(testimonialId: number): Promise<{ succes
         ...(token && { "Authorization": `Bearer ${token}` })
       },
     });
-
-    console.log(`Delete testimonial response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -359,11 +341,9 @@ export async function deleteTestimonial(testimonialId: number): Promise<{ succes
     }
 
     const result = await response.json();
-    console.log("Testimonial deleted successfully:", result);
 
     // New API returns { success, message }
-    return { success: result.success || true };
-  } catch (error: any) {
+    return { success: result.success || true };  } catch (error: any) {
     console.error(`Error deleting testimonial ${testimonialId}:`, error);
     throw error;
   }
@@ -377,7 +357,6 @@ export async function deleteTestimonial(testimonialId: number): Promise<{ succes
  */
 export async function updateTestimonialStatus(testimonialId: number, status: string): Promise<Testimonial> {
   try {
-    console.log(`Updating testimonial ${testimonialId} status to ${status}`);
 
     // Get auth token (check localStorage for adminToken, then fallback to generic token)
     const token = getAuthToken();
@@ -396,9 +375,6 @@ export async function updateTestimonialStatus(testimonialId: number, status: str
       },
       body: JSON.stringify(updatedData),
     });
-
-    console.log(`Update testimonial status response: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -406,7 +382,6 @@ export async function updateTestimonialStatus(testimonialId: number, status: str
     }
 
     const result = await response.json();
-    console.log("Testimonial status updated successfully:", result);
 
     // Fetch updated testimonial to return complete data
     if (result.success) {

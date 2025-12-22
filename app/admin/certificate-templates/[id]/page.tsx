@@ -27,7 +27,6 @@ export default function ViewCertificateTemplatePage() {
       try {
         setIsLoading(true)
         const templateData = await getCertificateTemplateById(templateId)
-        console.log("Template data received:", templateData)
         setTemplate(templateData)
       } catch (error) {
         console.error("Error fetching template:", error)

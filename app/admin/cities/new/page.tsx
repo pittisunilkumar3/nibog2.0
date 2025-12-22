@@ -26,11 +26,7 @@ export default function NewCityPage() {
     setError(null)
 
     try {
-      console.log("Creating city with data:", {
-        city_name: cityName,
-        state,
-        is_active: isActive
-      })
+      
 
       // Create city using the API service
       const result = await createCity({
@@ -39,7 +35,6 @@ export default function NewCityPage() {
         is_active: isActive ? 1 : 0
       })
 
-      console.log("City created successfully:", result)
 
       toast({
         title: "Success",

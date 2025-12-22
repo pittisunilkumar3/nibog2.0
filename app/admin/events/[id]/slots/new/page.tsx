@@ -141,12 +141,8 @@ export default function NewSlotPage({ params }: Props) {
         max_participants: Number(formData.maxParticipants)
       }
 
-      console.log("Creating slot with data:", slotData)
-
       // Call the API to create the slot
       const result = await createEventGameSlot(slotData)
-
-      console.log("Slot created successfully:", result)
 
       toast({
         title: "Success",

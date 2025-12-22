@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         const getResult = await getResponse.json();
         // Handle both array and object response formats
         templateData = Array.isArray(getResult) ? getResult[0] : getResult;
-        console.log('Template data for deletion:', templateData);
+        // removed debug log
       }
     } catch (error) {
       console.warn('Could not fetch template details before deletion:', error);
@@ -89,17 +89,17 @@ export async function POST(request: NextRequest) {
             const filename = imagePath.split('/').pop();
             const filePath = join(process.cwd(), 'public', 'images', 'certificatetemplates', filename);
 
-            console.log(`Attempting to delete ${imageInfo.type} image file:`, filePath);
+            // removed debug log
 
             // Check if file exists before trying to delete
             if (existsSync(filePath)) {
               await unlink(filePath);
-              console.log(`Successfully deleted ${imageInfo.type} image file:`, filename);
+              // removed debug log
             } else {
-              console.log(`${imageInfo.type} image file not found, may have been already deleted:`, filename);
+              // removed debug log
             }
           } else {
-            console.log(`${imageInfo.type} image path does not match expected format:`, imagePath);
+            // removed debug log
           }
         } catch (fileError) {
           console.error(`Error deleting ${imageInfo.type} image file:`, fileError);

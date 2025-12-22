@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Fetching single promo code...");
+    // removed debug log
 
     // Parse the request body to get the ID
     const requestData = await request.json();
@@ -15,11 +15,11 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Server API route: Fetching promo code with ID: ${promoCodeId}`);
+    // removed debug log
 
     // Forward the request to the external API
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/promocode/get";
-    console.log("Server API route: Calling API URL:", apiUrl);
+    // removed debug log
 
     // Set a timeout for the fetch request
     const controller = new AbortController();
@@ -37,14 +37,14 @@ export async function POST(request: Request) {
       });
 
       clearTimeout(timeoutId);
-      console.log(`Server API route: Get promo code response status: ${response.status}`);
+      // removed debug log
 
       if (!response.ok) {
         // If the first attempt fails, try with webhook-test URL
-        console.log("Server API route: First attempt failed, trying with webhook-test URL");
+        // removed debug log
         
         const alternativeUrl = apiUrl.replace("webhook/v1", "webhook-test/v1");
-        console.log("Server API route: Trying alternative URL:", alternativeUrl);
+        // removed debug log
         
         const alternativeResponse = await fetch(alternativeUrl, {
           method: "POST",
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
           cache: "no-store",
         });
 
-        console.log(`Server API route: Alternative response status: ${alternativeResponse.status}`);
+        // removed debug log
 
         if (!alternativeResponse.ok) {
           const altErrorText = await alternativeResponse.text();
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
           
           // If alternative URL also fails with webhook not registered, return 404
           if (alternativeResponse.status === 404 && altErrorText.includes("webhook") && altErrorText.includes("not registered")) {
-            console.log("Server API route: Alternative webhook also not registered");
+            // removed debug log
             return NextResponse.json(
               { error: "Promo code not found" },
               { status: 404 }
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         }
 
         const alternativeData = await alternativeResponse.json();
-        console.log("Server API route: Alternative URL success, promo code data:", alternativeData);
+        // removed debug log
         
         return NextResponse.json(alternativeData, { 
           status: 200,
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       }
 
       const data = await response.json();
-      console.log("Server API route: Successfully fetched promo code:", data);
+      // removed debug log
 
       return NextResponse.json(data, { 
         status: 200,

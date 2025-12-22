@@ -94,9 +94,7 @@ export async function middleware(request: NextRequest) {
 
   // Debug logging for protected paths
   if (pathname.startsWith('/register-event') || pathname.startsWith('/dashboard') || pathname.startsWith('/checkout')) {
-    console.log('[Middleware] Protected path accessed:', pathname);
-    console.log('[Middleware] User session exists:', !!userSession);
-    console.log('[Middleware] Cookies:', request.cookies.getAll().map(c => c.name));
+    // Debug logs removed for production readiness
   }
 
   // Create response with no-cache headers by default
@@ -233,12 +231,10 @@ export async function middleware(request: NextRequest) {
 
   // Handle user protected routes (dashboard, checkout, register-event, etc.)
   if (isUserProtectedPath) {
-    console.log('[Middleware] Checking user protected path:', pathname);
-    console.log('[Middleware] userSession value:', userSession ? 'exists' : 'missing');
-    
+    // Debug logs removed for production readiness
+
     // If user is not authenticated, redirect to login
     if (!userSession) {
-      console.log('[Middleware] No session found, redirecting to login');
       const loginUrl = new URL('/login', request.url);
       // Preserve the original intended URL for redirect after login
       loginUrl.searchParams.set('callbackUrl', pathname + (request.nextUrl.search || ''));
@@ -248,7 +244,7 @@ export async function middleware(request: NextRequest) {
       redirect.headers.set('Expires', '0');
       return redirect;
     }
-    console.log('[Middleware] Session found, allowing access');
+
     return response;
   }
 

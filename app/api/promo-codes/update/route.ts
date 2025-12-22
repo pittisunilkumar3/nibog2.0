@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Starting promo code update request");
+    // removed debug log
 
     // Parse the request body
     const requestData = await request.json();
-    console.log("Server API route: Received request body:", JSON.stringify(requestData, null, 2));
+    // removed debug log
 
     // Validate required fields
     const requiredFields = ['id', 'promo_code', 'type', 'value', 'valid_from', 'valid_to', 'usage_limit', 'minimum_purchase_amount'];
@@ -38,11 +38,11 @@ export async function POST(request: Request) {
       is_active: requestData.is_active !== undefined ? requestData.is_active : true // Include is_active with default value of true
     };
 
-    console.log("Server API route: Prepared payload:", JSON.stringify(payload, null, 2));
+    // removed debug log
 
     // Call the external API
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/promocode/update";
-    console.log("Server API route: Calling API URL:", apiUrl);
+    // removed debug log
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -52,12 +52,12 @@ export async function POST(request: Request) {
       body: JSON.stringify(payload),
     });
 
-    console.log(`Server API route: Update promo code response status: ${response.status}`);
+    // removed debug log
 
     let responseText;
     try {
       responseText = await response.text();
-      console.log("Server API route: Raw response:", responseText);
+      // removed debug log
     } catch (textError) {
       console.error("Server API route: Error reading response text:", textError);
       return NextResponse.json(
@@ -70,10 +70,10 @@ export async function POST(request: Request) {
     let data;
     try {
       data = JSON.parse(responseText);
-      console.log("Server API route: Parsed response:", data);
+      // removed debug log
     } catch (parseError) {
       console.error("Server API route: Error parsing JSON response:", parseError);
-      console.log("Server API route: Raw response text:", responseText);
+      // removed debug log
       
       // If parsing fails but status is OK, assume success
       if (response.ok) {
@@ -94,14 +94,14 @@ export async function POST(request: Request) {
     if (response.ok) {
       // The API returns an array with the updated promo code
       if (Array.isArray(data) && data.length > 0) {
-        console.log("Server API route: Promo code updated successfully");
+        // removed debug log
         return NextResponse.json({
           success: true,
           message: "Promo code updated successfully",
           data: data[0]
         });
       } else if (!Array.isArray(data)) {
-        console.log("Server API route: Promo code updated successfully");
+        // removed debug log
         return NextResponse.json({
           success: true,
           message: "Promo code updated successfully",

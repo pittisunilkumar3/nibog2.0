@@ -70,7 +70,6 @@ export default function CertificatesPage() {
         filters.status = statusFilter
       }
       
-      console.log('Loading certificates with filters:', filters);
 
       const data = await getAllCertificates(filters)
 
@@ -79,7 +78,6 @@ export default function CertificatesPage() {
         throw new Error('Invalid response format from server');
       }
 
-      console.log(`Successfully loaded ${data.length} certificates`);
       setCertificates(data)
     } catch (error) {
       console.error('Error loading certificates:', error)

@@ -233,9 +233,7 @@ export default function EditEventPage({ params }: Props) {
       setIsLoadingCities(true)
       setCityError(null)
 
-      console.log("Fetching cities from API...")
       const citiesData = await getAllCities()
-      console.log("Cities data from API:", citiesData)
 
       // Map the API response to the format expected by the dropdown
       const formattedCities = citiesData.map(city => ({

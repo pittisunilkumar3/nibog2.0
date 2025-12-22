@@ -426,7 +426,6 @@ export interface TicketDetails {
  */
 export async function getEventWithVenueDetails(eventId: number) {
   try {
-    console.log('Fetching event details with venue information for event ID:', eventId);
 
     const response = await fetch(`/api/events/get-with-games`, {
       method: 'POST',
@@ -441,7 +440,6 @@ export async function getEventWithVenueDetails(eventId: number) {
     }
 
     const eventData = await response.json();
-    console.log('Event details with venue information:', eventData);
 
     return eventData;
   } catch (error) {
@@ -487,23 +485,17 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
   } else if (cleanRef.startsWith('PPT')) {
     // Extract from PPT format (PPTYYMMDDxxx)
     // PPT format typically has date embedded in it
-    console.log(`Converting PPT reference: ${cleanRef}`);
-    console.log(`PPT reference length: ${cleanRef.length}`);
-    console.log(`PPT reference characters:`, cleanRef.split('').map(c => `${c}(${c.charCodeAt(0)})`));
 
     // More flexible regex that handles various PPT formats
     const pptMatch = cleanRef.match(/^PPT(\d{6})(\d+)$/);
-    console.log(`PPT regex match result:`, pptMatch);
 
     if (pptMatch) {
       const dateStr = pptMatch[1]; // YYMMDD part
       const idPart = pptMatch[2];  // xxx part (numeric ID)
-      console.log(`PPT matched - dateStr: ${dateStr}, idPart: ${idPart}`);
 
       if (targetFormat === 'PPT') {
         // Already in PPT format, return as-is to preserve original date
-        console.log(`Returning PPT as-is: ${cleanRef}`);
-        return cleanRef;
+        return cleanRef; 
       } else {
         // Convert PPT -> B format
         // Use the numeric part as is, pad to 7 digits
@@ -511,7 +503,6 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
       }
     } else {
       // Try alternative patterns for PPT references
-      console.log(`Primary PPT regex failed, trying alternative patterns...`);
 
       // Check if it's a valid PPT format with any number of digits after the date
       const altMatch = cleanRef.match(/^PPT(\d+)$/);
@@ -520,11 +511,8 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
         const dateStr = fullNumber.substring(0, 6); // First 6 digits as date
         const idPart = fullNumber.substring(6);     // Rest as ID
 
-        console.log(`Alternative PPT pattern matched - dateStr: ${dateStr}, idPart: ${idPart}`);
-
         if (targetFormat === 'PPT') {
           // Already in PPT format, return as-is to preserve original date
-          console.log(`Returning PPT as-is: ${cleanRef}`);
           return cleanRef;
         } else {
           // Convert PPT -> B format
@@ -534,41 +522,33 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
 
       // Last resort - if target format is PPT and input is already PPT, preserve it
       if (targetFormat === 'PPT') {
-        console.log(`PPT reference considered malformed but preserving original: ${cleanRef}`);
         return cleanRef; // Preserve original PPT reference to avoid date changes
       } else {
         // Only convert to B format if explicitly requested
-        console.log(`PPT reference considered malformed, converting to B format`);
         numericPart = cleanRef.replace(/\D/g, '');
         const fallbackResult = `B${numericPart.slice(-7).padStart(7, '0')}`;
-        console.log(`Fallback result: ${fallbackResult}`);
-        return fallbackResult;
+        return fallbackResult; 
       }
     }
   } else if (cleanRef.startsWith('MAN')) {
     // Handle MAN format (MANYYMMDDxxx) - manual booking references
-    console.log(`Converting MAN reference: ${cleanRef}`);
 
     const manMatch = cleanRef.match(/^MAN(\d{6})(\d+)$/);
     if (manMatch) {
       const dateStr = manMatch[1]; // YYMMDD part
       const idPart = manMatch[2];  // xxx part (numeric ID)
-      console.log(`MAN matched - dateStr: ${dateStr}, idPart: ${idPart}`);
 
       if (targetFormat === 'PPT') {
         // Convert MAN -> PPT format, preserving the original date
         const result = `PPT${dateStr}${idPart.padStart(3, '0')}`;
-        console.log(`MAN -> PPT conversion: ${cleanRef} -> ${result}`);
-        return result;
+        return result; 
       } else {
         // Convert MAN -> B format
         const result = `B${idPart.padStart(7, '0')}`;
-        console.log(`MAN -> B conversion: ${cleanRef} -> ${result}`);
-        return result;
+        return result; 
       }
     } else {
       // Fallback for malformed MAN references
-      console.log(`MAN reference malformed, using fallback conversion`);
       numericPart = cleanRef.replace(/\D/g, '');
       return targetFormat === 'B' ?
         `B${numericPart.slice(-7).padStart(7, '0')}` :
@@ -576,7 +556,6 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
     }
   } else {
     // Unknown format, extract any numeric parts
-    console.log(`Unknown booking reference format: ${cleanRef}, using fallback conversion`);
     numericPart = cleanRef.replace(/\D/g, '');
     return targetFormat === 'B' ?
       `B${numericPart.slice(-7).padStart(7, '0')}` :
@@ -587,31 +566,24 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
 // New function to fetch detailed ticket information using booking reference
 export async function getTicketDetails(bookingRef: string): Promise<TicketDetails[]> {
   try {
-    console.log('Fetching ticket details with booking reference:', bookingRef);
 
     // Use booking reference as-is - DO NOT convert MAN references
     // The API should handle different reference formats directly
     let formattedRef = bookingRef;
 
     if (bookingRef.startsWith('MAN')) {
-      console.log(`Using MAN booking reference as-is: ${bookingRef}`);
       // Keep MAN references unchanged
     } else if (bookingRef.startsWith('PPT')) {
-      console.log(`Using PPT booking reference as-is: ${bookingRef}`);
       // Keep PPT references unchanged
     } else if (!bookingRef.startsWith('PPT') && !bookingRef.startsWith('MAN')) {
       // Only convert B format references to PPT
       formattedRef = convertBookingRefFormat(bookingRef, 'PPT');
-      console.log(`Converted B format booking reference: ${bookingRef} -> ${formattedRef}`);
     }
 
     // Strip any JSON formatting if it was stored as JSON string
     if (formattedRef.startsWith('"') && formattedRef.endsWith('"')) {
       formattedRef = formattedRef.slice(1, -1);
-      console.log('Stripped JSON quotes from booking reference:', formattedRef);
     }
-
-    console.log('Making API call with formatted booking reference:', formattedRef);
 
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/tickect/booking_ref/details', {
       method: 'POST',
@@ -631,7 +603,6 @@ export async function getTicketDetails(bookingRef: string): Promise<TicketDetail
     }
 
     const data = await response.json();
-    console.log('Received ticket details:', data);
     return data;
   } catch (error) {
     console.error('Error fetching ticket details:', error);
@@ -684,14 +655,6 @@ export async function getEventGameSlotDetailsBySlotId(slotId: number) {
  */
 export async function findMostLikelySlotForBooking(booking: any) {
   try {
-    console.log('🔍 Finding most likely slot for booking:', booking.booking_id);
-    console.log('📋 Booking details:', {
-      event_title: booking.event_title,
-      event_date: booking.event_event_date,
-      game_name: booking.game_name,
-      total_amount: booking.total_amount,
-      booking_created_at: booking.booking_created_at
-    });
 
     // Get all slots first with timeout protection
     const slotsController = new AbortController();
@@ -711,7 +674,6 @@ export async function findMostLikelySlotForBooking(booking: any) {
     }
 
     const allSlots = await slotsResponse.json();
-    console.log(`📊 Total slots available: ${allSlots.length}`);
 
     // Get all events to find the matching event ID with timeout protection
     const eventsController = new AbortController();
@@ -740,11 +702,8 @@ export async function findMostLikelySlotForBooking(booking: any) {
     });
 
     if (!matchingEvent) {
-      console.log('❌ No matching event found for:', booking.event_title);
       return null;
     }
-
-    console.log('✅ Found matching event:', matchingEvent.id, matchingEvent.title);
 
     // Get all games to find the matching game ID with timeout protection
     const gamesController = new AbortController();
@@ -773,33 +732,25 @@ export async function findMostLikelySlotForBooking(booking: any) {
     );
 
     if (!matchingGame) {
-      console.log('❌ No matching game found for:', booking.game_name);
       return null;
     }
-
-    console.log('✅ Found matching game:', matchingGame.id, matchingGame.game_title || matchingGame.name);
 
     // Find slots that match both event and game
     const matchingSlots = allSlots.filter((slot: any) =>
       slot.event_id === matchingEvent.id && slot.game_id === matchingGame.id
     );
 
-    console.log(`🎯 Found ${matchingSlots.length} matching slots for event ${matchingEvent.id} + game ${matchingGame.id}`);
-
     if (matchingSlots.length === 0) {
-      console.log('❌ No matching slots found');
       return null;
     }
 
     // Log all matching slots for debugging
     matchingSlots.forEach((slot: any, index: number) => {
-      console.log(`  ${index + 1}. Slot ${slot.id}: "${slot.custom_title || 'No custom title'}" - Price: ${slot.slot_price}`);
     });
 
     // If there's only one slot, use it
     if (matchingSlots.length === 1) {
       const slot = matchingSlots[0];
-      console.log('✅ Using single matching slot:', slot.id, slot.custom_title);
       return await getEventGameSlotDetailsBySlotId(slot.id);
     }
 
@@ -815,7 +766,6 @@ export async function findMostLikelySlotForBooking(booking: any) {
 
     if (priceMatchingSlots.length === 1) {
       const slot = priceMatchingSlots[0];
-      console.log('✅ Using price-matched slot:', slot.id, slot.custom_title, `(${slot.slot_price})`);
       return await getEventGameSlotDetailsBySlotId(slot.id);
     }
 
@@ -828,7 +778,6 @@ export async function findMostLikelySlotForBooking(booking: any) {
 
     if (customSlots.length === 1) {
       const slot = customSlots[0];
-      console.log('✅ Using custom-titled slot:', slot.id, slot.custom_title);
       return await getEventGameSlotDetailsBySlotId(slot.id);
     }
 
@@ -845,7 +794,6 @@ export async function findMostLikelySlotForBooking(booking: any) {
 
       if (timeMatchingSlots.length === 1) {
         const slot = timeMatchingSlots[0];
-        console.log('✅ Using time-matched slot:', slot.id, slot.custom_title);
         return await getEventGameSlotDetailsBySlotId(slot.id);
       }
     }
@@ -858,7 +806,6 @@ export async function findMostLikelySlotForBooking(booking: any) {
     });
 
     const slot = sortedSlots[0];
-    console.log('✅ Using most recent slot as fallback:', slot.id, slot.custom_title);
     return await getEventGameSlotDetailsBySlotId(slot.id);
 
   } catch (error) {
@@ -944,9 +891,8 @@ export async function getBookingPaymentDetails(bookingId: number) {
  */
 export async function getBookingAddons(bookingId: number): Promise<any> {
   try {
-    console.log(`Fetching booking add-ons for booking ID: ${bookingId}`);
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/getting/add-on/by-bookingid', {
+    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/getting/add-on/by-bookingid', { 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -962,7 +908,6 @@ export async function getBookingAddons(bookingId: number): Promise<any> {
     }
 
     const data = await response.json();
-    console.log('Booking add-ons data:', data);
     return data;
   } catch (error) {
     console.error('Error fetching booking add-ons:', error);
@@ -978,7 +923,6 @@ export async function getBookingAddons(bookingId: number): Promise<any> {
  */
 export async function updateBookingPaymentStatus(bookingId: number, paymentStatus: string): Promise<any> {
   try {
-    console.log(`Updating booking ${bookingId} payment status to: ${paymentStatus}`);
 
     // Use our internal API route that handles both payment status and booking status updates
     const response = await fetch('/api/bookings/update-payment-status', {

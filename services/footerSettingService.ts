@@ -5,7 +5,7 @@ export interface FooterSetting {
   address: string;
   phone: string;
   email: string;
-  newsletter_enabled: boolean;
+  newsletter_enabled: boolean | number;
   copyright_text: string;
   facebook_url?: string;
   instagram_url?: string;
@@ -35,7 +35,6 @@ export interface FooterSettingPayload {
  * @returns Promise with the saved footer settings
  */
 export async function saveFooterSetting(footerData: FooterSettingPayload): Promise<FooterSetting[]> {
-  console.log("Saving footer settings:", footerData);
 
   try {
     // Create an AbortController for timeout
@@ -53,7 +52,6 @@ export async function saveFooterSetting(footerData: FooterSettingPayload): Promi
     });
 
     clearTimeout(timeoutId);
-    console.log(`Save footer settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -62,7 +60,6 @@ export async function saveFooterSetting(footerData: FooterSettingPayload): Promi
     }
 
     const data = await response.json();
-    console.log("Footer settings saved successfully:", data);
     return data;
   } catch (error) {
     console.error("Failed to save footer settings:", error);
@@ -78,9 +75,6 @@ export async function saveFooterSetting(footerData: FooterSettingPayload): Promi
  * @returns Promise with footer settings data or null if not found
  */
 export async function getFooterSetting(): Promise<FooterSetting | null> {
-  if (process.env.NODE_ENV === 'development') {
-    console.log("Fetching footer settings...");
-  }
 
   try {
     // Create an AbortController for timeout
@@ -97,35 +91,24 @@ export async function getFooterSetting(): Promise<FooterSetting | null> {
     });
 
     clearTimeout(timeoutId);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`Get footer settings response status: ${response.status}`);
-    }
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
-      
+
       // If 404, return null instead of throwing an error
       if (response.status === 404) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("No footer settings found (404)");
-        }
         return null;
       }
-      
+
       throw new Error(`API returned error status: ${response.status}`);
     }
 
     const data = await response.json();
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log("Footer settings fetched successfully:", data);
-    }
 
     // The API returns an array, so we take the first item
     if (Array.isArray(data) && data.length > 0) {
-      return data[0];
+      return data[0] as FooterSetting;
     }
 
     return null;
@@ -143,9 +126,6 @@ export async function getFooterSetting(): Promise<FooterSetting | null> {
  * @returns Promise with footer settings data including social links
  */
 export async function getFooterSettingWithSocial(): Promise<FooterSetting | null> {
-  if (process.env.NODE_ENV === 'development') {
-    console.log("Fetching footer settings with social links...");
-  }
 
   try {
     // Create an AbortController for timeout
@@ -163,10 +143,6 @@ export async function getFooterSettingWithSocial(): Promise<FooterSetting | null
     });
 
     clearTimeout(timeoutId);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`Get footer settings with social response status: ${response.status}`);
-    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -174,9 +150,6 @@ export async function getFooterSettingWithSocial(): Promise<FooterSetting | null
       
       // If 404, return null instead of throwing an error
       if (response.status === 404) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("No footer settings found (404)");
-        }
         return null;
       }
       
@@ -184,10 +157,6 @@ export async function getFooterSettingWithSocial(): Promise<FooterSetting | null
     }
 
     const data = await response.json();
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log("Footer settings with social fetched successfully:", data);
-    }
 
     return data;
   } catch (error) {
@@ -205,7 +174,6 @@ export async function getFooterSettingWithSocial(): Promise<FooterSetting | null
  * @returns Promise with the updated footer settings
  */
 export async function updateFooterSetting(footerData: FooterSettingPayload): Promise<any> {
-  console.log("Updating footer settings:", footerData);
 
   try {
     // Create an AbortController for timeout
@@ -251,7 +219,6 @@ export async function updateFooterSetting(footerData: FooterSettingPayload): Pro
     
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('✅ Using authentication token for footer update');
     } else {
       console.warn('⚠️ No authentication token found for footer update');
     }
@@ -265,7 +232,6 @@ export async function updateFooterSetting(footerData: FooterSettingPayload): Pro
     });
 
     clearTimeout(timeoutId);
-    console.log(`Update footer settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -274,7 +240,6 @@ export async function updateFooterSetting(footerData: FooterSettingPayload): Pro
     }
 
     const data = await response.json();
-    console.log("Footer settings updated successfully:", data);
     return data;
   } catch (error) {
     console.error("Failed to update footer settings:", error);

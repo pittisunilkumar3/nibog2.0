@@ -117,9 +117,7 @@ export default function EventDetailPage({ params }: Props) {
         setIsLoading(prev => ({ ...prev, fetchingEvent: true }))
         setApiError(null)
 
-        console.log(`Fetching event data for ID: ${eventId}`)
         const eventData = await getEventWithDetails(Number(eventId))
-        console.log("Event data received:", eventData)
 
         if (!eventData) {
           throw new Error("No event data returned from API")
@@ -149,7 +147,6 @@ export default function EventDetailPage({ params }: Props) {
 
     // Simulate API call to pause the event
     setTimeout(() => {
-      console.log(`Pausing event ${eventId}`)
       setIsLoading({ ...isLoading, pause: false })
       // In a real app, you would update the event status and refresh the page
       // For now, we'll just reload the page to simulate the change
@@ -163,7 +160,6 @@ export default function EventDetailPage({ params }: Props) {
 
     // Simulate API call to resume the event
     setTimeout(() => {
-      console.log(`Resuming event ${eventId}`)
       setIsLoading({ ...isLoading, resume: false })
       // In a real app, you would update the event status and refresh the page
       router.refresh()
@@ -176,7 +172,6 @@ export default function EventDetailPage({ params }: Props) {
 
     // Simulate API call to cancel the event
     setTimeout(() => {
-      console.log(`Cancelling event ${eventId}`)
       setIsLoading({ ...isLoading, cancel: false })
       // In a real app, you would update the event status and refresh the page
       router.refresh()
@@ -230,8 +225,9 @@ export default function EventDetailPage({ params }: Props) {
   // Calculate total bookings and capacity from the API data
   // Since the API doesn't provide booking counts, we'll use 0 as a placeholder
   const totalBookings = 0 // In a real implementation, this would come from the API
-  const gameSlots = event.event_games_with_slots || []
-  const totalCapacity = gameSlots.reduce((acc, slot) => acc + (slot.max_participants || 0), 0)
+  // Prefer detailed 'games_with_slots' if provided by API, otherwise fall back to 'games'
+  const gameSlots = (event.games_with_slots || event.games || []) as any[]
+  const totalCapacity = gameSlots.reduce((acc: number, slot: any) => acc + (slot.max_participants || 0), 0)
   const fillRate = totalCapacity > 0 ? Math.round((totalBookings / totalCapacity) * 100) : 0
 
   return (
@@ -246,23 +242,23 @@ export default function EventDetailPage({ params }: Props) {
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">
-              {event.title || event.event_title}
+              {event.event_title} 
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground truncate">
-              {event.venue_name}, {event.city_name} | {(event.event_date || event.date || "").split('T')[0]}
+              {event.venue_name}, {event.city_name} | {(event.event_date || "").split('T')[0]}
             </p>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" asChild className="touch-manipulation">
-            <Link href={`/admin/events/${event.id || event.event_id}/edit`}>
+            <Link href={`/admin/events/${event.event_id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Edit Event</span>
               <span className="sm:hidden">Edit</span>
             </Link>
           </Button>
 
-          {(event.status || event.event_status || "").toLowerCase() === "published" && (
+          {(event.event_status || "").toLowerCase() === "published" && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="touch-manipulation">
@@ -291,7 +287,7 @@ export default function EventDetailPage({ params }: Props) {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          {(event.status || event.event_status || "").toLowerCase() === "paused" && (
+          {(event.event_status || "").toLowerCase() === "paused" && (
             <Button
               variant="outline"
               onClick={handleResumeEvent}
@@ -307,7 +303,7 @@ export default function EventDetailPage({ params }: Props) {
               </span>
             </Button>
           )}
-          {((event.status || event.event_status || "").toLowerCase() === "published" || (event.status || event.event_status || "").toLowerCase() === "paused") && (
+          {((event.event_status || "").toLowerCase() === "published" || (event.event_status || "").toLowerCase() === "paused") && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -352,19 +348,19 @@ export default function EventDetailPage({ params }: Props) {
               <div className="flex flex-col gap-1 rounded-lg border p-3">
                 <span className="text-sm text-muted-foreground">Status</span>
                 <div className="flex items-center gap-2">
-                  {(event.status || event.event_status || "").toLowerCase() === "published" && (
+                  {(event.event_status || "").toLowerCase() === "published" && (
                     <Badge className="bg-green-500 hover:bg-green-600">Published</Badge>
                   )}
-                  {(event.status || event.event_status || "").toLowerCase() === "draft" && (
+                  {(event.event_status || "").toLowerCase() === "draft" && (
                     <Badge variant="outline">Draft</Badge>
                   )}
-                  {(event.status || event.event_status || "").toLowerCase() === "paused" && (
+                  {(event.event_status || "").toLowerCase() === "paused" && (
                     <Badge className="bg-amber-500 hover:bg-amber-600">Paused</Badge>
                   )}
-                  {(event.status || event.event_status || "").toLowerCase() === "cancelled" && (
+                  {(event.event_status || "").toLowerCase() === "cancelled" && (
                     <Badge className="bg-red-500 hover:bg-red-600">Cancelled</Badge>
                   )}
-                  {(event.status || event.event_status || "").toLowerCase() === "completed" && (
+                  {(event.event_status || "").toLowerCase() === "completed" && (
                     <Badge className="bg-blue-500 hover:bg-blue-600">Completed</Badge>
                   )}
                 </div>
@@ -398,7 +394,7 @@ export default function EventDetailPage({ params }: Props) {
           </CardHeader>
           <CardContent className="space-y-2">
             <Button className="w-full justify-start" asChild>
-              <Link href={`/admin/events/${event.id || event.event_id}/edit`}>
+              <Link href={`/admin/events/${event.event_id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Event Details
               </Link>
@@ -467,20 +463,20 @@ export default function EventDetailPage({ params }: Props) {
               <Separator />
               <div>
                 <h3 className="mb-2 font-medium">Description</h3>
-                <p className="text-sm text-muted-foreground">{event.description || event.event_description || "No description provided"}</p>
+                <p className="text-sm text-muted-foreground">{event.event_description || "No description provided"}</p>
               </div>
               <Separator />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <h3 className="mb-2 font-medium">Created At</h3>
                   <p className="text-sm text-muted-foreground">
-                    {event.created_at || event.event_created_at ? new Date(event.created_at || event.event_created_at).toLocaleString() : "N/A"}
+                    {event.event_created_at ? new Date(event.event_created_at).toLocaleString() : "N/A"}
                   </p>
                 </div>
                 <div>
                   <h3 className="mb-2 font-medium">Last Updated At</h3>
                   <p className="text-sm text-muted-foreground">
-                    {event.updated_at || event.event_updated_at ? new Date(event.updated_at || event.event_updated_at).toLocaleString() : "N/A"}
+                    {event.event_updated_at ? new Date(event.event_updated_at).toLocaleString() : "N/A"}
                   </p>
                 </div>
               </div>
@@ -509,7 +505,7 @@ export default function EventDetailPage({ params }: Props) {
                   </TableHeader>
                   <TableBody>
                     {gameSlots.map((slot) => (
-                      <TableRow key={`${event.id || event.event_id}-${slot.id}`}>
+                      <TableRow key={`${event.event_id}-${slot.id}`}>
                         <TableCell>
                           {slot.start_time} - {slot.end_time}
                         </TableCell>
@@ -537,13 +533,13 @@ export default function EventDetailPage({ params }: Props) {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/admin/events/${event.id || event.event_id}/slots/${slot.id}/edit`}>
+                              <Link href={`/admin/events/${event.event_id}/slots/${slot.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </Link>
                             </Button>
                             <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/admin/events/${event.id || event.event_id}/slots/${slot.id}/participants`}>
+                              <Link href={`/admin/events/${event.event_id}/slots/${slot.id}/participants`}>
                                 <Users className="mr-2 h-4 w-4" />
                                 Participants
                               </Link>
@@ -664,12 +660,12 @@ export default function EventDetailPage({ params }: Props) {
                     </div>
                     <div className="mt-4 flex justify-end gap-2">
                       <Button variant="outline" asChild>
-                        <Link href={`/admin/events/${event.id || event.event_id}/slots/${slot.id}/participants/export`}>
+                        <Link href={`/admin/events/${event.event_id}/slots/${slot.id}/participants/export`}>
                           Export Participants
                         </Link>
                       </Button>
                       <Button asChild>
-                        <Link href={`/admin/events/${event.id || event.event_id}/slots/${slot.id}/participants`}>
+                        <Link href={`/admin/events/${event.event_id}/slots/${slot.id}/participants`}>
                           Manage Participants
                         </Link>
                       </Button>

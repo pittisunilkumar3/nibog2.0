@@ -138,14 +138,14 @@ interface PendingBookingData {
  */
 async function getPendingBookingData(transactionId: string): Promise<PendingBookingData | null> {
   try {
-    console.log(`📋 Retrieving pending booking data for transaction: ${transactionId}`);
+    // removed debug log
 
     // Extract merchant transaction ID from the transactionId if needed
     const merchantTransactionId = transactionId.includes('NIBOG_') ? transactionId : `NIBOG_${transactionId}`;
 
-    console.log(`📋 Looking for pending booking with merchant transaction ID: ${merchantTransactionId}`);
-    console.log(`📋 Original transaction ID: ${transactionId}`);
-    console.log(`📋 Formatted merchant transaction ID: ${merchantTransactionId}`);
+    // removed debug log
+    // removed debug log
+    // removed debug log
 
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/pending-bookings/get`, {
       method: 'POST',
@@ -157,11 +157,11 @@ async function getPendingBookingData(transactionId: string): Promise<PendingBook
       }),
     });
 
-    console.log(`📋 Pending booking API response status: ${response.status}`);
+    // removed debug log
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log(`📭 No pending booking found for transaction: ${merchantTransactionId}`);
+        // removed debug log
         return null;
       }
 
@@ -171,28 +171,28 @@ async function getPendingBookingData(transactionId: string): Promise<PendingBook
     }
 
     const result = await response.json();
-    console.log(`✅ Retrieved pending booking data:`, JSON.stringify(result, null, 2));
+    // removed debug log
 
     // Log DOB specifically for tracking
     if (result && result.bookingData) {
-      console.log("=== DOB TRACKING IN PENDING BOOKING RETRIEVAL ===");
-      console.log("Retrieved DOB:", result.bookingData.childDob);
-      console.log("DOB type:", typeof result.bookingData.childDob);
-      console.log("DOB format validation:", /^\d{4}-\d{2}-\d{2}$/.test(result.bookingData.childDob) ? "✅ Valid YYYY-MM-DD" : "❌ Invalid format");
+      // removed debug log
+      // removed debug log
+      // removed debug log
+      // removed debug log
 
       // Check if this looks like real user data vs fallback data
       if (result.bookingData.childDob === "2015-01-01" ||
           result.bookingData.childName?.includes("Child ") ||
           result.bookingData.parentName === "PhonePe Customer") {
-        console.log(`⚠️ WARNING: Retrieved data appears to be fallback data, not actual user data!`);
-        console.log(`   - Child DOB: ${result.bookingData.childDob}`);
-        console.log(`   - Child Name: ${result.bookingData.childName}`);
-        console.log(`   - Parent Name: ${result.bookingData.parentName}`);
+        // removed debug log
+        // removed debug log
+        // removed debug log
+        // removed debug log
       } else {
-        console.log(`✅ Retrieved data appears to be actual user data`);
-        console.log(`   - Child DOB: ${result.bookingData.childDob}`);
-        console.log(`   - Child Name: ${result.bookingData.childName}`);
-        console.log(`   - Parent Name: ${result.bookingData.parentName}`);
+        // removed debug log
+        // removed debug log
+        // removed debug log
+        // removed debug log
       }
     }
 
@@ -214,7 +214,7 @@ async function updateExistingBooking(
   paymentState: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`Updating existing booking ${bookingId} with payment information`);
+    // removed debug log
 
     const paymentStatusMap = {
       COMPLETED: { booking: "Paid", payment: "successful" },
@@ -227,7 +227,7 @@ async function updateExistingBooking(
                         { booking: "Failed", payment: "failed" };
 
     // Update booking status using the correct status update endpoint
-    console.log(`📋 Updating booking ${bookingId} status to: ${statusValues.booking}`);
+    // removed debug log
     const updateResponse = await fetch(BOOKING_API.UPDATE_STATUS, {
       method: "POST",
       headers: {
@@ -239,7 +239,7 @@ async function updateExistingBooking(
       }),
     });
 
-    console.log(`📡 Booking update response status: ${updateResponse.status}`);
+    // removed debug log
 
     if (!updateResponse.ok) {
       const errorText = await updateResponse.text();
@@ -248,7 +248,7 @@ async function updateExistingBooking(
     }
 
     const updateResult = await updateResponse.json();
-    console.log(`✅ Booking status updated successfully:`, updateResult);
+    // removed debug log
 
     // Create payment record
     const paymentPayload = {
@@ -270,7 +270,7 @@ async function updateExistingBooking(
       },
     };
 
-    console.log(`💳 Creating payment record with payload:`, JSON.stringify(paymentPayload, null, 2));
+    // removed debug log
 
     const paymentResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/create', {
       method: "POST",
@@ -280,7 +280,7 @@ async function updateExistingBooking(
       body: JSON.stringify(paymentPayload),
     });
 
-    console.log(`📡 Payment creation response status: ${paymentResponse.status}`);
+    // removed debug log
 
     if (!paymentResponse.ok) {
       const errorText = await paymentResponse.text();
@@ -289,7 +289,7 @@ async function updateExistingBooking(
     }
 
     const paymentResult = await paymentResponse.json();
-    console.log(`✅ Payment record created successfully:`, paymentResult);
+    // removed debug log
 
     return { success: true };
   } catch (error) {
@@ -308,11 +308,11 @@ async function createBookingAndPaymentDirect(
   paymentState: string
 ): Promise<{ success: boolean; bookingId?: number; bookingData?: any; error?: string }> {
   try {
-    console.log('🔄 Creating booking and payment records directly...');
-    console.log(`Transaction ID: ${transactionId}`);
-    console.log(`Merchant Transaction ID: ${merchantTransactionId}`);
-    console.log(`Amount: ${amount} paise (₹${amount / 100})`);
-    console.log(`Payment State: ${paymentState}`);
+    // removed debug log
+    // removed debug log
+    // removed debug log
+    // removed debug log
+    // removed debug log
 
     // Extract user ID and potential temp booking ID from transaction ID format: NIBOG_USER-ID_TIMESTAMP
     const bookingMatch = merchantTransactionId.match(/NIBOG_(\d+)_/);
@@ -323,10 +323,10 @@ async function createBookingAndPaymentDirect(
       return { success: false, error: 'Invalid transaction ID format' };
     }
     
-    console.log(`Extracted User ID from transaction: ${userId}`);
+    // removed debug log
 
     // We'll create a booking directly with the user ID without trying to fetch any previous booking data
-    console.log(`👤 Using user ID ${userId} to create a direct booking for transaction: ${merchantTransactionId}`);
+    // removed debug log
 
     // Get current date for booking date
     const currentDate = new Date();
@@ -334,8 +334,8 @@ async function createBookingAndPaymentDirect(
 
     // Create minimal booking data with user ID
     // NOTE: This is a fallback - the actual user data should come from pending booking
-    console.log("⚠️ WARNING: Using fallback booking data - actual user data not found!");
-    console.log("This means the pending booking data was not properly saved or retrieved.");
+    // removed debug log
+    // removed debug log
 
     const finalBookingData = {
       user_id: userId,
@@ -369,7 +369,7 @@ async function createBookingAndPaymentDirect(
       ]
     };
 
-    console.log(`📋 Creating DIRECT booking with data:`, JSON.stringify(finalBookingData, null, 2));
+    // removed debug log
     
     // Add timeout and retry logic for creating booking
     let bookingResponse;
@@ -379,7 +379,7 @@ async function createBookingAndPaymentDirect(
     while (retryCount <= maxRetries) {
       try {
         if (retryCount > 0) {
-          console.log(`⏱️ Retry attempt ${retryCount} for direct booking creation...`);
+          // removed debug log
           await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
         }
         
@@ -387,7 +387,7 @@ async function createBookingAndPaymentDirect(
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
         
-        console.log(`Calling booking creation API at: ${BOOKING_API.CREATE}`);
+        // removed debug log
         bookingResponse = await fetch(BOOKING_API.CREATE, {
           method: 'POST',
           headers: {
@@ -416,7 +416,7 @@ async function createBookingAndPaymentDirect(
       return { success: false, error: `Failed to get booking response after retries` };
     }
 
-    console.log(`📡 Direct booking creation response status: ${bookingResponse.status}`);
+    // removed debug log
     
     // Handle response
     let bookingResultText;
@@ -424,7 +424,7 @@ async function createBookingAndPaymentDirect(
     
     try {
       bookingResultText = await bookingResponse.text();
-      console.log(`📋 Raw booking API response text:`, bookingResultText);
+      // removed debug log
       
       try {
         // Try to parse as JSON
@@ -433,7 +433,7 @@ async function createBookingAndPaymentDirect(
         console.error('❌ Failed to parse booking response as JSON:', parseError);
         // If it's not JSON but response is OK, assume success with userId as fallback
         if (bookingResponse.ok && userId) {
-          console.log(`⚠️ Non-JSON response but status OK. Using user ID as fallback booking ID: ${userId}`);
+          // removed debug log
           bookingResultJson = { booking_id: userId };
         } else {
           return { 
@@ -446,7 +446,7 @@ async function createBookingAndPaymentDirect(
       console.error('❌ Failed to get response text:', textError);
       // If we can't get text but response is OK, use userId as fallback
       if (bookingResponse.ok && userId) {
-        console.log(`⚠️ Cannot get response text but status OK. Using user ID as fallback booking ID: ${userId}`);
+        // removed debug log
         bookingResultJson = { booking_id: userId };
       } else {
         return {
@@ -482,7 +482,7 @@ async function createBookingAndPaymentDirect(
       return { success: false, error: 'No booking ID available for payment creation' };
     }
 
-    console.log(`✅ Direct booking created or identified with ID: ${bookingId}`);
+    // removed debug log
 
     // Create payment record
     const paymentStatusMap = {
@@ -514,7 +514,7 @@ async function createBookingAndPaymentDirect(
       },
     };
 
-    console.log(`💳 Creating direct payment record with payload:`, JSON.stringify(paymentPayload, null, 2));
+    // removed debug log
 
     const paymentResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/create', {
       method: 'POST',
@@ -524,7 +524,7 @@ async function createBookingAndPaymentDirect(
       body: JSON.stringify(paymentPayload),
     });
 
-    console.log(`📡 Direct payment creation response status: ${paymentResponse.status}`);
+    // removed debug log
 
     if (!paymentResponse.ok) {
       const errorText = await paymentResponse.text();
@@ -538,9 +538,9 @@ async function createBookingAndPaymentDirect(
     }
 
     const paymentResult = await paymentResponse.json();
-    console.log(`✅ Direct payment record created successfully:`, paymentResult);
+    // removed debug log
 
-    return { success: true, bookingId };
+    return { success: true, bookingId }; 
 
   } catch (error) {
     console.error('❌ Error in direct booking and payment creation:', error);
@@ -559,7 +559,7 @@ async function createBookingAndPayment(
   paymentState: string
 ): Promise<{ success: boolean; bookingId?: number; error?: string }> {
   try {
-    console.log('Creating booking and payment records...');
+    // removed debug log
 
     // Format booking data for API
     const formattedBookingData = {
@@ -573,10 +573,10 @@ async function createBookingAndPayment(
         full_name: bookingData.childName,
         date_of_birth: (() => {
           const formattedDob = formatDateForAPI(bookingData.childDob);
-          console.log("=== DOB FORMATTING IN PAYMENT CALLBACK ===");
-          console.log("Original DOB:", bookingData.childDob);
-          console.log("Formatted DOB:", formattedDob);
-          console.log("DOB format validation:", /^\d{4}-\d{2}-\d{2}$/.test(formattedDob) ? "✅ Valid YYYY-MM-DD" : "❌ Invalid format");
+          // removed debug log
+          // removed debug log
+          // removed debug log
+          // removed debug log
           return formattedDob;
         })(),
         school_name: bookingData.schoolName,
@@ -609,8 +609,8 @@ async function createBookingAndPayment(
     };
 
     // Create booking with enhanced logging
-    console.log(`🔍 Making booking API call to: ${BOOKING_API.CREATE}`);
-    console.log(`📦 Booking payload:`, JSON.stringify(formattedBookingData, null, 2));
+    // removed debug log
+    // removed debug log
     
     const bookingResponse = await fetch(BOOKING_API.CREATE, {
       method: 'POST',
@@ -629,7 +629,7 @@ async function createBookingAndPayment(
     }
 
     const bookingResult = await bookingResponse.json();
-    console.log(`✅ Booking API response:`, JSON.stringify(bookingResult, null, 2));
+    // removed debug log
     
     const bookingId = bookingResult.booking_id || bookingResult.id;
 
@@ -638,7 +638,7 @@ async function createBookingAndPayment(
       return { success: false, error: 'No booking ID returned from API response' };
     }
 
-    console.log(`✅ Booking created successfully with ID: ${bookingId}`);
+    // removed debug log
 
     // Create payment record
     const paymentStatusMap = {
@@ -685,11 +685,11 @@ async function createBookingAndPayment(
       };
     }
 
-    console.log('Payment record created successfully');
+    // removed debug log
 
     // Send booking confirmation email after successful booking and payment creation
     try {
-      console.log(`📧 Sending booking confirmation email for booking ID: ${bookingId}`);
+      // removed debug log
 
       // Get email settings first
       const emailSettingsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/emailsetting/get`);
@@ -705,7 +705,7 @@ async function createBookingAndPayment(
       }
 
       const settings = emailSettings[0];
-      console.log('📧 Email settings retrieved successfully');
+      // removed debug log
 
       // Generate booking confirmation HTML
       const bookingRef = `B${String(bookingId).padStart(7, '0')}`;
@@ -739,11 +739,11 @@ async function createBookingAndPayment(
       });
 
       if (emailResponse.ok) {
-        console.log(`📧 Booking confirmation email sent successfully`);
+        // removed debug log
 
         // Send admin notification email
         try {
-          console.log(`📧 Sending admin notification email...`);
+          // removed debug log
           const { sendAdminNotificationEmail } = await import('@/services/emailNotificationService');
 
           const adminNotificationResult = await sendAdminNotificationEmail({
@@ -762,7 +762,7 @@ async function createBookingAndPayment(
           });
 
           if (adminNotificationResult.success) {
-            console.log(`📧 Admin notification email sent successfully`);
+            // removed debug log
           } else {
             console.error(`📧 Admin notification email failed:`, adminNotificationResult.error);
           }
@@ -789,9 +789,9 @@ async function createBookingAndPayment(
 
 export async function POST(request: Request) {
   try {
-    console.log("=== PHONEPE SERVER CALLBACK RECEIVED ===");
-    console.log(`PhonePe Environment: ${PHONEPE_CONFIG.ENVIRONMENT}`);
-    console.log(`Timestamp: ${new Date().toISOString()}`);
+    // removed debug log
+    // removed debug log
+    // removed debug log
 
     // More efficient logging in production
     if (process.env.NODE_ENV !== 'production') {
@@ -799,12 +799,12 @@ export async function POST(request: Request) {
       request.headers.forEach((value, key) => {
         headers[key] = value;
       });
-      console.log("Request headers:", headers);
+      // removed debug log
     }
 
     // Parse the request body
     const callbackData = await request.json();
-    console.log(`Callback data received:`, JSON.stringify(callbackData, null, 2));
+    // removed debug log
 
     // Verify the callback using X-VERIFY header - skip in non-production for easier testing
     if (process.env.NODE_ENV === 'production') {
@@ -832,23 +832,23 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Hash verification failed" }, { status: 400 });
       }
       
-      console.log("✅ PhonePe callback verification successful");
+      // removed debug log
     } else {
-      console.log("⚠️ Running in development mode - skipping signature verification");
+      // removed debug log
     }
 
 
     // Extract the transaction details
     const { merchantTransactionId, transactionId, amount, paymentState } = callbackData;
-    console.log(`💰 Payment Details:`);
-    console.log(`  - Amount: ${amount} paise (₹${amount / 100})`);
-    console.log(`  - State: ${paymentState}`);
-    console.log(`  - Transaction ID: ${transactionId}`);
-    console.log(`  - Merchant Transaction ID: ${merchantTransactionId}`);
+    // removed debug log
+    // removed debug log
+    // removed debug log
+    // removed debug log
+    // removed debug log
 
     // Check if this transaction has already been processed
     if (processedTransactions.has(transactionId)) {
-      console.log(`⚠️ Transaction ${transactionId} has already been processed. Skipping.`);
+      // removed debug log
       return NextResponse.json({
         status: "SUCCESS", 
         message: "Transaction already processed"
@@ -857,28 +857,28 @@ export async function POST(request: Request) {
 
     // Process the transaction based on payment status
     if (paymentState === "COMPLETED") {
-      console.log("✅ Payment completed successfully. Creating booking and payment record...");
+      // removed debug log
 
       // First, try to retrieve pending booking data
-      console.log("🔍 Attempting to retrieve pending booking data...");
+      // removed debug log
       const pendingBookingData = await getPendingBookingData(merchantTransactionId);
 
       let bookingResult;
 
       if (pendingBookingData) {
-        console.log("✅ Found pending booking data. Creating booking with actual user data...");
+        // removed debug log
         bookingResult = await createBookingAndPayment(pendingBookingData, transactionId, merchantTransactionId, amount, paymentState);
       } else {
-        console.log("⚠️ No pending booking data found. Using fallback method...");
+        // removed debug log
         bookingResult = await createBookingAndPaymentDirect(transactionId, merchantTransactionId, amount, paymentState);
       }
 
       if (bookingResult.success && bookingResult.bookingId) {
-        console.log(`✅ Booking and payment successfully created for ID: ${bookingResult.bookingId}`);
+        // removed debug log
 
         // Send booking confirmation email immediately after successful booking creation
         try {
-          console.log(`📧 Sending booking confirmation email for booking ID: ${bookingResult.bookingId}`);
+          // removed debug log
 
           // Get email settings first
           const emailSettingsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/emailsetting/get`);
@@ -894,7 +894,7 @@ export async function POST(request: Request) {
           }
 
           const settings = emailSettings[0];
-          console.log('📧 Email settings retrieved successfully');
+          // removed debug log
 
           // Generate booking confirmation HTML with actual data if available
           const bookingRef = `B${String(bookingResult.bookingId).padStart(7, '0')}`;
@@ -928,7 +928,7 @@ export async function POST(request: Request) {
           });
 
           if (emailResponse.ok) {
-            console.log(`📧 Booking confirmation email sent successfully`);
+            // removed debug log
 
             // Send admin notification email
             try {
@@ -951,7 +951,7 @@ export async function POST(request: Request) {
               });
 
               if (adminNotificationResult.success) {
-                console.log(`📧 Admin notification email sent successfully`);
+                // removed debug log
               } else {
                 console.error(`📧 Admin notification email failed:`, adminNotificationResult.error);
               }
@@ -971,7 +971,7 @@ export async function POST(request: Request) {
         // Send notifications via N8N webhook (handles both WhatsApp and Email)
         let notificationsSent = false;
         try {
-          console.log(`🔔 Sending notifications for booking ID: ${bookingResult.bookingId} via N8N webhook`);
+          // removed debug log
 
           // Extract phone number from transaction ID or use a fallback
           const phoneMatch = merchantTransactionId.match(/NIBOG_(\d+)_/);
@@ -1009,7 +1009,7 @@ export async function POST(request: Request) {
 
           if (n8nResponse.ok) {
             const n8nResult = await n8nResponse.json();
-            console.log(`🔔 Notifications sent successfully via N8N:`, n8nResult);
+            // removed debug log
             notificationsSent = true;
           } else {
             const errorData = await n8nResponse.json();
@@ -1017,7 +1017,7 @@ export async function POST(request: Request) {
 
             // Fallback to direct WhatsApp API if N8N fails
             if (process.env.WHATSAPP_NOTIFICATIONS_ENABLED === 'true') {
-              console.log(`📱 Falling back to direct WhatsApp API`);
+              // removed debug log
               const whatsappResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nibog.in'}/api/whatsapp/send-booking-confirmation`, {
                 method: 'POST',
                 headers: {
@@ -1027,7 +1027,7 @@ export async function POST(request: Request) {
               });
 
               if (whatsappResponse.ok) {
-                console.log(`📱 WhatsApp fallback notification sent successfully`);
+                // removed debug log
               }
             }
           }

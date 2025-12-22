@@ -90,9 +90,7 @@ export default function EditPromoCodePage({ params }: Props) {
         setIsLoadingPromoCode(true)
         setPromoCodeError(null)
 
-        console.log(`Fetching promo code with ID: ${promoCodeId}`)
         const promoCodeData = await getPromoCodeById(parseInt(promoCodeId))
-        console.log("Retrieved promo code data:", promoCodeData)
 
         setPromoCode(promoCodeData)
 
@@ -158,9 +156,6 @@ export default function EditPromoCodePage({ params }: Props) {
         // Fetch all games
         const gamesData = await getAllGamesFromEvents()
         setAllGames(gamesData)
-
-        console.log("Loaded events:", eventsData)
-        console.log("Loaded games:", gamesData)
       } catch (error: any) {
         console.error("Error fetching events and games:", error)
         setEventsError(error.message || "Failed to load events and games")
@@ -247,12 +242,8 @@ export default function EditPromoCodePage({ params }: Props) {
         ...updateApiData
       };
 
-      console.log("Updating promo code with data:", updateData);
-
       // Call the API to update the promo code
       const response = await updatePromoCode(updateData);
-
-      console.log("Promo code update response:", response);
 
       if (response.success) {
         setIsSaved(true);

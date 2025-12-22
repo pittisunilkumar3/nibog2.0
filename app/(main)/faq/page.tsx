@@ -28,10 +28,10 @@ export default function FAQPage() {
     const fetchFAQs = async () => {
       try {
         setLoading(true)
-        console.log('🔄 Fetching FAQs from API for public page...')
+       
         
         const data = await getAllFAQs()
-        console.log('✅ FAQs fetched:', data)
+       
         
         // Transform FAQ to FAQItem format and filter only Active FAQs
         const transformedData: FAQItem[] = data

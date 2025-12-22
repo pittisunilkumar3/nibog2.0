@@ -43,11 +43,9 @@ export default function EditCityPage({ params }: { params: { id: string } }) {
         }
 
         setIsFetching(true)
-        console.log(`Fetching city data for ID: ${cityId}`)
 
         // Fetch city data from API
         const cityData = await getCityById(cityId)
-        console.log("City data received:", cityData)
 
         if (!cityData) {
           throw new Error("No city data returned from API")

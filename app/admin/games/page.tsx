@@ -217,7 +217,7 @@ export default function GameTemplatesPage() {
       icon: <Trash className="h-4 w-4" />,
       onClick: (selectedGames) => {
         // Handle bulk delete - would need confirmation dialog
-        console.log("Bulk delete:", selectedGames)
+        // TODO: implement bulk delete with confirmation
       },
       variant: 'destructive'
     }

@@ -295,9 +295,6 @@ export async function sendBookingConfirmationFromServer(
   confirmationData: BookingConfirmationData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("📧 Sending booking confirmation email using existing email settings...");
-    console.log(`Recipient: ${confirmationData.parentEmail}`);
-    console.log(`Booking ID: ${confirmationData.bookingId}`);
 
     // Get email settings from your existing API
     const emailSettings = await getEmailSetting();
@@ -309,8 +306,6 @@ export async function sendBookingConfirmationFromServer(
         error: "Email settings not configured. Please configure email settings first."
       };
     }
-
-    console.log("✅ Email settings retrieved successfully");
 
     // Generate HTML email content
     const htmlContent = generateBookingConfirmationHTML(confirmationData);
@@ -340,7 +335,6 @@ export async function sendBookingConfirmationFromServer(
     }
 
     const result = await response.json();
-    console.log("✅ Booking confirmation email sent successfully from server");
 
     return { success: true };
 
@@ -361,9 +355,6 @@ export async function sendBookingConfirmationFromClient(
   confirmationData: BookingConfirmationData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("📧 Sending booking confirmation email from client (backup)...");
-    console.log(`Recipient: ${confirmationData.parentEmail}`);
-    console.log(`Booking ID: ${confirmationData.bookingId}`);
 
     // Get email settings from your existing API
     const emailSettings = await getEmailSetting();
@@ -376,7 +367,7 @@ export async function sendBookingConfirmationFromClient(
       };
     }
 
-    console.log("✅ Email settings retrieved successfully");
+
 
     // Generate HTML email content
     const htmlContent = generateBookingConfirmationHTML(confirmationData);
@@ -406,7 +397,6 @@ export async function sendBookingConfirmationFromClient(
     }
 
     const result = await response.json();
-    console.log("✅ Booking confirmation email sent successfully from client");
 
     return { success: true };
 
@@ -427,9 +417,6 @@ export async function sendAdminNotificationEmail(
   confirmationData: BookingConfirmationData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("📧 Sending admin notification email for new booking...");
-    console.log(`Admin Email: newindiababyolympics@gmail.com`);
-    console.log(`Booking ID: ${confirmationData.bookingId}`);
 
     // Get email settings from your existing API
     const emailSettings = await getEmailSetting();
@@ -441,8 +428,6 @@ export async function sendAdminNotificationEmail(
         error: "Email settings not configured. Please configure email settings first."
       };
     }
-
-    console.log("✅ Email settings retrieved successfully for admin notification");
 
     // Generate HTML email content for admin
     const htmlContent = generateAdminNotificationHTML(confirmationData);
@@ -471,7 +456,6 @@ export async function sendAdminNotificationEmail(
     }
 
     const result = await response.json();
-    console.log("✅ Admin notification email sent successfully:", result.messageId);
 
     return { success: true };
   } catch (error: any) {
@@ -552,9 +536,6 @@ export async function sendPaymentFailureNotification(
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("📧 Sending payment failure notification...");
-    console.log(`Recipient: ${parentEmail}`);
-    console.log(`Transaction ID: ${transactionId}`);
 
     // Get email settings from your existing API
     const emailSettings = await getEmailSetting();
@@ -597,7 +578,6 @@ export async function sendPaymentFailureNotification(
       };
     }
 
-    console.log("✅ Payment failure notification sent successfully");
     return { success: true };
 
   } catch (error: any) {
@@ -618,9 +598,6 @@ export async function sendBookingReminder(
   reminderType: 'event_reminder' | 'payment_pending' = 'event_reminder'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`📧 Sending booking reminder (${reminderType})...`);
-    console.log(`Recipient: ${confirmationData.parentEmail}`);
-    console.log(`Booking ID: ${confirmationData.bookingId}`);
 
     // Get email settings from your existing API
     const emailSettings = await getEmailSetting();
@@ -666,7 +643,6 @@ export async function sendBookingReminder(
       };
     }
 
-    console.log("✅ Booking reminder sent successfully");
     return { success: true };
 
   } catch (error: any) {

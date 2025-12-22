@@ -63,11 +63,8 @@ export default function VenuesPage() {
         // Fetch venues with city details
         const venuesData = await getAllVenuesWithCity()
 
-        console.log("Venues data received:", venuesData)
-
         // Check if we have valid data
         if (!Array.isArray(venuesData) || venuesData.length === 0) {
-          console.log("No venues data found or invalid data format")
           setVenuesList([])
         } else {
           // Normalize the data to ensure it matches our expected structure
@@ -79,9 +76,6 @@ export default function VenuesPage() {
               (venue.city_name || "") !== ""
             )
             .map(venue => {
-              // Log the venue data to help diagnose issues
-              console.log("Processing venue:", venue)
-      
               // Create a normalized venue object with all required fields
               return {
                 venue_id: venue.venue_id || venue.id || 0,
@@ -102,13 +96,11 @@ export default function VenuesPage() {
               }
             })
     
-          console.log("Normalized venues:", normalizedVenues)
           setVenuesList(normalizedVenues)
         }
 
         // Fetch cities for the filter dropdown
         const citiesData = await getAllCities()
-        console.log("Cities data received:", citiesData)
         setCities(
           citiesData
             .filter(city => typeof city.id === "number")
@@ -250,7 +242,7 @@ export default function VenuesPage() {
       icon: <Trash className="h-4 w-4" />,
       onClick: (selectedVenues) => {
         // Handle bulk delete - would need confirmation dialog
-        console.log("Bulk delete:", selectedVenues)
+        // TODO: implement bulk delete with confirmation
       },
       variant: 'destructive'
     }

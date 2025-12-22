@@ -27,7 +27,6 @@ export interface FAQsByCategory {
  */
 export async function getAllActiveFAQs(): Promise<FAQ[]> {
   try {
-    console.log('📋 Fetching all active FAQs from API...');
     
     const response = await fetch(FAQ_API.GET_ALL, {
       method: 'GET',
@@ -37,14 +36,11 @@ export async function getAllActiveFAQs(): Promise<FAQ[]> {
       cache: 'no-store',
     });
 
-    console.log('📋 FAQ API response status:', response.status);
-
     if (!response.ok) {
       throw new Error(`Failed to fetch FAQs: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('📋 FAQ API response:', data);
 
     // Handle different response formats
     let faqs: FAQ[] = [];
@@ -65,8 +61,6 @@ export async function getAllActiveFAQs(): Promise<FAQ[]> {
       .filter(faq => faq.is_active !== false) // Include if is_active is true or undefined
       .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
-    console.log(`✅ Fetched ${activeFAQs.length} active FAQs`);
-    
     return activeFAQs;
   } catch (error) {
     console.error('❌ Error fetching FAQs:', error);
@@ -79,27 +73,22 @@ export async function getAllActiveFAQs(): Promise<FAQ[]> {
  */
 export async function getAllFAQs(): Promise<FAQ[]> {
   try {
-    console.log('📋 Fetching all FAQs from internal API route...');
     const response = await fetch('/api/faq/faqs', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store'
     });
 
-    console.log('📋 Internal FAQ GET response status:', response.status);
-
     if (!response.ok) {
       throw new Error(`Failed to fetch FAQs: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('📋 Internal FAQ GET response:', data);
 
     // Normalize array response
     const faqsArray: FAQ[] = Array.isArray(data) ? data : (data.data && Array.isArray(data.data) ? data.data : (data.faqs && Array.isArray(data.faqs) ? data.faqs : []));
 
     const sortedFaqs = faqsArray.sort((a: FAQ, b: FAQ) => (a.display_priority || a.display_order || 0) - (b.display_priority || b.display_order || 0));
-    console.log(`✅ Fetched ${sortedFaqs.length} FAQs (admin)`);
     return sortedFaqs;
   } catch (error) {
     console.error('❌ Error fetching FAQs:', error);
@@ -155,8 +144,6 @@ export async function createFAQ(faqData: {
   status: string;
 }): Promise<FAQ> {
   try {
-    console.log('📝 Creating FAQ via internal API with data:', faqData);
-
     // Get auth token
     let token: string | null = null;
     if (typeof window !== 'undefined') {
@@ -176,8 +163,6 @@ export async function createFAQ(faqData: {
       body: JSON.stringify(faqData)
     });
 
-    console.log('📝 Internal FAQ Create response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Internal FAQ Create error:', errorText);
@@ -185,7 +170,6 @@ export async function createFAQ(faqData: {
     }
 
     const data = await response.json();
-    console.log('📝 Internal FAQ Create response:', data);
 
     // Expect the backend to return created FAQ object
     return data.faq || data.data || data;
@@ -200,14 +184,11 @@ export async function createFAQ(faqData: {
  */
 export async function getSingleFAQ(id: number): Promise<FAQ> {
   try {
-    console.log(`📖 Fetching FAQ with ID: ${id} via internal API`);
     const response = await fetch(`/api/faq/faqs/${id}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store'
     });
-
-    console.log('📖 Internal FAQ GET response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -216,12 +197,10 @@ export async function getSingleFAQ(id: number): Promise<FAQ> {
     }
 
     const data = await response.json();
-    console.log('📖 Internal FAQ GET response:', data);
 
     const faq = data.faq || data.data || data;
     if (!faq) throw new Error('FAQ not found');
 
-    console.log(`✅ FAQ ${id} fetched successfully`);
     return faq;
   } catch (error) {
     console.error('❌ Error fetching FAQ:', error);
@@ -235,7 +214,6 @@ export async function getSingleFAQ(id: number): Promise<FAQ> {
 export async function updateFAQ(faqData: FAQ): Promise<FAQ> {
   try {
     if (!faqData.id) throw new Error('FAQ id is required for update');
-    console.log('📝 Updating FAQ via internal API:', faqData);
 
     // Get auth token
     let token: string | null = null;
@@ -256,8 +234,6 @@ export async function updateFAQ(faqData: FAQ): Promise<FAQ> {
       body: JSON.stringify(faqData)
     });
 
-    console.log('📝 Internal FAQ Update response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Internal FAQ Update error:', errorText);
@@ -265,7 +241,6 @@ export async function updateFAQ(faqData: FAQ): Promise<FAQ> {
     }
 
     const data = await response.json();
-    console.log('📝 Internal FAQ Update response:', data);
 
     return data.faq || data.data || data;
   } catch (error) {
@@ -279,8 +254,6 @@ export async function updateFAQ(faqData: FAQ): Promise<FAQ> {
  */
 export async function deleteFAQ(id: number): Promise<{ success: boolean }> {
   try {
-    console.log(`🗑️ Deleting FAQ with ID: ${id} via internal API`);
-
     // Get auth token
     let token: string | null = null;
     if (typeof window !== 'undefined') {
@@ -299,8 +272,6 @@ export async function deleteFAQ(id: number): Promise<{ success: boolean }> {
       headers
     });
 
-    console.log('🗑️ Internal FAQ Delete response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Internal FAQ Delete error:', errorText);
@@ -308,7 +279,6 @@ export async function deleteFAQ(id: number): Promise<{ success: boolean }> {
     }
 
     const data = await response.json();
-    console.log('🗑️ Internal FAQ Delete response:', data);
 
     // Expect { message: 'FAQ deleted successfully' } or similar
     if (data && (data.success === true || data.message?.toLowerCase().includes('deleted'))) {

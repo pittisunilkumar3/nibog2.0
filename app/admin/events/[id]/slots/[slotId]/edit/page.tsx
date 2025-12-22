@@ -187,12 +187,10 @@ export default function EditSlotPage({ params }: Props) {
         max_participants: Number(formData.maxParticipants)
       }
 
-      console.log("Updating slot with data:", slotData)
 
       // Call the API to update the slot
       const result = await updateEventGameSlot(slotData)
 
-      console.log("Slot updated successfully:", result)
 
       toast({
         title: "Success",
