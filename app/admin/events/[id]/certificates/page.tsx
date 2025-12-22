@@ -70,19 +70,19 @@ export default function EventCertificatesPage() {
   const loadEventParticipants = async () => {
     try {
       setLoading(true)
-      console.log('Loading participants for event ID:', eventId)
+      // Loading participants for event ID (debug log removed)
       const data = await getEventParticipants(eventId)
-      console.log('Participants data received:', data)
+      // Participants data received (debug log removed)
       // Handle both array response and direct object response formats
       if (Array.isArray(data)) {
         // If it's an array (new API format), take the first item
         const firstResponse = data[0];
-        console.log('Array response format, first item:', JSON.stringify(firstResponse, null, 2));
+        // Array response format (debug log removed)
         
         // If we have participants, extract event info from the first participant
         if (firstResponse?.participants?.length > 0) {
           const firstParticipant = firstResponse.participants[0];
-          console.log('First participant with event info:', firstParticipant);
+          // First participant with event info (debug log removed)
           
           // Create enhanced event data with info from both the response and first participant
           const enhancedEventData = {
@@ -93,14 +93,14 @@ export default function EventCertificatesPage() {
             event_date: firstParticipant.event_date
           };
           
-          console.log('Enhanced event data:', enhancedEventData);
+          // Enhanced event data created (debug log removed)
           setEventData(enhancedEventData);
         } else {
           setEventData(firstResponse);
         }
       } else {
         // If it's already an object (old format)
-        console.log('Object response format:', JSON.stringify(data, null, 2));
+        // Object response format (debug log removed)
         
         // Similar logic for object format
         if (data?.participants?.length > 0) {
@@ -234,12 +234,13 @@ export default function EventCertificatesPage() {
         return map;
       }, {} as Record<string, number>);
       
-      console.log('Game name to ID mapping:', gameNameToIdMap);
+      // Game name to ID mapping created (debug log removed);
       
       // Enhance participants with game IDs from the mapping
       const enhancedParticipants = participantsToGenerate.map(p => ({
         ...p,
-        game_id: p.game_id || gameNameToIdMap[p.game_name] || null
+        // Ensure game_id is a number or undefined (EventParticipant expects number | undefined)
+        game_id: (p.game_id ?? gameNameToIdMap[p.game_name]) as number | undefined
       }));
       
 

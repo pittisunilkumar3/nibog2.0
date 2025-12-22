@@ -104,7 +104,7 @@ export default function EmailSendingPage() {
 
   // Get template by id (for edit/view)
   const fetchTemplateById = async (id: number) => {
-    console.log("fetchTemplateById called", id, typeof id);
+    // fetchTemplateById called (debug log removed)
     setIsLoadingTemplates(true)
     try {
       // Try with number id first
@@ -114,7 +114,7 @@ export default function EmailSendingPage() {
         body: JSON.stringify({ id }),
       });
       let data = await res.json();
-      console.log("API response for template by id (number):", data);
+      // API response for template by id (number) (debug log removed)
 
       let tpl = null;
       if (Array.isArray(data) && data.length > 0) {
@@ -131,7 +131,7 @@ export default function EmailSendingPage() {
           body: JSON.stringify({ id: id.toString() }),
         });
         data = await res.json();
-        console.log("API response for template by id (string):", data);
+        // API response for template by id (string) (debug log removed)
         if (Array.isArray(data) && data.length > 0) {
           tpl = data[0];
         } else if (data && typeof data === "object" && data.id) {
@@ -150,7 +150,7 @@ export default function EmailSendingPage() {
         });
         setIsEditing(true);
         setTimeout(() => {
-          console.log("templateData after edit:", tpl);
+          // templateData after edit (debug log removed)
         }, 100);
       } else {
         toast({ title: "Error", description: "Template not found or API returned empty.", variant: "destructive" });

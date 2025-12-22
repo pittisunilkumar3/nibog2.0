@@ -132,7 +132,7 @@ export default function EditCityPage({ params }: { params: { id: string } }) {
         is_active: isActive
       }
 
-      console.log("Updating city with data:", cityDataToUpdate)
+      // Updating city with data (debug log removed)
 
       // Update city using the API service
       const result = await updateCity(cityId, {
@@ -141,7 +141,7 @@ export default function EditCityPage({ params }: { params: { id: string } }) {
         is_active: isActive ? 1 : 0
       })
 
-      console.log("City updated successfully:", result)
+      // City updated successfully (debug log removed)
 
       toast({
         title: "Success",

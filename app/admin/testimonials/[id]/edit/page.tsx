@@ -187,7 +187,7 @@ export default function EditTestimonialPage({ params }: Props) {
   useEffect(() => {
     const fetchTestimonialImage = async () => {
       try {
-        console.log('Fetching existing testimonial image for ID:', testimonialId)
+        // Fetching existing testimonial image (debug log removed)
 
         const response = await fetch('/api/testimonials/images/get-single', {
           method: 'POST',
@@ -200,20 +200,18 @@ export default function EditTestimonialPage({ params }: Props) {
         })
 
         if (!response.ok) {
-          // If no image found, that's okay - just log it
-          console.log('No existing image found for testimonial ID:', testimonialId)
+          // If no image found, that's okay (debug log removed)
           return
         }
 
         const data = await response.json()
-        console.log('Existing testimonial image data:', data)
+        // Existing testimonial image data received (debug log removed)
 
         // Handle array response (API returns array)
         const imageData = Array.isArray(data) ? data[0] : data
 
         if (imageData && imageData.image_url) {
-          // Set the existing image data
-          console.log('📸 Loading existing image:', imageData.image_url)
+          // Loading existing image (debug log removed)
 
           // For existing images, store the URL separately and don't set imagePreview
           // imagePreview should only be used for new uploads (data URLs)
@@ -221,10 +219,9 @@ export default function EditTestimonialPage({ params }: Props) {
           setUploadedImagePath(imageData.image_url)
           setPriority(imageData.priority || 1)
 
-          console.log('✅ Loaded existing image:', imageData.image_url)
-          console.log('✅ Loaded existing priority:', imageData.priority)
+          // Loaded existing image and priority (debug logs removed)
         } else {
-          console.log('ℹ️ No existing image found for testimonial')
+          // No existing image found for testimonial (debug log removed)
         }
       } catch (error) {
         console.error('Error fetching testimonial image:', error)
@@ -301,14 +298,12 @@ export default function EditTestimonialPage({ params }: Props) {
       }
 
       const uploadResult = await uploadResponse.json()
-      console.log('Upload result:', uploadResult)
+      // Upload result received (debug log removed)
 
       // Set the uploaded image path from the server response
       setUploadedImagePath(uploadResult.path)
 
-      console.log(`Image uploaded successfully: ${uploadResult.path}`)
-      console.log(`Original file name: ${file.name}`)
-      console.log(`File size: ${(file.size / 1024 / 1024).toFixed(2)} MB`)
+      // Image upload info (debug logs removed)
 
     } catch (error) {
       console.error('Error uploading image:', error)
@@ -367,18 +362,18 @@ export default function EditTestimonialPage({ params }: Props) {
         // Extract just the filename from the path (e.g., "testimonial_1766294157627_3470.jpg")
         const imageFilename = uploadedImagePath.split('/').pop() || uploadedImagePath
         updateData.image_url = imageFilename
-        console.log('Including new uploaded image in update:', imageFilename)
+        // Including new uploaded image in update (debug log removed)
       } else if (existingImageUrl) {
         // Keep the existing image URL
         const imageFilename = existingImageUrl.split('/').pop() || existingImageUrl
         updateData.image_url = imageFilename
-        console.log('Keeping existing image in update:', imageFilename)
+        // Keeping existing image in update (debug log removed)
       }
 
-      console.log('Submitting update with data:', updateData)
+      // Submitting update with data (debug log removed)
 
       const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null
-      console.log('Using token for testimonial update:', token ? (token.length > 12 ? `${token.slice(0,6)}...${token.slice(-6)}` : '****') : 'no-token')
+      // Using token for testimonial update (debug log removed)
       if (!token) {
         throw new Error('No authentication token found. Please log in again.')
       }
@@ -412,7 +407,7 @@ export default function EditTestimonialPage({ params }: Props) {
         throw new Error(parsedData.message || `Failed to update testimonial (Status: ${response.status})`);
       }
 
-      console.log('Testimonial updated successfully:', parsedData)
+      // Testimonial updated successfully (debug log removed)
 
       setIsLoading(false)
       setIsSaved(true)
@@ -507,8 +502,8 @@ export default function EditTestimonialPage({ params }: Props) {
                     <SelectValue placeholder="Select city" />
                   </SelectTrigger>
                   <SelectContent>
-                    {cities.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
+                    {cities.map((c, index) => (
+                      <SelectItem key={c.id ?? `city-${index}`} value={String(c.id ?? '')}>
                         {c.city_name}
                       </SelectItem>
                     ))}
@@ -674,7 +669,7 @@ export default function EditTestimonialPage({ params }: Props) {
                         }
                         alt="Preview"
                         className="w-full h-full object-cover"
-                        onLoad={() => console.log('✅ Image loaded successfully')}
+                        onLoad={() => {/* Image loaded successfully (debug log removed) */}}
                         onError={(e) => {
                           console.error('❌ Image failed to load');
                           e.currentTarget.src = '/placeholder-user.jpg';

@@ -45,11 +45,11 @@ export default function NewTestimonialPage() {
       setIsDataLoading(true)
       try {
         setError(null)
-        console.log('Fetching cities...')
+        // Fetching cities (debug log removed)
 
         // Fetch cities using the service
         const citiesData = await getAllCities()
-        console.log('Cities data:', citiesData)
+        // Cities data received (debug log removed)
 
         // Clean up city names and ensure proper structure
         const cleanedCities = citiesData.map((city: any) => ({
@@ -59,7 +59,7 @@ export default function NewTestimonialPage() {
           is_active: city.is_active === 1 || city.is_active === true
         }))
 
-        console.log('Cleaned cities data:', cleanedCities)
+        // Cleaned cities data prepared (debug log removed)
         setCities(cleanedCities)
 
       } catch (error) {
@@ -87,9 +87,9 @@ export default function NewTestimonialPage() {
       setError(null)
       
       try {
-        console.log(`Fetching events for city ${selectedCityId}...`)
+        // Fetching events for selected city (debug log removed)
         const eventsData = await getEventsByCityId(selectedCityId)
-        console.log('Events data for city:', eventsData)
+        // Events data for city received (debug log removed)
         setEvents(eventsData)
         
         // Reset selected event when city changes
@@ -172,9 +172,7 @@ export default function NewTestimonialPage() {
       const uploadData = await uploadResponse.json()
       setUploadedImagePath(uploadData.path)
 
-      console.log(`Image uploaded successfully: ${uploadData.path}`)
-      console.log(`Original file name: ${file.name}`)
-      console.log(`File size: ${(file.size / 1024 / 1024).toFixed(2)} MB`)
+      // Image upload info (debug logs removed)
 
       // Clear the progress after a short delay
       setTimeout(() => {
@@ -240,22 +238,12 @@ export default function NewTestimonialPage() {
         is_active: 1
       }
 
-      // Debug logging
-      console.log('Form Data:', {
-        name,
-        selectedCityId,
-        selectedEventId,
-        rating,
-        testimonialText,
-        date,
-        priority
-      });
-
-      console.log('Payload for API:', payload);
+      // Form data prepared (debug log removed)
+      // Payload prepared (debug log removed)
 
       // Get authentication token (support adminToken in localStorage)
       const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null;
-      console.log('Using token for testimonial create:', token ? (token.length > 12 ? `${token.slice(0,6)}...${token.slice(-6)}` : '****') : 'no-token');
+      // Token usage info (debug log removed)
       if (!token) {
         throw new Error('No authentication token found. Please log in again.');
       }
@@ -277,17 +265,16 @@ export default function NewTestimonialPage() {
       }
 
       const testimonialResponse = await response.json()
-      console.log('✅ Step 1 Complete: Testimonial API response:', testimonialResponse)
+      // Testimonial API response received (debug log removed)
 
       // Handle array response from testimonial API
       const testimonialData = Array.isArray(testimonialResponse) ? testimonialResponse[0] : testimonialResponse
-      console.log('✅ Testimonial data extracted:', testimonialData)
+      // Testimonial data extracted (debug log removed)
 
       // Step 2: MANDATORY - Associate image with the testimonial
       // Both testimonial creation AND image association must succeed
       if (uploadedImagePath && testimonialData && testimonialData.id) {
-        console.log('🔄 Step 2 Starting: Image association is REQUIRED for this testimonial');
-        console.log('Associating image with testimonial ID:', testimonialData.id)
+        // Image association step started (debug log removed)
 
         const imagePayload = {
           testimonial_id: testimonialData.id,
@@ -296,7 +283,7 @@ export default function NewTestimonialPage() {
           is_active: true
         }
 
-        console.log('Image payload:', imagePayload)
+        // Image payload prepared (debug log removed)
 
         const imageResponse = await fetch('/api/testimonials/images/update', {
           method: 'POST',
@@ -316,8 +303,8 @@ export default function NewTestimonialPage() {
         const imageResponse_data = await imageResponse.json()
         // Handle array response from testimonial images API
         const imageData = Array.isArray(imageResponse_data) ? imageResponse_data[0] : imageResponse_data
-        console.log('✅ Step 2 Complete: Image associated successfully:', imageData)
-        console.log('🎉 SUCCESS: Both testimonial and image created successfully!')
+        // Image associated successfully (debug log removed)
+        // Testimonial and image creation succeeded (debug log removed)
       } else if (uploadedImagePath && (!testimonialData || !testimonialData.id)) {
         // Image was uploaded but testimonial ID is missing
         console.error('❌ CRITICAL ERROR: Testimonial ID missing for image association');
@@ -325,7 +312,7 @@ export default function NewTestimonialPage() {
         throw new Error('Testimonial was created but ID is missing for image association');
       } else if (!uploadedImagePath) {
         // No image was uploaded, testimonial creation alone is sufficient
-        console.log('✅ SUCCESS: Testimonial created successfully (no image to associate)')
+        // Testimonial created successfully (no image to associate) (debug log removed)
       }
 
       setIsLoading(false)
@@ -396,10 +383,10 @@ export default function NewTestimonialPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {cities && cities.length > 0 ? (
-                      cities.map((c) => (
+                      cities.map((c, index) => (
                         <SelectItem
-                          key={c.id}
-                          value={c.id.toString()}
+                          key={c.id ?? `city-${index}`}
+                          value={String(c.id ?? '')}
                         >
                           {c.city_name}
                         </SelectItem>

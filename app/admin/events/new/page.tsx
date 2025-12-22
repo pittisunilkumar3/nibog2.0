@@ -109,22 +109,22 @@ export default function NewEventPage() {
       try {
         setIsLoadingCities(true)
         setCityError(null)
-        console.log("Fetching cities with venues from API...")
+        // Fetching cities with venues from API (debug log removed)
         const res = await fetch("/api/city/with-venues/list")
-        console.log("API Response status:", res.status)
+        // API Response status (debug log removed)
         if (!res.ok) throw new Error("Failed to fetch cities with venues")
         let data = await res.json()
-        console.log("Cities with venues data:", data)
-        console.log("Data type:", Array.isArray(data) ? "array" : typeof data)
+        // Cities with venues data (debug log removed)
+        // Data type (debug log removed)
         // Defensive: ensure data is always an array
         if (!Array.isArray(data)) {
           console.error("API response is not an array:", data)
           data = []
         }
-        console.log(`Loaded ${data.length} cities from API`)
+        // Loaded cities from API (debug log removed)
         // Filter only active cities
         const activeCities = data.filter((city: any) => city.is_active === 1)
-        console.log(`Active cities: ${activeCities.length}`)
+        // Active cities count (debug log removed)
         setCitiesWithVenues(activeCities)
         setDebugCities(JSON.stringify(activeCities, null, 2))
       } catch (error: any) {
@@ -147,11 +147,11 @@ export default function NewEventPage() {
         setIsLoadingGames(true)
         setGamesError(null)
 
-        console.log("Fetching baby games from API...")
+        // Fetching baby games from API (debug log removed)
 
         // Fetch baby games from the API
         const gamesData = await getAllBabyGames()
-        console.log("Baby games data from API:", gamesData)
+        // Baby games data from API (debug log removed)
 
         if (gamesData.length === 0) {
           console.warn("No baby games found in the API response")
@@ -330,7 +330,7 @@ export default function NewEventPage() {
 
     setEventImageFile(file)
     setEventImage(file.name) // Store filename for display
-    console.log('Event image selected:', file.name)
+    // Event image selected (debug log removed)
 
     toast({
       title: "Success",
@@ -388,15 +388,15 @@ export default function NewEventPage() {
         imagePriority: imagePriority
       }
 
-      console.log("Form data:", formData)
+      // Form data prepared (debug log removed)
 
       // Format the data for the API
       const apiData = formatEventDataForAPI(formData)
-      console.log("API data:", apiData)
+      // API data prepared (debug log removed)
 
       // Call the API to create the event
       const createdEvent = await createEvent(apiData)
-      console.log("Created event:", createdEvent)
+      // Created event (debug log removed)
 
       // Get the event ID from the response
       // Handle both response formats: {id: ...} or {event_id: ...}
@@ -405,22 +405,22 @@ export default function NewEventPage() {
         throw new Error("Event created but no ID returned")
       }
 
-      console.log("Event created with ID:", eventId)
+      // Event created with ID (debug log removed)
 
       // If there's an image file, upload it and update the event
       if (eventImageFile) {
         try {
-          console.log("Uploading event image after successful event creation...")
+          // Uploading event image after successful event creation (debug log removed)
 
           // Upload the image
           const uploadResult = await uploadEventImage(eventImageFile)
-          console.log("Event image uploaded:", uploadResult)
+          // Event image uploaded (debug log removed)
 
           // Update the event with the correct image filename
           // Extract just the filename from the path (e.g., "eventimage_1766294157627_3470.jpg")
           const imageFilename = uploadResult.filename || uploadResult.path.split('/').pop()
           
-          console.log("Updating event with image filename:", imageFilename)
+          // Updating event with image filename (debug log removed)
           
           // Update the event with the correct image filename using the edit endpoint
           const updateDataWithImage = {
@@ -439,9 +439,9 @@ export default function NewEventPage() {
           const apiDataWithImage = formatEventDataForUpdate(eventId, updateDataWithImage)
           apiDataWithImage.id = eventId
 
-          console.log("Updating event with image data:", apiDataWithImage)
+          // Updating event with image data (debug log removed)
           const updatedEvent = await updateEvent(apiDataWithImage)
-          console.log("Event updated with image filename successfully:", updatedEvent)
+          // Event updated with image filename successfully (debug log removed)
 
           toast({
             title: "Success",

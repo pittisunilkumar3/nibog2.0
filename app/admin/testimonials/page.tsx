@@ -83,7 +83,7 @@ export default function TestimonialsPage() {
         setIsLoading(true)
         setError(null)
 
-        console.log("Fetching testimonials data from database...")
+        // Fetching testimonials data from database (debug log removed)
 
         // Fetch all data from APIs
         const [testimonialsData, eventsData, citiesData] = await Promise.all([
@@ -92,21 +92,17 @@ export default function TestimonialsPage() {
           getAllCities()
         ])
 
-        console.log("Data received:", {
-          testimonials: testimonialsData?.length || 0,
-          events: eventsData?.length || 0,
-          cities: citiesData?.length || 0
-        })
+        // Data received (debug log removed)
 
-        // Debug: Log the first few items to see the structure
+        // Debug: Sample data inspection (logs removed)
         if (testimonialsData && testimonialsData.length > 0) {
-          console.log("Sample testimonial:", testimonialsData[0])
+          // sample testimonial inspected (debug log removed)
         }
         if (eventsData && eventsData.length > 0) {
-          console.log("Sample event:", eventsData[0])
+          // sample event inspected (debug log removed)
         }
         if (citiesData && citiesData.length > 0) {
-          console.log("Sample city:", citiesData[0])
+          // sample city inspected (debug log removed)
         }
 
         // Set the data
@@ -114,7 +110,7 @@ export default function TestimonialsPage() {
         setEvents(eventsData || [])
         setCities(citiesData || [])
 
-        console.log(`Successfully loaded ${testimonialsData?.length || 0} testimonials from database`)
+        // Successfully loaded testimonials (debug log removed)
 
       } catch (error: any) {
         console.error("Failed to fetch testimonials data:", error)
@@ -133,7 +129,7 @@ export default function TestimonialsPage() {
       setIsLoading(true)
       setError(null)
 
-      console.log("Refreshing all data...")
+      // Refreshing all data (debug log removed)
 
       // Fetch all data from APIs
       const [testimonialsData, eventsData, citiesData] = await Promise.all([
@@ -147,11 +143,7 @@ export default function TestimonialsPage() {
       setEvents(eventsData || [])
       setCities(citiesData || [])
 
-      console.log("Refreshed data:", {
-        testimonials: testimonialsData?.length || 0,
-        events: eventsData?.length || 0,
-        cities: citiesData?.length || 0
-      })
+      // Refreshed data (debug log removed)
     } catch (error: any) {
       console.error("Failed to refresh data:", error)
       setError(error.message || "Failed to refresh data")
@@ -195,7 +187,7 @@ export default function TestimonialsPage() {
       }
 
       const data = await response.json()
-      console.log('Delete response:', data)
+      // Delete response received (debug log removed)
 
       if (!data.success) {
         throw new Error(data.message || 'Delete operation failed')
@@ -305,11 +297,11 @@ export default function TestimonialsPage() {
 
     if (event) {
       const eventName = event.event_title || event.title || event.name
-      console.log(`Found event for ID ${eventId}:`, eventName)
+      // Found event for ID (debug log removed)
       return eventName
     }
 
-    console.log(`No event found for ID ${eventId}. Available events:`, events.map(e => ({ id: e.event_id || e.id, name: e.event_title || e.title || e.name })))
+    // No event found for ID (debug log removed)
     return `Event ${eventId}`
   }
 
