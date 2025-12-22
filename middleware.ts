@@ -88,13 +88,15 @@ const verifySuperadmin = async (token: string | undefined): Promise<SuperadminUs
 
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
-  const cookieStore = cookies();
-  const superadminToken = request.cookies.get('superadmin-token')?.value;
-  const userSession = request.cookies.get('nibog-session')?.value;
+  const cookieStore = await cookies();
+  const superadminToken = cookieStore.get('superadmin-token')?.value || request.cookies.get('superadmin-token')?.value;
+  const userSession = cookieStore.get('nibog-session')?.value || request.cookies.get('nibog-session')?.value;
 
   // Debug logging for protected paths
   if (pathname.startsWith('/register-event') || pathname.startsWith('/dashboard') || pathname.startsWith('/checkout')) {
-   
+    console.log('[Middleware] Protected path accessed:', pathname);
+    console.log('[Middleware] User session exists:', !!userSession);
+    console.log('[Middleware] Cookies:', request.cookies.getAll().map(c => c.name));
   }
 
   // Create response with no-cache headers by default
@@ -231,17 +233,22 @@ export async function middleware(request: NextRequest) {
 
   // Handle user protected routes (dashboard, checkout, register-event, etc.)
   if (isUserProtectedPath) {
+    console.log('[Middleware] Checking user protected path:', pathname);
+    console.log('[Middleware] userSession value:', userSession ? 'exists' : 'missing');
+    
     // If user is not authenticated, redirect to login
     if (!userSession) {
+      console.log('[Middleware] No session found, redirecting to login');
       const loginUrl = new URL('/login', request.url);
       // Preserve the original intended URL for redirect after login
-      loginUrl.searchParams.set('callbackUrl', pathname);
+      loginUrl.searchParams.set('callbackUrl', pathname + (request.nextUrl.search || ''));
       const redirect = NextResponse.redirect(loginUrl);
       redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
       redirect.headers.set('Pragma', 'no-cache');
       redirect.headers.set('Expires', '0');
       return redirect;
     }
+    console.log('[Middleware] Session found, allowing access');
     return response;
   }
 

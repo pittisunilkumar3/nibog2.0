@@ -210,17 +210,19 @@ function LoginContent() {
         description: "Welcome back " + userData.full_name,
       });
 
-      setLoadingMessage("Redirecting to dashboard...")
+      setLoadingMessage("Redirecting...")
 
-      // Store user data in auth context
+      // Store user data in auth context (this also calls setSession)
       login(userDataForStorage, token);
 
-      // Small delay to show the redirect message
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('[Login] Auth context updated, preparing redirect');
+      console.log('[Login] Redirect URL:', callbackUrl || returnUrl);
 
-      // Redirect to the callback URL or return URL after successful login
-      router.push(callbackUrl || returnUrl);
-      router.refresh(); // Refresh to update the layout with the new auth state
+      // Small delay to ensure cookie is set before redirect
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Use window.location.href for hard navigation to ensure middleware runs fresh
+      window.location.href = callbackUrl || returnUrl;
 
     } catch (error: any) {
       setError(error.message || 'An error occurred during login')

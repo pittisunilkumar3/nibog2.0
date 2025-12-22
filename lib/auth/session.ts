@@ -126,10 +126,17 @@ export function setSession(token: string) {
     return;
   }
   try {
+    console.log('[Session] Setting session token');
     localStorage.setItem(SESSION_COOKIE_NAME, token);
-    // Sync with cookies for server-side access
-    document.cookie = `${SESSION_COOKIE_NAME}=${token}; path=/; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''
-      }SameSite=Lax`;
+    
+    // Sync with cookies for server-side access - set with proper expiry
+    const maxAge = 60 * 60 * 24 * 7; // 7 days in seconds
+    const secure = process.env.NODE_ENV === 'production' ? 'Secure; ' : '';
+    document.cookie = `${SESSION_COOKIE_NAME}=${token}; path=/; max-age=${maxAge}; ${secure}SameSite=Lax`;
+    
+    // Verify cookie was set
+    const cookieSet = document.cookie.split(';').some(c => c.trim().startsWith(`${SESSION_COOKIE_NAME}=`));
+    console.log('[Session] Cookie set successfully:', cookieSet);
   } catch (error) {
     console.error('Error setting session:', error);
   }

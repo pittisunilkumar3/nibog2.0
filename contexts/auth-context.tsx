@@ -165,29 +165,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const isAuthenticated = await isClientAuthenticated()
-        if (isAuthenticated && typeof window !== 'undefined') {
-          const storedUser = localStorage.getItem('nibog-user') || localStorage.getItem('user')
+        console.log('[AuthContext] Checking authentication...');
+        const authenticated = isClientAuthenticated();
+        console.log('[AuthContext] Is authenticated:', authenticated);
+        
+        if (authenticated && typeof window !== 'undefined') {
+          const storedUser = localStorage.getItem('nibog-user') || localStorage.getItem('user');
+          console.log('[AuthContext] Stored user found:', !!storedUser);
+          
           if (storedUser) {
-            setUser(JSON.parse(storedUser))
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            console.log('[AuthContext] User set:', userData.email);
+            
             // Migrate old key to new key
             if (localStorage.getItem('user')) {
-              localStorage.setItem('nibog-user', storedUser)
-              localStorage.removeItem('user')
+              localStorage.setItem('nibog-user', storedUser);
+              localStorage.removeItem('user');
             }
           } else {
             // Session exists but no user data, clear session
-            clearSession()
-            setUser(null)
+            console.log('[AuthContext] Session exists but no user data, clearing');
+            clearSession();
+            setUser(null);
           }
         } else {
-          setUser(null)
+          console.log('[AuthContext] Not authenticated');
+          setUser(null);
         }
       } catch (error) {
-        console.error('Error checking authentication:', error)
-        setUser(null)
+        console.error('[AuthContext] Error checking authentication:', error);
+        setUser(null);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
+        console.log('[AuthContext] Auth check complete');
       }
     }
 
