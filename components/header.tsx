@@ -138,7 +138,7 @@ export default function Header() {
                   className="rounded-full px-4 font-medium text-blue-600 dark:text-blue-300 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-200 transition-all duration-300 hover:scale-105 relative z-10"
                   asChild
                 >
-                  <Link href="/login">Login</Link>
+                  <Link href="/login" onClick={async (e) => { e.preventDefault(); try { await router.push('/login'); console.log('router.push ok - login'); } catch (err) { console.error('router.push failed - falling back to hard navigation', err); window.location.href = '/login'; } }}>Login</Link>
                 </Button>
                 <Button 
                   className="rounded-full px-5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 border-0 font-medium shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 relative z-10"
@@ -280,7 +280,7 @@ export default function Header() {
                         onClick={() => setIsOpen(false)} 
                         asChild
                       >
-                        <Link href="/login">Login</Link>
+                        <Link href="/login" onClick={async (e) => { e.preventDefault(); try { await router.push('/login'); console.log('router.push ok - login (mobile)'); } catch (err) { console.error('router.push failed - falling back to hard navigation', err); window.location.href = '/login'; } }}>Login</Link>
                       </Button>
                     </div>
                   )}

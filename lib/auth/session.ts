@@ -61,6 +61,35 @@ export const isClientAuthenticated = (): boolean => {
   }
 };
 
+// Check if a JWT token is expired. Returns false for non-JWT / opaque tokens.
+export function isTokenExpired(token?: string | null): boolean {
+  if (!token) return true; // missing token -> treat as expired
+
+  try {
+    // JWTs have three parts separated by dots
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      // Not a JWT; we cannot reliably determine expiration
+      return false
+    }
+
+    // Decode payload (base64url)
+    const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const decoded = atob(payloadBase64)
+    const payload = JSON.parse(decoded)
+    if (payload && typeof payload.exp === 'number') {
+      const now = Math.floor(Date.now() / 1000)
+      return payload.exp <= now
+    }
+
+    // No exp claim - assume not expired
+    return false
+  } catch (error) {
+    console.warn('Failed to parse token for expiry check:', error)
+    return false
+  }
+} 
+
 // Server-side authentication check
 export async function isServerAuthenticated() {
   if (typeof window !== 'undefined') {

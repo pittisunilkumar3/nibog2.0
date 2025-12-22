@@ -287,14 +287,16 @@ export default function AdminSidebar() {
 
   const handleLogout = async () => {
     try {
-      // Call logout API
-      await fetch('/api/auth/logout', {
+      // Call superadmin logout API
+      await fetch('/api/auth/superadmin/logout', {
         method: 'POST',
         credentials: 'include',
       })
 
       // Clear localStorage
       localStorage.removeItem('superadmin')
+      localStorage.removeItem('adminToken')
+      sessionStorage.removeItem('adminToken')
 
       // Redirect to login page
       window.location.href = '/superadmin/login'

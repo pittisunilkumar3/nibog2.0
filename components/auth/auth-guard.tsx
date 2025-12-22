@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { isTokenExpired } from '@/lib/auth/session'
 
 // Helper function to get cookie by name
 function getCookie(name: string): string | null {
@@ -10,7 +11,7 @@ function getCookie(name: string): string | null {
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
   return null;
-}
+} 
 
 export default function AuthGuard({
   children,
@@ -47,6 +48,18 @@ export default function AuthGuard({
         const superadminData = localStorage.getItem('superadmin')
         if (superadminData) {
           const user = JSON.parse(superadminData)
+
+          // If we have a stored admin token, check its expiry
+          const adminToken = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken')
+          if (adminToken && isTokenExpired(adminToken)) {
+            // Token expired - clear stored data and redirect to login
+            localStorage.removeItem('superadmin')
+            localStorage.removeItem('adminToken')
+            sessionStorage.removeItem('adminToken')
+            window.location.href = '/superadmin/login'
+            return
+          }
+
           if (user.is_superadmin) {
             setAuthState('authorized')
             return

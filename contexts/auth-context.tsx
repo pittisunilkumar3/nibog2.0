@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { setSession, clearSession, isClientAuthenticated } from '@/lib/auth/session'
+import { setSession, clearSession, isClientAuthenticated, getSession, isTokenExpired } from '@/lib/auth/session' 
 
 // Define the user type based on the API response
 interface User {
@@ -61,11 +61,105 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Logout function
-  const logout = () => {
-    console.log('Logout initiated - redirecting to logout page');
-    // Redirect to logout page which will handle all cleanup
-    window.location.href = '/logout';
-  };
+  const logout = useCallback(async () => {
+    console.log('Logout initiated - performing cleanup');
+
+    // Try server-side logout (clears httpOnly cookies if any)
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (error) {
+      console.warn('Server logout failed (continuing client cleanup):', error)
+    }
+
+    // Clear client-side session and user data
+    clearSession()
+    try {
+      localStorage.removeItem('nibog-user')
+      localStorage.removeItem('user')
+      localStorage.removeItem('adminToken')
+      sessionStorage.removeItem('adminToken')
+      localStorage.removeItem('superadmin')
+      sessionStorage.removeItem('superadmin')
+      sessionStorage.clear()
+    } catch (e) {
+      console.warn('Error clearing storage during logout:', e)
+    }
+
+    // Update in-memory state and redirect
+    setUser(null)
+    window.location.href = '/'
+  }, []);
+
+  // Periodic token expiry check (auto-logout)
+  useEffect(() => {
+    let interval: number | undefined
+
+      const checkToken = async () => {
+      try {
+        const token = await getSession()
+        if (token && isTokenExpired(token)) {
+          console.info('Token expired - auto logging out and reloading')
+
+          // Best-effort server-side logout to clear httpOnly cookies
+          try {
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+          } catch (e) {
+            console.warn('Server logout failed during expiry cleanup:', e)
+          }
+
+          // Clear client-side session and storage
+          clearSession()
+          try {
+            localStorage.removeItem('nibog-user')
+            localStorage.removeItem('user')
+            localStorage.removeItem('adminToken')
+            sessionStorage.removeItem('adminToken')
+            localStorage.removeItem('superadmin')
+            sessionStorage.removeItem('superadmin')
+            sessionStorage.clear()
+          } catch (e) {
+            console.warn('Error clearing storage during expiry cleanup:', e)
+          }
+
+          setUser(null)
+
+          // Force full reload so the app/middleware re-evaluates auth state
+          window.location.reload()
+        }
+      } catch (e) {
+        console.warn('Error checking token expiry:', e)
+      }
+    }
+
+    // Initial check
+    checkToken()
+
+    // Check every 60s
+    interval = window.setInterval(checkToken, 60 * 1000)
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [logout])
+
+  // Listen for storage changes to sync logout across tabs
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'nibog-session' && !e.newValue) {
+        // session removed in another tab
+        setUser(null)
+      }
+      if ((e.key === 'superadmin' || e.key === 'adminToken') && !e.newValue) {
+        setUser(null)
+      }
+    }
+
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Check if user is logged in on initial load
   useEffect(() => {

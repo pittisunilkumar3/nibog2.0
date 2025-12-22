@@ -103,11 +103,13 @@ export default function AdminHeader({ title, description }: AdminHeaderProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
+      await fetch('/api/auth/superadmin/logout', {
         method: 'POST',
         credentials: 'include',
       })
       localStorage.removeItem('superadmin')
+      localStorage.removeItem('adminToken')
+      sessionStorage.removeItem('adminToken')
       window.location.href = '/superadmin/login'
     } catch (error) {
       console.error('Logout error:', error)
