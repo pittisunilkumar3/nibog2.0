@@ -176,7 +176,6 @@ function BookingConfirmationContent() {
               try {
                 const ticketData = await getTicketDetails(normalizedApiBookingId);
                 if (ticketData && ticketData.length > 0) {
-                  console.log("Successfully fetched ticket details using payment API bookingId:", ticketData);
                   setTicketDetails(ticketData);
                   // Store the first ticket as the booking details for display
                   if (ticketData[0]) {
@@ -213,11 +212,9 @@ function BookingConfirmationContent() {
                 const day = currentDate.getDate().toString().padStart(2, '0');
 
                 const pptRef = `PPT${year}${month}${day}${numericPart.slice(0, 3)}`;
-                console.log("Last attempt - trying PPT formatted reference:", pptRef);
 
                 const ticketData = await getTicketDetails(pptRef);
                 if (ticketData && ticketData.length > 0) {
-                  console.log("Successfully fetched ticket details using PPT format:", ticketData);
                   setTicketDetails(ticketData);
                   if (ticketData[0]) {
                     setBookingDetails(ticketData[0]);
@@ -248,7 +245,6 @@ function BookingConfirmationContent() {
             }
             const ticketData = await getTicketDetails(refToUse);
             if (ticketData && ticketData.length > 0) {
-              console.log("Successfully fetched ticket details as final attempt:", ticketData);
               setTicketDetails(ticketData);
               return;
             }

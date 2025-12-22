@@ -16,7 +16,6 @@ export default function RefundPolicyPage() {
 
       try {
         const data = await getRefundPolicy()
-        console.log('Fetched refund policy data:', data)
 
         if (data && data.success && data.policy) {
           // API returns html_content, not policy_text

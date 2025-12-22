@@ -137,8 +137,6 @@ function LoginContent() {
         ip_address: "0.0.0.0" // This will be set by the server
       }
 
-      console.log('Sending login request with:', { email, device_info: deviceInfo });
-      
       setLoadingMessage("Verifying credentials...")
       
       // Call our API route
@@ -154,7 +152,6 @@ function LoginContent() {
         }),
       })
       
-      console.log('Login response status:', response.status);
 
       const data = await response.json()
 
@@ -172,7 +169,6 @@ function LoginContent() {
       const userData = data.data;
       const token = data.token;
       
-      console.log('Login successful, userData:', userData)
 
       // Check if user is active
       if (!userData.is_active) {

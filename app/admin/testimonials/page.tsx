@@ -292,10 +292,10 @@ export default function TestimonialsPage() {
     }
   }
 
-  // Get event name by ID
-  const getEventName = (eventId: number) => {
-    if (!eventId || !events || events.length === 0) {
-      return `Event ${eventId}`
+  // Get event name by ID (accepts undefined for backwards compatibility)
+  const getEventName = (eventId?: number) => {
+    if (eventId == null || !events || events.length === 0) {
+      return `Event ${eventId ?? 'N/A'}`
     }
 
     const event = events.find(e =>

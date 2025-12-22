@@ -6,6 +6,7 @@ export interface Testimonial {
   city_name?: string; // Name of the city (if city_id is set)
   event_id?: number;
   event_name?: string; // Name of the event (if event_id is set)
+  event_title?: string; // Backwards-compatible event title field used by older APIs
   rating: number;
   testimonial: string;
   submitted_at: string;

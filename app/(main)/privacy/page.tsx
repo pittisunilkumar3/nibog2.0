@@ -16,7 +16,7 @@ export default function PrivacyPolicyPage() {
 
       try {
         const data = await getPrivacyPolicy()
-        console.log('Fetched privacy policy data:', data)
+       
 
         if (data && data.success && data.policy) {
           // API returns html_content, not policy_text
