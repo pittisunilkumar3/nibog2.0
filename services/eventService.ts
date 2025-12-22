@@ -1552,7 +1552,9 @@ export async function getEventsByCityId(cityId: number): Promise<Array<{ id: num
 
     const result = await response.json();
     
-    return events.map((event: any) => ({
+    const rawEvents = Array.isArray(result) ? result : (result.success && result.data ? result.data : []);
+    
+    return (rawEvents || []).map((event: any) => ({
       id: event.id || event.event_id,
       title: event.title || event.event_title
     }));
@@ -1561,16 +1563,4 @@ export async function getEventsByCityId(cityId: number): Promise<Array<{ id: num
     throw error;
   }
 }    
-    // Return the data array, ensuring it has id and title fields
-    const events = result.success && result.data ? result.data : [];
-    
-    // Transform to consistent format with id and title
-    return events.map((event: any) => ({
-      id: event.id || event.event_id,
-      title: event.title || event.event_title
-    }));
-  } catch (error: any) {
-    console.error(`Error in getEventsByCityId(${cityId}):`, error);
-    throw error;
-  }
-}
+
