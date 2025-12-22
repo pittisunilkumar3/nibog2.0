@@ -24,19 +24,26 @@ export async function POST(request: Request) {
       is_active: imageData.is_active !== undefined ? imageData.is_active : true
     };
 
-    // Forward the request to the external API
+    // Always use the ai.nibog.in webhook for testimonial image association
     const apiUrl = "https://ai.nibog.in/webhook/nibog/testmonialimages/update";
 
+    // Forward Authorization header from the original request if present
+    const incomingAuth = (request && (request as any).headers && (request as any).headers.get ? (request as any).headers.get('authorization') : null) || null;
 
     // Create an AbortController for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
+    const forwardHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (incomingAuth) {
+      forwardHeaders['Authorization'] = incomingAuth;
+    }
+
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: forwardHeaders,
       body: JSON.stringify(payload),
       signal: controller.signal,
     });

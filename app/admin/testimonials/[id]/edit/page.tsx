@@ -359,14 +359,18 @@ export default function EditTestimonialPage({ params }: Props) {
 
       // Include image_url if a new image was uploaded or if there's an existing image
       if (uploadedImagePath) {
-        // Extract just the filename from the path (e.g., "testimonial_1766294157627_3470.jpg")
-        const imageFilename = uploadedImagePath.split('/').pop() || uploadedImagePath
-        updateData.image_url = imageFilename
+        // Always use the full relative path as returned by upload API (e.g., /upload/testmonialimage/filename.jpg)
+        updateData.image_url = uploadedImagePath;
         // Including new uploaded image in update (debug log removed)
       } else if (existingImageUrl) {
-        // Keep the existing image URL
-        const imageFilename = existingImageUrl.split('/').pop() || existingImageUrl
-        updateData.image_url = imageFilename
+        // If existingImageUrl is already a full path, use as is; otherwise, try to reconstruct
+        if (existingImageUrl.startsWith('/upload/') || existingImageUrl.startsWith('upload/')) {
+          updateData.image_url = existingImageUrl;
+        } else {
+          // Fallback: try to extract filename and prepend upload path
+          const imageFilename = existingImageUrl.split('/').pop() || existingImageUrl;
+          updateData.image_url = `/upload/testmonialimage/${imageFilename}`;
+        }
         // Keeping existing image in update (debug log removed)
       }
 

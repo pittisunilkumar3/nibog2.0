@@ -22,21 +22,26 @@ export async function POST(request: Request) {
 
     let response;
     try {
+      // Forward image_url if present
+      const payload: any = {
+        id: testimonialData.id,
+        name: testimonialData.name,
+        city: testimonialData.city || null, // City can be null as shown in the API response
+        event_id: testimonialData.event_id,
+        rating: testimonialData.rating,
+        testimonial: testimonialData.testimonial,
+        date: testimonialData.date || new Date().toISOString().split('T')[0],
+        status: testimonialData.status || 'Published'
+      };
+      if (testimonialData.image_url) {
+        payload.image_url = testimonialData.image_url;
+      }
       response = await fetch('https://ai.nibog.in/webhook/v1/nibog/testimonials/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id: testimonialData.id,
-          name: testimonialData.name,
-          city: testimonialData.city || null, // City can be null as shown in the API response
-          event_id: testimonialData.event_id,
-          rating: testimonialData.rating,
-          testimonial: testimonialData.testimonial,
-          date: testimonialData.date || new Date().toISOString().split('T')[0],
-          status: testimonialData.status || 'Published'
-        }),
+        body: JSON.stringify(payload),
       });
     } catch (err) {
       console.error('Failed to reach external API:', err);
