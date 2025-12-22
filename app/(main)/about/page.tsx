@@ -1,5 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -7,9 +8,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { CheckCircle2, Users, Trophy, Calendar, MapPin, Heart, ChevronLeft, ChevronRight } from "lucide-react"
 import type { Metadata } from "next"
-import { AnimatedBackground } from "@/components/animated-background"
-import { ImageSlideshow } from "@/components/image-slideshow"
-import { AboutTestimonialsSection } from "@/components/about-testimonials-section"
+
+// Dynamic imports for heavy components to reduce initial bundle size
+const AnimatedBackground = dynamic(
+  () => import("@/components/animated-background").then((mod) => mod.AnimatedBackground),
+  { ssr: false, loading: () => <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-mint-50 to-coral-50" /> }
+)
+
+const ImageSlideshow = dynamic(
+  () => import("@/components/image-slideshow").then((mod) => mod.ImageSlideshow),
+  { ssr: false, loading: () => <div className="w-full h-64 bg-gray-200 animate-pulse rounded-xl" /> }
+)
+
+const AboutTestimonialsSection = dynamic(
+  () => import("@/components/about-testimonials-section").then((mod) => mod.AboutTestimonialsSection),
+  { ssr: false, loading: () => <div className="py-20 bg-gray-100 animate-pulse" /> }
+)
 
 export const metadata: Metadata = {
   title: "About NIBOG | New India Baby Olympic Games",
@@ -48,9 +62,9 @@ export default function AboutPage() {
             {/* Fun emoji decorations */}
             <div className="flex justify-center gap-6 text-4xl">
               <span className="animate-bounce-gentle">📚</span>
-              <span className="animate-bounce-gentle" style={{animationDelay: '0.5s'}}>👶</span>
-              <span className="animate-bounce-gentle" style={{animationDelay: '1s'}}>🏆</span>
-              <span className="animate-bounce-gentle" style={{animationDelay: '1.5s'}}>❤️</span>
+              <span className="animate-bounce-gentle" style={{ animationDelay: '0.5s' }}>👶</span>
+              <span className="animate-bounce-gentle" style={{ animationDelay: '1s' }}>🏆</span>
+              <span className="animate-bounce-gentle" style={{ animationDelay: '1.5s' }}>❤️</span>
             </div>
           </div>
         </div>
@@ -137,8 +151,8 @@ export default function AboutPage() {
               {/* Floating decorative elements around the slideshow */}
               <div className="absolute -top-4 -left-4 w-8 h-8 bg-sunshine-400 rounded-full animate-bounce-gentle"></div>
               <div className="absolute -top-4 -right-4 w-6 h-6 bg-coral-400 rounded-full animate-sparkle"></div>
-              <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-mint-400 rounded-full animate-sparkle" style={{animationDelay: '1s'}}></div>
-              <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-lavender-400 rounded-full animate-bounce-gentle" style={{animationDelay: '0.5s'}}></div>
+              <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-mint-400 rounded-full animate-sparkle" style={{ animationDelay: '1s' }}></div>
+              <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-lavender-400 rounded-full animate-bounce-gentle" style={{ animationDelay: '0.5s' }}></div>
             </div>
           </div>
         </div>
@@ -258,6 +272,8 @@ export default function AboutPage() {
                   src={image.src}
                   alt={image.alt}
                   fill
+                  loading="lazy"
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                   className="object-cover transition-transform duration-300 hover:scale-105"
                 />
               </div>

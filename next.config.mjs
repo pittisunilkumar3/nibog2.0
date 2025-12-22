@@ -13,9 +13,12 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-    // Disable image optimization cache completely
-    minimumCacheTTL: 0,
-    unoptimized: process.env.NODE_ENV === 'production',
+    // Enable image optimization with proper caching
+    minimumCacheTTL: 2592000, // 30 days cache for optimized images
+    unoptimized: false, // Enable Next.js image optimization
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ['image/avif', 'image/webp'],
   },
   // Suppress hydration warnings in development
   reactStrictMode: true,
@@ -46,23 +49,56 @@ const nextConfig = {
       },
     ];
   },
-  // Disable all static optimization - force dynamic rendering
+  // Smart caching strategy - cache static assets, allow revalidation for pages
   async headers() {
     return [
+      // Static assets - cache for 1 year
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Images - cache for 30 days
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      // Fonts - cache for 1 year
+      {
+        source: '/:path*.woff2',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // API routes - no cache, always fresh
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate',
+          },
+        ],
+      },
+      // HTML pages - short cache with revalidation
       {
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-          },
-          {
-            key: 'Pragma',
-            value: 'no-cache',
-          },
-          {
-            key: 'Expires',
-            value: '0',
+            value: 'public, max-age=60, stale-while-revalidate=300',
           },
         ],
       },

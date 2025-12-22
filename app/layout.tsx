@@ -1,21 +1,34 @@
 import type React from "react"
 import type { Metadata } from "next/types"
-import { Inter } from "next/font/google"
+import { Inter, Poppins } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
-const inter = Inter({ subsets: ["latin"] })
+// Optimized font loading with display swap for better performance
+const inter = Inter({
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  variable: '--font-inter',
+})
+
+const poppins = Poppins({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  variable: '--font-poppins',
+})
 
 export const metadata: Metadata = {
   title: "NIBOG - Baby Events Platform",
   description: "Discover and book baby-focused games and events across India",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
-// Force dynamic rendering - disable all caching
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-export const fetchCache = 'force-no-store'
+// Enable Incremental Static Regeneration with 60 second revalidation
+// This provides a good balance between freshness and performance
+export const revalidate = 60
 
 export default function RootLayout({
   children,
@@ -65,7 +78,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${inter.variable} ${poppins.variable} font-poppins`} suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

@@ -302,25 +302,29 @@
   display: inline-block;
 }
 
-/* Google Fonts import for Comic Neue and Poppins */
-@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+/* Fonts loaded via Next.js font system for optimal performance */
+/* See layout.tsx for Inter and Poppins font configuration */
 
 /* NIBOG Baby Olympics Design System */
 @layer base {
   body {
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-poppins), 'Poppins', sans-serif;
     font-weight: 400;
     line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-poppins), 'Poppins', sans-serif;
     font-weight: 600;
     line-height: 1.2;
   }
 
-  .font-playful {
-    font-family: 'Comic Neue', cursive;
+  .font-poppins {
+    font-family: var(--font-poppins), 'Poppins', sans-serif;
+  }
+
+  .font-inter {
+    font-family: var(--font-inter), 'Inter', sans-serif;
   }
 }
 
@@ -366,35 +370,7 @@
   animation: medal-shine 3s ease-in-out infinite;
 }
 
-/* Additional floating animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-10px) rotate(1deg); }
-  66% { transform: translateY(5px) rotate(-1deg); }
-}
-
-@keyframes float-delayed {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(8px) rotate(-1deg); }
-  66% { transform: translateY(-6px) rotate(1deg); }
-}
-
-@keyframes float-slow {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-15px) rotate(2deg); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-float-delayed {
-  animation: float-delayed 8s ease-in-out infinite;
-}
-
-.animate-float-slow {
-  animation: float-slow 10s ease-in-out infinite;
-}
+/* Floating animations defined above - removed duplicates */
 
 /* Baby-friendly button styles */
 .btn-baby-primary {

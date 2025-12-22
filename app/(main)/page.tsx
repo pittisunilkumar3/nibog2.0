@@ -63,11 +63,11 @@ function HomeHeroSlider() {
     fetchSliderImages()
   }, [])
 
-  // Periodic refresh every 30 seconds to catch updates
+  // Periodic refresh every 5 minutes instead of 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       fetchSliderImages()
-    }, 30000) // 30 seconds
+    }, 5 * 60 * 1000) // 5 minutes
 
     return () => clearInterval(interval)
   }, [])
@@ -276,7 +276,8 @@ function useHomepageStats() {
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 5 * 60 * 1000);
+    // Refresh stats every 10 minutes instead of 5 minutes
+    const interval = setInterval(fetchStats, 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 

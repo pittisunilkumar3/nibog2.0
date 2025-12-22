@@ -3,7 +3,11 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
-import { useEffect, useState } from "react"
+import { useEffect, useState, memo } from "react"
+
+// Cache configuration
+const PARTNERS_CACHE_KEY = 'nibog_partners_data';
+const PARTNERS_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 interface Partner {
   id: number
@@ -13,14 +17,27 @@ interface Partner {
   status: string
 }
 
-export function PartnersSection() {
+function PartnersSectionComponent() {
   const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchPartners = async () => {
       try {
-        const response = await fetch('/api/partners/get-all')
+        // Check sessionStorage cache first
+        const cached = sessionStorage.getItem(PARTNERS_CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < PARTNERS_CACHE_EXPIRY) {
+            setPartners(data);
+            setLoading(false);
+            return;
+          }
+        }
+
+        const response = await fetch('/api/partners/get-all', {
+          next: { revalidate: 300 }, // Revalidate every 5 minutes
+        })
         if (response.ok) {
           const payload = await response.json()
           // payload may be an array or an object { success, data }
@@ -29,6 +46,13 @@ export function PartnersSection() {
           const activePartners = arr
             .filter((partner: Partner) => partner.status === 'Active')
             .sort((a: Partner, b: Partner) => a.display_priority - b.display_priority)
+
+          // Cache the result
+          sessionStorage.setItem(PARTNERS_CACHE_KEY, JSON.stringify({
+            data: activePartners,
+            timestamp: Date.now()
+          }));
+
           setPartners(activePartners)
         } else {
           console.warn('Partners fetch returned non-ok status:', response.status)
@@ -148,8 +172,8 @@ export function PartnersSection() {
           <div className="text-center mt-6">
             <p className="text-muted-foreground text-sm">
               Interested in partnering with NIBOG? {" "}
-              <a 
-                href="/contact" 
+              <a
+                href="/contact"
                 className="text-primary hover:underline font-semibold"
               >
                 Get in touch
@@ -161,3 +185,7 @@ export function PartnersSection() {
     </section>
   )
 }
+
+// Memoize to prevent unnecessary re-renders
+export const PartnersSection = memo(PartnersSectionComponent);
+export default PartnersSection;

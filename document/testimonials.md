@@ -1,6 +1,6 @@
 # Testimonials API 📣
 
-**Base URL:** `/api/testimonials`
+**Base URL:** `http://localhost:3004/api/testimonials`
 
 ---
 

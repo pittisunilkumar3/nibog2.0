@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
+// Cache configuration
+const GAMES_CACHE_KEY = 'nibog_games_data';
+const GAMES_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 interface Game {
   id: number;
@@ -22,25 +26,30 @@ interface Game {
   updatedAt: string;
 }
 
-export default function HomepageGamesSection() {
+function HomepageGamesSectionComponent() {
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchGames = async () => {
     try {
+      // Check sessionStorage cache first
+      const cached = sessionStorage.getItem(GAMES_CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < GAMES_CACHE_EXPIRY) {
+          setGames(data);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       setIsLoading(true);
       setError(null);
 
-
       const response = await fetch('/api/games-with-images', {
         method: 'GET',
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
+        next: { revalidate: 300 }, // Revalidate every 5 minutes
       });
 
       if (!response.ok) {
@@ -48,6 +57,12 @@ export default function HomepageGamesSection() {
       }
 
       const data = await response.json();
+
+      // Cache the response
+      sessionStorage.setItem(GAMES_CACHE_KEY, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
 
       setGames(data);
 
@@ -65,8 +80,8 @@ export default function HomepageGamesSection() {
   useEffect(() => {
     fetchGames();
 
-    // Refresh games every 2 minutes
-    const interval = setInterval(fetchGames, 2 * 60 * 1000);
+    // Refresh games every 10 minutes instead of 2 minutes
+    const interval = setInterval(fetchGames, 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -270,3 +285,6 @@ export default function HomepageGamesSection() {
     </section>
   );
 }
+
+// Memoize to prevent unnecessary re-renders
+export default memo(HomepageGamesSectionComponent);

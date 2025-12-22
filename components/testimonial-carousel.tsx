@@ -74,9 +74,15 @@ export function TestimonialCarousel({
   const getCurrentTestimonials = () => {
     const start = currentIndex * slidesPerView;
     const end = start + slidesPerView;
-    return testimonials
-      .slice(start, end)
-      .concat(testimonials.slice(0, Math.max(0, start + slidesPerView - testimonials.length)));
+    const currentSlice = testimonials.slice(start, end);
+    
+    // Only wrap around if we need more testimonials to fill the view
+    if (currentSlice.length < slidesPerView && testimonials.length > slidesPerView) {
+      const needed = slidesPerView - currentSlice.length;
+      return currentSlice.concat(testimonials.slice(0, needed));
+    }
+    
+    return currentSlice;
   };
 
   // Calculate total number of slides based on testimonials and slides per view

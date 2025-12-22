@@ -1,26 +1,40 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import { MapPin } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 
-export default function Footer() {
+// Cache key for sessionStorage
+const FOOTER_CACHE_KEY = 'nibog_footer_data';
+const FOOTER_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
+function FooterComponent() {
   const [footerData, setFooterData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchFooterData = async () => {
       try {
+        // Check sessionStorage cache first
+        const cached = sessionStorage.getItem(FOOTER_CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < FOOTER_CACHE_EXPIRY) {
+            setFooterData(data);
+            setIsLoading(false);
+            return;
+          }
+        }
+
         setIsLoading(true);
-        // Use Next.js API route to fetch footer settings
         const response = await fetch('/api/footer-settings/with-social', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
-          cache: 'no-store',
+          next: { revalidate: 300 }, // Revalidate every 5 minutes
         });
 
         if (!response.ok) {
@@ -30,6 +44,12 @@ export default function Footer() {
         }
 
         const data = await response.json();
+
+        // Cache the response
+        sessionStorage.setItem(FOOTER_CACHE_KEY, JSON.stringify({
+          data,
+          timestamp: Date.now()
+        }));
 
         setFooterData(data);
       } catch (error) {
@@ -244,3 +264,6 @@ export default function Footer() {
     </footer>
   )
 }
+
+// Memoize the footer to prevent unnecessary re-renders
+export default memo(FooterComponent);

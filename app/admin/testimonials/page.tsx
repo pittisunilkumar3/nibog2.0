@@ -579,8 +579,8 @@ export default function TestimonialsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Events</SelectItem>
-                  {events.map((event) => (
-                    <SelectItem key={event.event_id || event.id} value={event.event_title || event.title || event.name}>
+                  {events.map((event, index) => (
+                    <SelectItem key={`event-${event.event_id || event.id}-${index}`} value={event.event_title || event.title || event.name}>
                       {event.event_title || event.title || event.name}
                     </SelectItem>
                   ))}
@@ -593,8 +593,8 @@ export default function TestimonialsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Cities</SelectItem>
-                  {cities.map((city) => (
-                    <SelectItem key={city.id} value={city.city_name || city.name}>
+                  {cities.map((city, index) => (
+                    <SelectItem key={`city-${city.id}-${index}`} value={city.city_name || city.name}>
                       {city.city_name || city.name}
                     </SelectItem>
                   ))}
