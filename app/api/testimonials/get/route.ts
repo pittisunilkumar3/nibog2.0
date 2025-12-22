@@ -9,6 +9,7 @@ const MAX_RETRIES = 3;
 export async function POST(request: Request) {
   let retries = 0;
   let requestBody;
+  let data: any = null;
 
   try {
     // Parse the request body (outside the retry loop to avoid parsing multiple times)
@@ -48,97 +49,8 @@ export async function POST(request: Request) {
           }
         }
 
-        // Forward the request to the external API
-        const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/testimonials/get";
-
-
-        // Create an AbortController for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Cache-Control": "no-cache"
-          },
-          body: JSON.stringify({ id: Number(id) }),
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Server API route: Error response: ${errorText}`);
-
-          // If we get a server error (5xx), retry
-          if (response.status >= 500 && retries < MAX_RETRIES - 1) {
-            retries++;
-            await delay(1000 * retries); // Exponential backoff
-            continue;
-          }
-
-          let errorMessage = `Error getting testimonial: ${response.status}`;
-          try {
-            const errorData = JSON.parse(errorText);
-            if (errorData.error) {
-              errorMessage = errorData.error;
-            }
-          } catch (e) {
-            // If we can't parse the error as JSON, use the status code
-          }
-
-          return NextResponse.json(
-            { error: errorMessage },
-            { status: response.status }
-          );
-        }
-
-        // Get the response data
-        const responseText = await response.text();
-
-        // Handle empty response case
-        if (!responseText || responseText.trim() === '') {
-
-          return NextResponse.json(
-            { error: "No testimonial data found" },
-            { status: 404 }
-          );
-        }
-
-
-
-        let data;
-        try {
-          // Try to parse the response as JSON
-          data = JSON.parse(responseText);
-
-        } catch (error) {
-          // TypeScript-safe error handling
-          const parseError = error instanceof Error ? error : new Error(String(error));
-          console.error("Server API route: Error parsing response:", parseError);
-
-          // If we can't parse JSON and haven't exceeded retries, try again
-          if (retries < MAX_RETRIES - 1) {
-            retries++;
-            await delay(1000 * retries); // Exponential backoff
-            continue;
-          }
-
-          return NextResponse.json(
-            {
-              error: "Failed to parse API response",
-              details: parseError.message,
-              rawResponseSample: responseText.substring(0, 200) // Just include a sample for debug
-            },
-            { status: 500 }
-          );
-        }
+        // No external webhook is used here — all data comes from the local backend (BACKEND_URL).
+        // If the backend GET by ID above failed to find a testimonial, we will fall back to the backend list search below.
 
         // If data is empty, try fallback: search backend list
         const isEmpty = (!data) || (Array.isArray(data) && data.length === 0);

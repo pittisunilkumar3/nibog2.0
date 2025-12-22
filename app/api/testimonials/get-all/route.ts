@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 
+// Configure route segment to allow dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     console.log("Server API route: Getting testimonials from external API");
 
-    // Call the external API
-    const response = await fetch('https://ai.nibog.in/webhook/nibog/testmonialimages/get', {
+    // Call the backend API to get testimonials
+    const base = (process.env.BACKEND_URL || "http://localhost:3004").replace(/\/$/, "");
+    const response = await fetch(`${base}/api/testimonials?limit=1000&offset=0`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

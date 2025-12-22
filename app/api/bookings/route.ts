@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 
+// Configure route segment to allow dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';

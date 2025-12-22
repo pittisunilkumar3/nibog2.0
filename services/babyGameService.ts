@@ -32,6 +32,7 @@ export interface GameWithImage {
 }
 
 import { getSession } from "@/lib/auth/session";
+import { apiUrl } from './apiClient';
 
 /**
  * Get authentication headers with Bearer token
@@ -76,8 +77,8 @@ export async function createBabyGame(gameData: BabyGame): Promise<BabyGame> {
  */
 export async function getAllBabyGames(): Promise<BabyGame[]> {
   try {
-    // Use our internal API route to avoid CORS issues
-    const response = await fetch('/api/babygames/get-all', {
+    // Use our internal API route on the client, but call backend URL when running on server
+    const response = await fetch(apiUrl('/api/babygames/get-all'), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -109,7 +110,7 @@ export async function getAllBabyGames(): Promise<BabyGame[]> {
 export async function getAllGamesWithImages(): Promise<GameWithImage[]> {
   try {
     // Use the new API endpoint that returns ALL games (not just first 4)
-    const response = await fetch('/api/all-games-with-images', {
+    const response = await fetch(apiUrl('/api/all-games-with-images'), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

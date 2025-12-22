@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic'
+
 // In-memory storage for slot statuses (in production, this should be a database)
 // This is a temporary solution until we have a proper database setup
 let slotStatuses: Record<string, string> = {};

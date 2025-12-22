@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { BABY_GAMES_REST_API } from '@/config/api';
 
+export const dynamic = 'force-dynamic' 
+
 export async function GET() {
   try {
     const apiUrl = BABY_GAMES_REST_API.BASE;

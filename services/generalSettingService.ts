@@ -14,6 +14,8 @@ export interface GeneralSetting {
   updated_at?: string;
 }
 
+import { apiUrl } from './apiClient';
+
 /**
  * Get general settings from backend API
  * @returns The general settings data
@@ -25,7 +27,7 @@ export async function getGeneralSetting(): Promise<GeneralSetting | null> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    const response = await fetch('/api/general-settings', {
+    const response = await fetch(apiUrl('/api/general-settings'), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -118,7 +120,7 @@ export async function updateGeneralSetting(generalSettingData: Partial<GeneralSe
       console.warn('⚠️ No authentication token found for general settings update');
     }
 
-    const response = await fetch('/api/general-settings', {
+    const response = await fetch(apiUrl('/api/general-settings'), {
       method: "PUT",
       headers,
       body: JSON.stringify(generalSettingData),

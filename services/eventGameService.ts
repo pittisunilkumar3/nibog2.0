@@ -47,12 +47,14 @@ export interface EventWithGames {
  * Get all events with their games
  * @returns A list of all events with their associated games
  */
+import { apiUrl } from './apiClient';
+
 export async function getAllEventsWithGames(): Promise<EventWithGames[]> {
   console.log("Fetching all events with games");
 
   try {
-    // Use our internal API route to avoid CORS issues and enable caching
-    const response = await fetch('/api/events/get-all-with-games', {
+    // Use our internal API route on the client, call backend directly on server
+    const response = await fetch(apiUrl('/api/events/get-all-with-games'), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

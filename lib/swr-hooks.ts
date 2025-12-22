@@ -387,8 +387,10 @@ export function useApi<T>(url: string | null, options = {}) {
 /**
  * Fetch testimonials from the API
  */
+import { apiUrl } from '@/services/apiClient';
+
 async function fetchTestimonials(): Promise<TestimonialListItem[]> {
-  const response = await fetch('/api/testimonials/get-all-with-images', {
+  const response = await fetch(apiUrl('/api/testimonials/get-all-with-images'), {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

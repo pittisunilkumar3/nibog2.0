@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic'
+const BACKEND_URL = (process.env.BACKEND_URL || 'http://localhost:3004').replace(/\/$/, '');
+
 export async function POST(request: Request) {
   try {
 
@@ -18,14 +21,13 @@ export async function POST(request: Request) {
 
     // Ensure is_active is set to true by default
     const payload = {
-      testimonial_id: imageData.testimonial_id,
       image_url: imageData.image_url,
       priority: imageData.priority,
       is_active: imageData.is_active !== undefined ? imageData.is_active : true
     };
 
-    // Forward the request to the external API
-    const apiUrl = "https://ai.nibog.in/webhook/nibog/testmonialimages/update";
+    // Update testimonial on backend (PUT to testimonial resource)
+    const apiUrl = `${BACKEND_URL}/api/testimonials/${encodeURIComponent(String(imageData.testimonial_id))}`;
 
 
     // Create an AbortController for timeout
@@ -33,12 +35,13 @@ export async function POST(request: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     const response = await fetch(apiUrl, {
-      method: "POST",
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
       signal: controller.signal,
+      cache: 'no-store'
     });
 
     clearTimeout(timeoutId);

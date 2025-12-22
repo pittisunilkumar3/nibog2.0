@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { EVENT_API } from '@/config/api';
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: Request) {
   try {
     // Parse the request body

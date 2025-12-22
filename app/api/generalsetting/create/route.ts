@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { GENERAL_SETTING_API } from '@/config/api';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     // Parse the request body
@@ -44,14 +46,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Forward the request to the external API with the correct URL
+    // Call backend API (POST creates new record if not exists, or use PUT to update)
     const apiUrl = GENERAL_SETTING_API.CREATE;
-    console.log("Server API route: Calling API URL:", apiUrl);
+    const forwardAuth = request.headers.get('authorization');
+    console.log("Server API route: Calling backend API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(forwardAuth ? { 'Authorization': forwardAuth } : {})
       },
       body: JSON.stringify(generalSettingData),
       cache: "no-store",
@@ -60,54 +64,12 @@ export async function POST(request: Request) {
     console.log(`Server API route: Create general settings response status: ${response.status}`);
 
     if (!response.ok) {
-      // If the first attempt fails, try with a different URL format
-      console.log("Server API route: First attempt failed, trying with alternative URL format");
-
-      // Try with webhook instead of webhook-test
-      const alternativeUrl = apiUrl.replace("webhook-test/v1", "webhook/v1");
-      console.log("Server API route: Trying alternative URL:", alternativeUrl);
-
-      const alternativeResponse = await fetch(alternativeUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(generalSettingData),
-        cache: "no-store",
-      });
-
-      console.log(`Server API route: Alternative create general settings response status: ${alternativeResponse.status}`);
-
-      if (!alternativeResponse.ok) {
-        const errorText = await alternativeResponse.text();
-        console.error("Server API route: Error response from alternative URL:", errorText);
-        return NextResponse.json(
-          { error: `Failed to create general settings. API returned status: ${alternativeResponse.status}` },
-          { status: alternativeResponse.status }
-        );
-      }
-
-      // Get the response data from the alternative URL
-      const responseText = await alternativeResponse.text();
-      console.log(`Server API route: Raw response from alternative URL: ${responseText}`);
-      
-      try {
-        // Try to parse the response as JSON
-        const responseData = JSON.parse(responseText);
-        console.log("Server API route: Created general settings:", responseData);
-        
-        return NextResponse.json(responseData, { status: 201 });
-      } catch (parseError) {
-        console.error("Server API route: Error parsing response:", parseError);
-        // If parsing fails, return the error
-        return NextResponse.json(
-          { 
-            error: "Failed to parse API response", 
-            rawResponse: responseText.substring(0, 500) // Limit the size of the raw response
-          },
-          { status: 500 }
-        );
-      }
+      const errorText = await response.text();
+      console.error("Server API route: Error response from backend:", errorText);
+      return NextResponse.json(
+        { error: `Failed to create general settings. Backend returned status: ${response.status}` },
+        { status: response.status }
+      );
     }
 
     // Get the response data

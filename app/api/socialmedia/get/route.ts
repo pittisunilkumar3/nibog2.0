@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { SOCIAL_MEDIA_API } from '@/config/api';
 
+// Configure route segment to allow dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     console.log("Server API route: Fetching social media...");

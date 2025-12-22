@@ -27,16 +27,18 @@ export async function GET() {
     // Read local testimonials
     const localTestimonials = readTestimonials();
 
-    // Also get external testimonials for comparison/backup
+    // Also get testimonials from backend for comparison/backup
     let externalTestimonials = [];
     try {
-      const externalResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/testimonials/get-all');
+      const base = (process.env.BACKEND_URL || 'http://localhost:3004').replace(/\/$/, '');
+      const externalResponse = await fetch(`${base}/api/testimonials?limit=1000&offset=0`, { cache: 'no-store' });
       if (externalResponse.ok) {
         externalTestimonials = await externalResponse.json();
-        // Mark external testimonials
+        // Normalize backend response to array if it uses { data: [...] }
+        externalTestimonials = externalTestimonials.data || externalTestimonials || [];
         externalTestimonials = externalTestimonials.map((t: any) => ({
           ...t,
-          source: 'external'
+          source: 'backend'
         }));
       }
     } catch (error) {

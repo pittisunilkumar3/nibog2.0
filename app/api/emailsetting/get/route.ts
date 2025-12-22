@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { EMAIL_SETTING_API } from '@/config/api';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     console.log("Server API route: Fetching email settings...");

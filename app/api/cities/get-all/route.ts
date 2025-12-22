@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     console.log("Server API route: Fetching all cities...");
@@ -18,7 +20,6 @@ export async function GET() {
           "Content-Type": "application/json",
         },
         cache: "no-store",
-        next: { revalidate: 0 }
       });
 
       console.log(`Server API route: External API response status: ${response.status} ${response.statusText}`);

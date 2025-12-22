@@ -17,23 +17,28 @@ export async function POST(request: Request) {
       );
     }
 
-    // Call the external API to create testimonial
+    // Call the backend API to create testimonial
 
+    const base = (process.env.BACKEND_URL || 'http://localhost:3004').replace(/\/$/, '');
+    const backendUrl = `${base}/api/testimonials`;
+    const forwardAuth = request.headers.get('authorization');
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/testimonials/create', {
+    const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(forwardAuth ? { 'Authorization': forwardAuth } : {})
       },
       body: JSON.stringify({
         name: testimonialData.name,
-        city_id: testimonialData.city_id || null, // Send city_id instead of city name
+        city_id: testimonialData.city_id || null,
         event_id: testimonialData.event_id,
         rating: testimonialData.rating,
         testimonial: testimonialData.testimonial,
-        date: testimonialData.date || new Date().toISOString().split('T')[0],
+        submitted_at: testimonialData.date || new Date().toISOString().split('T')[0],
         status: testimonialData.status || 'Published'
       }),
+      cache: 'no-store'
     });
 
 

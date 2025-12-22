@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BABY_GAMES_REST_API } from '@/config/api';
 
+// Configure route segment to allow dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const apiUrl = BABY_GAMES_REST_API.BASE;

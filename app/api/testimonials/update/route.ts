@@ -17,29 +17,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // Call the external API to update testimonial
+    // Call the backend API to update testimonial
 
+    const base = (process.env.BACKEND_URL || 'http://localhost:3004').replace(/\/$/, '');
+    const backendUrl = `${base}/api/testimonials/${encodeURIComponent(String(testimonialData.id))}`;
+    const forwardAuth = request.headers.get('authorization');
 
     let response;
     try {
-      response = await fetch('https://ai.nibog.in/webhook/v1/nibog/testimonials/update', {
-        method: 'POST',
+      response = await fetch(backendUrl, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...(forwardAuth ? { 'Authorization': forwardAuth } : {})
         },
         body: JSON.stringify({
-          id: testimonialData.id,
           name: testimonialData.name,
-          city: testimonialData.city || null, // City can be null as shown in the API response
+          city_id: testimonialData.city_id || null,
           event_id: testimonialData.event_id,
           rating: testimonialData.rating,
           testimonial: testimonialData.testimonial,
-          date: testimonialData.date || new Date().toISOString().split('T')[0],
+          submitted_at: testimonialData.date || new Date().toISOString().split('T')[0],
           status: testimonialData.status || 'Published'
         }),
+        cache: 'no-store'
       });
     } catch (err) {
-      console.error('Failed to reach external API:', err);
+      console.error('Failed to reach backend API:', err);
       return NextResponse.json(
         { success: false, message: 'Backend service unavailable. Please ensure the backend is running or try again later.' },
         { status: 503 }

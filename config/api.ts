@@ -105,8 +105,9 @@ export const EMAIL_SETTING_API = {
 
 // General Settings API endpoints
 export const GENERAL_SETTING_API = {
-  CREATE: "https://ai.nibog.in/webhook/v1/nibog/generalsetting/create", // POST
-  GET: "https://ai.nibog.in/webhook/v1/nibog/generalsetting/get", // GET
+  CREATE: `${API_BASE_URL}/api/general-settings`, // POST
+  GET: `${API_BASE_URL}/api/general-settings`, // GET
+  UPDATE: `${API_BASE_URL}/api/general-settings`, // PUT
 };
 
 

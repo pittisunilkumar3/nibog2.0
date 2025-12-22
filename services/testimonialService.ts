@@ -18,6 +18,8 @@ export interface Testimonial {
   updated_at?: string;
 }
 
+import { apiUrl } from './apiClient';
+
 // Extended testimonial interface for testimonials with images
 export interface TestimonialWithImage extends Testimonial {
   // Additional fields for backward compatibility
@@ -79,7 +81,7 @@ export async function getAllTestimonials(): Promise<TestimonialWithImage[]> {
     console.log("Fetching all testimonials from API");
 
     // Use the new RESTful API endpoint
-    const response = await fetch('/api/testimonials', {
+    const response = await fetch(apiUrl('/api/testimonials'), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -135,7 +137,7 @@ export async function getTestimonialById(testimonialId: string | number): Promis
     console.log(`Fetching testimonial with ID: ${testimonialId}`);
 
     // Use the new RESTful API endpoint
-    const response = await fetch(`/api/testimonials/${testimonialId}`, {
+    const response = await fetch(apiUrl(`/api/testimonials/${testimonialId}`), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

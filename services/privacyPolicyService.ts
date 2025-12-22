@@ -2,9 +2,11 @@
  * Get privacy policy from API
  * @returns Promise with privacy policy data
  */
+import { apiUrl } from './apiClient';
+
 export async function getPrivacyPolicy(): Promise<any> {
     try {
-        const response = await fetch('/api/privacy-policy', {
+        const response = await fetch(apiUrl('/api/privacy-policy'), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -73,7 +75,7 @@ export async function updatePrivacyPolicy(policyText: string): Promise<any> {
             console.warn('⚠️ No authentication token found for privacy policy update');
         }
 
-        const response = await fetch('/api/privacy-policy', {
+        const response = await fetch(apiUrl('/api/privacy-policy'), {
             method: 'PUT',
             headers,
             body: JSON.stringify({

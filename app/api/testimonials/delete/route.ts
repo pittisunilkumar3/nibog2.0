@@ -15,22 +15,25 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Call the external API to delete testimonial
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/testimonials/delete', {
-      method: 'POST',
+    // Call the backend API to delete the testimonial
+    const base = (process.env.BACKEND_URL || 'http://localhost:3004').replace(/\/$/, '');
+    const forwardAuth = request.headers.get('authorization');
+    const response = await fetch(`${base}/api/testimonials/${encodeURIComponent(String(id))}`, {
+      method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
+        ...(forwardAuth ? { 'Authorization': forwardAuth } : {}),
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ id: Number(id) }),
+      cache: 'no-store'
     });
 
     console.log(`Server API route: Delete testimonial response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('External API error:', errorText);
+      console.error('Backend API error:', errorText);
       return NextResponse.json(
-        { error: `External API returned error status: ${response.status}` },
+        { error: `Backend API returned error status: ${response.status}` },
         { status: response.status }
       );
     }

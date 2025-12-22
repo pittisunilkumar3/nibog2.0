@@ -1,5 +1,7 @@
 // Promo Code service for handling promo code API calls
 
+import { apiUrl } from './apiClient';
+
 export interface PromoCodeEvent {
   id: number;
   games_id: number[];
@@ -38,11 +40,9 @@ export interface UpdatePromoCodeRequest {
   usage_count?: number;
   minimum_purchase_amount: number;
   maximum_discount_amount?: number;
-  description?: string;
-  events: Array<{ id: number; games_id: number[] }>;
-  scope: "all" | "events" | "games";
-  is_active: boolean;
 }
+
+
 
 export interface UpdatePromoCodeResponse {
   success: boolean;
@@ -371,11 +371,7 @@ export function transformFormDataToUpdateAPI(
     usage_limit: parseInt(formData.usageLimit),
     usage_count: usageCount,
     minimum_purchase_amount: parseFloat(formData.minPurchase),
-    maximum_discount_amount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined,
-    description: formData.description || "",
-    events: events,
-    scope: scope,
-    is_active: formData.status ? formData.status === "active" : true
+    maximum_discount_amount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined
   };
 
   console.log("=== UPDATE TRANSFORMATION DEBUG ===");
@@ -633,7 +629,7 @@ export async function getAllActivePromoCodes(): Promise<PromoCodeDetail[]> {
   console.log("Fetching all active promo codes");
 
   try {
-    const response = await fetch('/api/promo-codes/get-all', {
+    const response = await fetch(apiUrl('/api/promo-codes/get-all'), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

@@ -1,5 +1,6 @@
 import { EventListItem } from '@/types';
 import { EVENT_DETAILS_API } from '@/config/api';
+import { apiUrl } from './apiClient';
 
 // Interface for the new API response structure
 export interface EventDetailsWithImage {
@@ -37,7 +38,7 @@ export async function getEventsFromBackend(): Promise<any[]> {
   try {
     console.log("Fetching events from backend API /api/events/list...");
 
-    const response = await fetch('/api/events/list', {
+  const response = await fetch(apiUrl('/api/events/list'), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -223,8 +224,8 @@ export function transformBackendEventsToListItems(events: any[]): EventListItem[
         min: s.min_age || 5,
         max: s.max_age || 84
       }));
-      minAge = Math.min(...ages.map(a => a.min));
-      maxAge = Math.max(...ages.map(a => a.max));
+      minAge = Math.min(...ages.map((a: { min: number; max: number }) => a.min));
+      maxAge = Math.max(...ages.map((a: { min: number; max: number }) => a.max));
     }
 
     // Handle image URL

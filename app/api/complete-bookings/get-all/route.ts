@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Force dynamic to allow runtime fetches and request.url usage
+export const dynamic = 'force-dynamic'
+
 // Simple in-memory cache to prevent excessive API calls
 let cachedData: any = null;
 let cacheTimestamp: number = 0;

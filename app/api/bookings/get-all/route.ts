@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic'
+
 // Simple in-memory cache to prevent excessive API calls
 let cachedData: any = null;
 let cacheTimestamp: number = 0;

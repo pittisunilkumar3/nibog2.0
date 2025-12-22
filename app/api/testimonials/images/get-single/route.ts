@@ -21,21 +21,16 @@ export async function POST(request: Request) {
       testmonial_id: requestData.testmonial_id
     };
 
-    // Forward the request to the external API
-    const apiUrl = "https://ai.nibog.in/webhook/nibog/testmonialimages/getsingle";
-
-
-    // Create an AbortController for timeout
+    // Call backend API to get testimonial by ID and extract image information
+    const base = (process.env.BACKEND_URL || "http://localhost:3004").replace(/\/$/, "");
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
+    const response = await fetch(`${base}/api/testimonials/${encodeURIComponent(String(requestData.testmonial_id))}`, {
+      method: "GET",
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store',
+      signal: controller.signal
     });
 
     clearTimeout(timeoutId);

@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic'
+
 import { USER_API, CITY_API, BABY_GAME_API } from '@/config/api';
 
 // Cache duration in milliseconds (5 minutes)

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { VENUES_REST_API } from '@/config/api';
 
+// Force dynamic to allow no-store fetches to backend during runtime
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: Request) {
   try {
     const { city_id } = await request.json();

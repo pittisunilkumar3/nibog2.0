@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     console.log("Server API route: Fetching all promo codes...");

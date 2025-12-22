@@ -1557,11 +1557,13 @@ export async function updateEventImage(
  * Returns events with venue_name, city_name, and event_games_with_slots
  * @returns Promise with array of events with full details
  */
+import { apiUrl } from './apiClient';
+
 export async function getAllEventsWithDetails(): Promise<any[]> {
   try {
     console.log('Fetching all events with details from new API');
 
-    const response = await fetch('/api/events/list', {
+    const response = await fetch(apiUrl('/api/events/list'), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

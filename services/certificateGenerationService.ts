@@ -7,6 +7,7 @@ import {
   BulkGenerationProgress,
   CertificateListItem
 } from '@/types/certificate';
+import { apiUrl } from './apiClient';
 
 /**
  * Generate a single certificate
@@ -42,7 +43,7 @@ export async function generateSingleCertificate(
 export async function getEventParticipants(eventId: number): Promise<EventParticipantsResponse> {
   try {
     console.log('Fetching participants for event ID:', eventId);
-    const response = await fetch(`/api/events/participants-for-certificates?event_id=${eventId}`, {
+    const response = await fetch(apiUrl(`/api/events/participants-for-certificates?event_id=${eventId}`), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

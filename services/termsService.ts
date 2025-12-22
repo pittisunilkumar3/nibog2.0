@@ -2,10 +2,13 @@
  * Terms service: fetch and update terms & conditions via internal API routes
  */
 
+import { apiUrl } from './apiClient';
+
 export async function getTerms(): Promise<any> {
   try {
     // First attempt
-    let response = await fetch('/api/terms', {
+
+    let response = await fetch(apiUrl('/api/terms'), {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store'
@@ -17,7 +20,7 @@ export async function getTerms(): Promise<any> {
       console.warn('getTerms: initial fetch failed, retrying once. Status:', response.status, 'BodySample:', text.substring ? text.substring(0,120) : text);
       // small backoff
       await new Promise(r => setTimeout(r, 250));
-      response = await fetch('/api/terms', { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' });
+      response = await fetch(apiUrl('/api/terms'), { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' });
     }
 
     if (!response.ok) {
@@ -100,7 +103,7 @@ export async function updateTerms(termsText: string): Promise<any> {
     const payload = { terms_text: termsText };
     console.log('updateTerms: sending payload (truncated):', JSON.stringify(payload).substring(0,200));
 
-    const response = await fetch('/api/terms', {
+    const response = await fetch(apiUrl('/api/terms'), {
       method: 'PUT',
       headers,
       body: JSON.stringify(payload)
