@@ -39,15 +39,16 @@ export function extractFilename(filePath: string): string {
  * @returns boolean - true if safe to delete
  */
 export function isSafeToDelete(filePath: string): boolean {
-  // Only allow deletion of files in upload directories
+  // Only allow deletion of files in upload directories and homepage hero images
   const allowedPaths = [
     './upload/eventimages/',
     './upload/gamesimage/',
     './upload/gameimages/',
     'upload/eventimages/',
     'upload/gamesimage/',
-    'upload/gameimages/'
+    'upload/gameimages/',
+    './upload/blog/home/',
+    'upload/blog/home/'
   ]
-  
   return allowedPaths.some(allowedPath => filePath.includes(allowedPath))
 }

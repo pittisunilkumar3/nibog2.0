@@ -36,8 +36,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create directory if it doesn't exist
-    const uploadDir = join(process.cwd(), "public", "images", "blog", "home");
+    // Create directory if it doesn't exist (use /upload/blog/home for production safety)
+    const uploadDir = join(process.cwd(), "upload", "blog", "home");
     if (!existsSync(uploadDir)) {
       mkdirSync(uploadDir, { recursive: true });
     }
@@ -60,7 +60,8 @@ export async function POST(request: Request) {
 
       uploadedFiles.push({
         filename,
-        url: `/images/blog/home/${filename}`,
+        // Return the API path for serving
+        url: `/api/serve-image?path=upload/blog/home/${filename}`,
         originalName: file.name,
         size: file.size,
       });

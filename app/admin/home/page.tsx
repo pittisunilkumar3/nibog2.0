@@ -33,9 +33,13 @@ export default function HomeSection() {
       setImageMeta(validItems)
       setImageUrls(
         validItems.map((img: any) => {
-          // The new API should return correct paths, but we'll keep the sanitization just in case
-          const rel = img.image_path.replace(/^public/, "")
-          return rel.startsWith("/") ? rel : "/" + rel
+          // If the path is already an API path, use as is; otherwise, build the API path
+          if (img.image_path.startsWith('/api/serve-image')) {
+            return img.image_path
+          }
+          // If the path is just a filename, build the API path
+          const filename = img.image_path.split('/').pop()
+          return `/api/serve-image?path=upload/blog/home/${filename}`
         })
       )
 

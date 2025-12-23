@@ -21,14 +21,18 @@ export async function GET(request: NextRequest) {
     const cleanPath = path.replace(/^\.\//, '');
     const filePath = join(process.cwd(), cleanPath);
 
-    // Security check: ensure path is within upload directory
+    // Security check: ensure path is within upload directory (including /upload/blog/home)
     const uploadDir = join(process.cwd(), 'upload');
-    if (!filePath.startsWith(uploadDir)) {
+    const blogHomeDir = join(process.cwd(), 'upload', 'blog', 'home');
+    if (!filePath.startsWith(uploadDir) && !filePath.startsWith(blogHomeDir)) {
       return NextResponse.json(
         { error: 'Invalid image path' },
         { status: 403 }
       );
     }
+// Usage:
+// To serve a homepage hero image, use:
+// /api/serve-image?path=upload/blog/home/filename.jpg
 
     // Check if file exists
     if (!existsSync(filePath)) {
