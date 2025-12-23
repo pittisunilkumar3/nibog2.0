@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log(`=== DELETING PENDING BOOKING ===`);
     
     // Parse the request body to get transaction ID
     const { transaction_id } = await request.json();
-    console.log(`Transaction ID: ${transaction_id}`);
 
     if (!transaction_id) {
       return NextResponse.json(
@@ -35,7 +33,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("✅ Pending booking deleted successfully");
 
     return NextResponse.json({
       success: true,

@@ -13,7 +13,6 @@ export async function POST(request: Request) {
     }
 
     const apiUrl = VENUES_REST_API.BASE;
-    console.log(`📡 Fetching venues by city ${city_id} from all venues: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
       method: "GET",

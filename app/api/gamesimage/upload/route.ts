@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
     // Return the file path relative to the upload directory
     const relativePath = `./upload/gamesimage/${filename}`;
     
-    console.log(`Game image uploaded successfully: ${relativePath}`);
 
     // Revalidate all game-related pages to show the new image
     try {

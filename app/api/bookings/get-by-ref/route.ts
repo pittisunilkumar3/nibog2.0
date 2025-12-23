@@ -12,7 +12,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Fetching booking details for reference:', booking_ref_id);
 
     // Call the external API to get booking details by reference
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/tickect/booking_ref/details', {

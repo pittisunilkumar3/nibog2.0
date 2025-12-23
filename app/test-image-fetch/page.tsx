@@ -17,7 +17,6 @@ export default function TestImageFetch() {
     setResult(null)
 
     try {
-      console.log(`Testing image fetch for event ID: ${eventId}`)
       
       const response = await fetch('/api/eventimages/get', {
         method: 'POST',
@@ -29,7 +28,6 @@ export default function TestImageFetch() {
         }),
       })
 
-      console.log(`Response status: ${response.status}`)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -37,7 +35,6 @@ export default function TestImageFetch() {
       }
 
       const data = await response.json()
-      console.log('API response:', data)
       setResult(data)
 
     } catch (err: any) {

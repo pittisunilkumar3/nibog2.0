@@ -13,7 +13,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Server API route: Fetching games for age: ${ageInMonths} months`);
 
     // Forward the request to the external API with the correct URL
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/game/get-by-age";

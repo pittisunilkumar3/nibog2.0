@@ -45,7 +45,6 @@ export default function DebugCKEditorPage() {
               { name: 'paragraph', items: ['NumberedList', 'BulletedList'] }
             ]
           })
-          console.log('Test editor created:', editor)
         }
       } catch (error) {
         console.error('Error creating test editor:', error)

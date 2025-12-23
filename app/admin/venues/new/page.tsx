@@ -87,17 +87,15 @@ export default function NewVenuePage() {
         venue_name: name,
         city_id: Number(selectedCity.id),
         address: address,
-        capacity: capacityValue,
+        // Ensure capacity is always a number (createVenue expects number)
+        capacity: capacityValue ?? 0,
         is_active: isActive
       }
 
-      console.log("Creating venue with data:", venueData)
 
       try {
         // Call the API to create the venue
         const newVenue = await createVenue(venueData)
-
-        console.log("Venue created successfully:", newVenue)
 
         // Show success message
         toast({

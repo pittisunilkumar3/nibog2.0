@@ -145,7 +145,6 @@
             div.className = `log ${type}`;
             div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
             results.appendChild(div);
-            console.log(message);
         }
 
         function setStatus(message, type = 'info') {

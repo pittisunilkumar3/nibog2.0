@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
     // Return the public URL
     const publicUrl = `/images/${folder}/${filename}`;
 
-    console.log(`File uploaded successfully: ${publicUrl}`);
 
     return NextResponse.json({
       success: true,

@@ -15,9 +15,7 @@ export default function TestFooterPage() {
     setIsLoading(true)
     setError(null)
     try {
-      console.log('🧪 Testing Footer API...')
       const data = await getFooterSettingWithFallback()
-      console.log('✅ Footer data received:', data)
       setFooterData(data)
     } catch (err) {
       console.error('❌ Footer API test failed:', err)

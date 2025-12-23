@@ -48,7 +48,6 @@ export async function POST(request: Request) {
       data = JSON.parse(responseText);
     } catch (parseError) {
       console.error("Server API route: Error parsing JSON response:", parseError);
-      console.log("Server API route: Raw response text:", responseText);
       
       // If parsing fails but status is OK, assume success
       if (response.ok) {

@@ -36,7 +36,6 @@ export async function GET(
     }
 
     const slotDataArray = await response.json();
-    console.log('Slot data retrieved:', slotDataArray);
 
     // The API returns an array, so we need to get the first item
     if (!slotDataArray || !Array.isArray(slotDataArray) || slotDataArray.length === 0) {

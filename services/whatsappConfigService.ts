@@ -34,7 +34,7 @@ export function getWhatsAppSettings(): WhatsAppSettings {
   }
 
   if (settings.debugMode) {
-    console.log('📱 WhatsApp Settings:', {
+    console.debug('📱 WhatsApp Settings:', {
       ...settings,
       apiToken: settings.apiToken ? '***HIDDEN***' : 'NOT_SET'
     });
@@ -132,7 +132,7 @@ export function logWhatsAppEvent(
 
   // In production, you might want to send this to a logging service
   if (process.env.NODE_ENV === 'development') {
-    console.log('📱 WhatsApp Event:', logData);
+    console.debug('📱 WhatsApp Event:', logData);
   }
 
   // You can extend this to send to external monitoring services

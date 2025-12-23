@@ -932,7 +932,6 @@ export async function POST(request: Request) {
 
             // Send admin notification email
             try {
-              console.log(`📧 Sending admin notification email...`);
               const { sendAdminNotificationEmail } = await import('@/services/emailNotificationService');
 
               const adminNotificationResult = await sendAdminNotificationEmail({

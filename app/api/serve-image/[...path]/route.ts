@@ -11,7 +11,6 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
-    console.log('IMAGE REQUEST:', params.path);
     
     if (!params.path || params.path.length === 0) {
       return new NextResponse('Image path required', { status: 400 });
@@ -30,7 +29,6 @@ export async function GET(
     }
     
     if (!existsSync(fullPath)) {
-      console.log('File not found:', fullPath);
       return new NextResponse('Image not found', { status: 404 });
     }
 
@@ -43,7 +41,6 @@ export async function GET(
     else if (ext === 'webp') contentType = 'image/webp';
     else if (ext === 'svg') contentType = 'image/svg+xml';
 
-    console.log('Serving image:', fullPath, 'Size:', fileBuffer.length);
 
     // Convert Buffer to Uint8Array for Response compatibility
     const uint8Array = new Uint8Array(fileBuffer);

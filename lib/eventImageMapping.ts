@@ -145,7 +145,6 @@ export async function fetchEventImagesWithMapping(eventId: number): Promise<any[
  */
 export function clearMappingCache(): void {
   mappingCache.clear();
-  console.log('Event image mapping cache cleared');
 }
 
 /**

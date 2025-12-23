@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const apiUrl = VENUES_REST_API.BASE;
-    console.log(`📡 Fetching all venues with city from: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
       method: "GET",

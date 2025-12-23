@@ -50,7 +50,6 @@ export interface EventWithGames {
 import { apiUrl } from './apiClient';
 
 export async function getAllEventsWithGames(): Promise<EventWithGames[]> {
-  console.log("Fetching all events with games");
 
   try {
     // Use our internal API route on the client, call backend directly on server
@@ -61,8 +60,6 @@ export async function getAllEventsWithGames(): Promise<EventWithGames[]> {
       },
     });
 
-    console.log(`Get all events with games response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -70,7 +67,6 @@ export async function getAllEventsWithGames(): Promise<EventWithGames[]> {
     }
 
     const data = await response.json();
-    console.log("Retrieved events with games:", data);
 
     return data;
   } catch (error) {

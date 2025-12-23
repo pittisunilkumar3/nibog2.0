@@ -56,7 +56,6 @@ export async function POST(request: Request) {
 
     // Forward the request to the external API
     const apiUrl = `${backendUrl}/api/user/register`;
-    // console.log("Payload:", JSON.stringify(backendPayload, null, 2)); // Careful with logging passwords
 
     const response = await fetch(apiUrl, {
       method: "POST",

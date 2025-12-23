@@ -911,8 +911,6 @@ function generateCertificateHTML(
 
   // Check if we have new background_style or need to use legacy background_image
   if (template.background_style && template.background_style.type) {
-    console.log('Using new background style:', template.background_style);
-
     if (template.background_style.type === 'image') {
       const imageUrl = template.background_style.image_url || template.background_image;
       if (imageUrl && imageUrl !== 'null' && imageUrl !== null) {

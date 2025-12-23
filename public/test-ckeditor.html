@@ -13,11 +13,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ckeditor/4.25.1/ckeditor.js"></script>
     <script>
-        console.log('Loading CKEditor...');
         
         window.addEventListener('load', function() {
-            console.log('Page loaded, initializing CKEditor');
-            console.log('CKEDITOR available:', !!window.CKEDITOR);
             
             if (window.CKEDITOR) {
                 try {
@@ -46,7 +43,6 @@
                             { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] }
                         ]
                     });
-                    console.log('CKEditor initialized successfully');
                 } catch (error) {
                     console.error('Error initializing CKEditor:', error);
                 }

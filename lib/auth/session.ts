@@ -126,7 +126,6 @@ export function setSession(token: string) {
     return;
   }
   try {
-    console.log('[Session] Setting session token');
     localStorage.setItem(SESSION_COOKIE_NAME, token);
     
     // Sync with cookies for server-side access - set with proper expiry
@@ -137,7 +136,6 @@ export function setSession(token: string) {
     
     // Verify cookie was set
     const cookieSet = document.cookie.split(';').some(c => c.trim().startsWith(`${SESSION_COOKIE_NAME}=`));
-    console.log('[Session] Cookie set successfully:', cookieSet);
   } catch (error) {
     console.error('Error setting session:', error);
   }
@@ -175,7 +173,7 @@ export function clearSession() {
     if (stillExists) {
       console.warn('Warning: Cookie may not have been fully cleared');
     } else {
-      
+
     }
   } catch (error) {
     console.error('Error clearing session:', error);

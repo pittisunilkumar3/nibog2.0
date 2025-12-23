@@ -8,10 +8,10 @@ export function registerServiceWorker() {
     window.addEventListener('load', function() {
       navigator.serviceWorker.register('/sw.js').then(
         function(registration) {
-          console.log('Service Worker registration successful with scope: ', registration.scope);
+          // Service Worker registered successfully (silenced in production)
         },
-        function(err) {
-          console.log('Service Worker registration failed: ', err);
+        function(/* err */) {
+          // Service Worker registration failed (suppressed in production)
         }
       );
     });

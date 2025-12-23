@@ -70,7 +70,6 @@ export async function updatePrivacyPolicy(policyText: string): Promise<any> {
 
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
-            console.log('✅ Using authentication token for privacy policy update');
         } else {
             console.warn('⚠️ No authentication token found for privacy policy update');
         }

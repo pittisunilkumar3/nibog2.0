@@ -14,7 +14,6 @@ export async function POST(request: Request) {
     }
 
     const apiUrl = `${BABY_GAMES_REST_API.BASE}/${id}`;
-    console.log(`📡 Fetching baby game ${id} from: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
       method: "GET",

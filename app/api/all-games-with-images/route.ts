@@ -8,7 +8,6 @@ export const revalidate = 0;
 export async function GET(request: NextRequest) {
   try {
     const apiUrl = BABY_GAMES_REST_API.BASE;
-    console.log(`📡 Fetching ALL games for frontend from: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
       method: 'GET',

@@ -68,7 +68,6 @@ export async function updateRefundPolicy(policyText: string): Promise<any> {
 
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
-            console.log('✅ Using authentication token for refund policy update');
         } else {
             console.warn('⚠️ No authentication token found for refund policy update');
         }

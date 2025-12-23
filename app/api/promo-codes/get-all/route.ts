@@ -21,7 +21,6 @@ export async function GET() {
       });
 
       clearTimeout(timeoutId);
-      console.log(`Server API route: Get all promo codes response status: ${response.status}`);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -61,7 +60,6 @@ export async function GET() {
 
           // If alternative URL also fails with webhook not registered, return empty array
           if (alternativeResponse.status === 404 && altErrorText.includes("webhook") && altErrorText.includes("not registered")) {
-            console.log("Server API route: Alternative webhook also not registered - returning empty array");
             return NextResponse.json([], {
               status: 200,
               headers: {

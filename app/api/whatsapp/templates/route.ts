@@ -4,7 +4,6 @@ import { getWhatsAppSettings } from '@/services/whatsappConfigService';
 
 export async function GET() {
   try {
-    console.log('📱 WhatsApp Templates API: Fetching available templates');
 
     // Check if WhatsApp is enabled
     const settings = getWhatsAppSettings();
@@ -22,7 +21,6 @@ export async function GET() {
     const result = await getWhatsAppTemplates();
 
     if (result.success) {
-      console.log(`✅ WhatsApp Templates API: Found ${result.templates?.length || 0} templates`);
       return NextResponse.json({
         success: true,
         templates: result.templates,

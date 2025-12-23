@@ -23,7 +23,6 @@ export async function POST(request: Request) {
     }
 
     const apiUrl = `${backendUrl}/api/employee/login`;
-    console.log("Super Admin Proxy: Calling API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: 'POST',

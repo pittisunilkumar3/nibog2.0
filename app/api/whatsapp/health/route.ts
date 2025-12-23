@@ -3,7 +3,6 @@ import { checkWhatsAppHealth, whatsappCircuitBreaker } from '@/services/whatsapp
 
 export async function GET() {
   try {
-    console.log('📱 WhatsApp Health API: Checking WhatsApp integration health');
 
     // Check WhatsApp health
     const healthResult = await checkWhatsAppHealth();

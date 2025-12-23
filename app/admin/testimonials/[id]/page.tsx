@@ -26,6 +26,8 @@ interface Testimonial {
   name: string;
   city: string;
   event_id: number;
+  // Optional event_name may be provided by API for convenience
+  event_name?: string;
   rating: number;
   testimonial: string;
   submitted_at: string;
@@ -133,7 +135,6 @@ export default function TestimonialDetailPage({ params }: Props) {
       }
 
       const data = await response.json()
-      console.log('Delete response:', data)
 
       if (!data.success) {
         throw new Error(data.message || 'Delete operation failed')

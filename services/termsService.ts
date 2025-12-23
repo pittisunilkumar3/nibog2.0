@@ -94,14 +94,12 @@ export async function updateTerms(termsText: string): Promise<any> {
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('✅ Using authentication token for terms update');
     } else {
       console.warn('⚠️ No authentication token found for terms update');
     }
 
     // Send terms_text to match backend API expectation (just like refund-policy sends policy_text)
     const payload = { terms_text: termsText };
-    console.log('updateTerms: sending payload (truncated):', JSON.stringify(payload).substring(0,200));
 
     const response = await fetch(apiUrl('/api/terms'), {
       method: 'PUT',
