@@ -60,10 +60,20 @@ fi
 
 # Install deps and build
 echo "[deploy] Installing dependencies..."
-pnpm install --prefer-offline
+# capture full install logs for debugging
+pnpm install --prefer-offline 2>&1 | tee -a "$REPO_ROOT/logs/deploy-install.log"
+if [ ${PIPESTATUS[0]:-0} -ne 0 ]; then
+  echo "[deploy][error] pnpm install failed. See logs: $REPO_ROOT/logs/deploy-install.log" >&2
+  exit 10
+fi
 
 echo "[deploy] Building project (NEXT_PUBLIC_* envvars must be set before build)..."
-pnpm build
+# capture build logs for debugging
+pnpm build 2>&1 | tee -a "$REPO_ROOT/logs/deploy-build.log"
+if [ ${PIPESTATUS[0]:-0} -ne 0 ]; then
+  echo "[deploy][error] pnpm build failed. See logs: $REPO_ROOT/logs/deploy-build.log" >&2
+  exit 11
+fi
 
 # Start or reload pm2 process
 APP_NAME="nibog-platform"
