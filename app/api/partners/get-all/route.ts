@@ -6,26 +6,15 @@ export async function GET() {
   try {
 
     const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
-    const primaryApiUrl = `${BACKEND_URL}/api/partners/get-all`;
-    const fallbackApiUrl = `${BACKEND_URL}/api/partners`;
+    const apiUrl = `${BACKEND_URL}/api/partners`;
 
-    let response = await fetch(primaryApiUrl, {
+    const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
       cache: "no-store",
     });
-
-    // If primary endpoint fails, try fallback
-    if (!response.ok) {
-      console.warn(`Server API route: Primary endpoint failed with status ${response.status}, trying fallback: ${fallbackApiUrl}`);
-      response = await fetch(fallbackApiUrl, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-      });
-    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -37,7 +26,6 @@ export async function GET() {
     }
 
     const data = await response.json();
-    
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
     console.error("Server API route: Error fetching partners:", error);

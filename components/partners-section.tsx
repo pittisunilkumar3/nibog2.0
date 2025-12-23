@@ -5,9 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { useEffect, useState, memo } from "react"
 
-// Cache configuration
-const PARTNERS_CACHE_KEY = 'nibog_partners_data';
-const PARTNERS_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
 
 interface Partner {
   id: number
@@ -24,35 +22,15 @@ function PartnersSectionComponent() {
   useEffect(() => {
     const fetchPartners = async () => {
       try {
-        // Check sessionStorage cache first
-        const cached = sessionStorage.getItem(PARTNERS_CACHE_KEY);
-        if (cached) {
-          const { data, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < PARTNERS_CACHE_EXPIRY) {
-            setPartners(data);
-            setLoading(false);
-            return;
-          }
-        }
-
         const response = await fetch('/api/partners/get-all', {
-          next: { revalidate: 300 }, // Revalidate every 5 minutes
+          cache: 'no-store',
         })
         if (response.ok) {
           const payload = await response.json()
-          // payload may be an array or an object { success, data }
           const arr = Array.isArray(payload) ? payload : (payload && payload.data) ? payload.data : []
-          // Filter only active partners and sort by display_priority
           const activePartners = arr
             .filter((partner: Partner) => partner.status === 'Active')
             .sort((a: Partner, b: Partner) => a.display_priority - b.display_priority)
-
-          // Cache the result
-          sessionStorage.setItem(PARTNERS_CACHE_KEY, JSON.stringify({
-            data: activePartners,
-            timestamp: Date.now()
-          }));
-
           setPartners(activePartners)
         } else {
           console.warn('Partners fetch returned non-ok status:', response.status)
@@ -63,7 +41,6 @@ function PartnersSectionComponent() {
         setLoading(false)
       }
     }
-
     fetchPartners()
   }, [])
 
