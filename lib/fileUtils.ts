@@ -50,7 +50,9 @@ export function isSafeToDelete(filePath: string): boolean {
     './upload/blog/home/',
     'upload/blog/home/',
     './upload/partner/',
-    'upload/partner/'
+    'upload/partner/',
+    './upload/babygames/',
+    'upload/babygames/'
   ]
   return allowedPaths.some(allowedPath => filePath.includes(allowedPath))
 }
