@@ -21,10 +21,11 @@ export async function GET(request: NextRequest) {
     const cleanPath = path.replace(/^\.\//, '');
     const filePath = join(process.cwd(), cleanPath);
 
-    // Security check: ensure path is within upload directory (including /upload/blog/home)
+    // Security check: ensure path is within upload directory (including /upload/blog/home and /upload/partner)
     const uploadDir = join(process.cwd(), 'upload');
     const blogHomeDir = join(process.cwd(), 'upload', 'blog', 'home');
-    if (!filePath.startsWith(uploadDir) && !filePath.startsWith(blogHomeDir)) {
+    const partnerDir = join(process.cwd(), 'upload', 'partner');
+    if (!filePath.startsWith(uploadDir) && !filePath.startsWith(blogHomeDir) && !filePath.startsWith(partnerDir)) {
       return NextResponse.json(
         { error: 'Invalid image path' },
         { status: 403 }

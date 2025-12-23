@@ -136,9 +136,8 @@ export default function PartnersPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('type', 'partner')
 
-      const response = await fetch('/api/upload', {
+      const response = await fetch('/api/partners/upload-image', {
         method: 'POST',
         body: formData,
       })
