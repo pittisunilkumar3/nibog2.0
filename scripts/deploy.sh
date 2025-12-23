@@ -60,7 +60,7 @@ fi
 
 # Install deps and build
 echo "[deploy] Installing dependencies..."
-pnpm install --prefer-offline --frozen-lockfile
+pnpm install --prefer-offline
 
 echo "[deploy] Building project (NEXT_PUBLIC_* envvars must be set before build)..."
 pnpm build
