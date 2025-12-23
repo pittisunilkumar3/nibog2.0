@@ -66,9 +66,14 @@ if [ ${PIPESTATUS[0]:-0} -ne 0 ]; then
   echo "[deploy][error] pnpm install failed. See logs: $REPO_ROOT/logs/deploy-install.log" >&2
   exit 10
 fi
+# Deduplicate packages to avoid multiple React instances (fixes `useContext` null errors)
+echo "[deploy] Running pnpm dedupe to avoid duplicate React versions..."
+pnpm dedupe 2>&1 | tee -a "$REPO_ROOT/logs/deploy-install.log" || true
 
-echo "[deploy] Building project (NEXT_PUBLIC_* envvars must be set before build)..."
-# capture build logs for debugging
+# Log pnpm why react for debugging
+pnpm why react 2>&1 | tee -a "$REPO_ROOT/logs/deploy-install.log" || true
+echo "[deploy] Building project (NEXT_PUBLIC_* envvars must be set before build)..."# ensure clean build
+rm -rf .next# capture build logs for debugging
 pnpm build 2>&1 | tee -a "$REPO_ROOT/logs/deploy-build.log"
 if [ ${PIPESTATUS[0]:-0} -ne 0 ]; then
   echo "[deploy][error] pnpm build failed. See logs: $REPO_ROOT/logs/deploy-build.log" >&2
