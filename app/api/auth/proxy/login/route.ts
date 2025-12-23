@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
       res.cookies.set('superadmin-token', JSON.stringify(sessionData), {
         httpOnly: false, // Allow client access for authentication
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       // Also set the auth token separately for API calls
       res.cookies.set('auth-token', token, {
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days

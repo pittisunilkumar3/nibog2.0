@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     // Set HTTP-only cookie
     response.cookies.set(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
       // 30 days

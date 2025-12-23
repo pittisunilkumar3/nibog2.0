@@ -96,9 +96,11 @@ export async function POST(request: Request) {
     res.headers.set('authorization', `Bearer ${token}`);
 
     // Set the session cookie
+    // Don't set secure flag on server-side cookies - let the reverse proxy/HTTPS termination handle it
+    // Setting secure: true on HTTP sites prevents browsers from accepting the cookie
     res.cookies.set('nibog-session', token, {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // Changed: Remove secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 7  // 7 days
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
       is_superadmin: false
     }), {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // Changed: Remove secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 7  // 7 days

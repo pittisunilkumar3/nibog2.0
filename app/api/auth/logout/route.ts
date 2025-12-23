@@ -11,7 +11,7 @@ export async function POST() {
     // Clear the user session cookie - httpOnly: false to match how it was set
     response.cookies.set('nibog-session', '', {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
       maxAge: 0,
@@ -21,7 +21,7 @@ export async function POST() {
     // Clear the user-token cookie (for backward compatibility)
     response.cookies.set('user-token', '', {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
       maxAge: 0,
@@ -31,7 +31,7 @@ export async function POST() {
     // Clear the superadmin token cookie
     response.cookies.set('superadmin-token', '', {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
       maxAge: 0,
@@ -41,7 +41,7 @@ export async function POST() {
     // Clear legacy 'user' cookie if it exists
     response.cookies.set('user', '', {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
       maxAge: 0,

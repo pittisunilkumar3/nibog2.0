@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       name: 'superadmin-token',
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
       sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 24 // 1 day
