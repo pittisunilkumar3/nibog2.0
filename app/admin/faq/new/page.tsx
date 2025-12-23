@@ -110,11 +110,7 @@ export default function NewFAQPage() {
         status: formData.status
       }
 
-      console.log('📝 Submitting FAQ with payload:', payload)
-      
       const result = await createFAQ(payload)
-      
-      console.log('✅ FAQ created successfully:', result)
       
       toast({
         title: "FAQ Created Successfully! ✅",

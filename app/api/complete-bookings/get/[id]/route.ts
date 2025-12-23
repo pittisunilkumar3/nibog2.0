@@ -6,11 +6,9 @@ export async function GET(
 ) {
   try {
     const bookingId = params.id;
-    console.log(`Server API route: Fetching complete booking with ID: ${bookingId}`);
 
     // Forward the request to the external API
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get-all";
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -19,8 +17,6 @@ export async function GET(
       },
       cache: "no-store"
     });
-
-    console.log(`Server API route: Get complete booking response status: ${response.status}`);
 
     if (!response.ok) {
       console.error(`Server API route: API request failed with status ${response.status}`);
@@ -31,7 +27,6 @@ export async function GET(
     }
 
     const data = await response.json();
-    console.log(`Server API route: Received ${Array.isArray(data) ? data.length : 'unknown'} complete bookings from API`);
 
     if (!Array.isArray(data)) {
       console.error("Server API route: API response is not an array:", typeof data);
@@ -77,14 +72,12 @@ export async function GET(
     }
 
     if (!result) {
-      console.log(`Server API route: Complete booking with ID ${bookingId} not found`);
       return NextResponse.json(
         { error: "Complete booking not found" },
         { status: 404 }
       );
     }
 
-    console.log(`Server API route: Found complete booking with ID ${bookingId}`);
     return NextResponse.json(result, { status: 200 });
 
   } catch (error: any) {

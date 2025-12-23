@@ -13,14 +13,10 @@ export async function deleteFile(filePath: string): Promise<boolean> {
     const cleanPath = filePath.startsWith('./') ? filePath.substring(2) : filePath
     const absolutePath = join(process.cwd(), cleanPath)
     
-    console.log(`Attempting to delete file: ${absolutePath}`)
-    
     await unlink(absolutePath)
-    console.log(`Successfully deleted file: ${absolutePath}`)
     return true
   } catch (error: any) {
     if (error.code === 'ENOENT') {
-      console.log(`File not found (already deleted?): ${filePath}`)
       return false
     }
     console.error(`Error deleting file ${filePath}:`, error)

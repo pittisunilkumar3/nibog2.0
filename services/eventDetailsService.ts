@@ -36,7 +36,6 @@ export interface EventDetailsWithImage {
  */
 export async function getEventsFromBackend(): Promise<any[]> {
   try {
-    console.log("Fetching events from backend API /api/events/list...");
 
   const response = await fetch(apiUrl('/api/events/list'), {
       method: 'GET',
@@ -51,9 +50,8 @@ export async function getEventsFromBackend(): Promise<any[]> {
     }
 
     const data = await response.json();
-    console.log(`Successfully fetched ${Array.isArray(data) ? data.length : 'unknown'} events from backend`);
 
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? data : []; 
   } catch (error) {
     console.error('Error fetching events from backend:', error);
     throw error;
@@ -66,7 +64,6 @@ export async function getEventsFromBackend(): Promise<any[]> {
  */
 export async function getEventDetailsWithImages(): Promise<EventDetailsWithImage[]> {
   try {
-    console.log("Fetching events with images from API...");
 
     const response = await fetch(EVENT_DETAILS_API.GET_WITH_IMAGES, {
       method: 'GET',
@@ -81,9 +78,8 @@ export async function getEventDetailsWithImages(): Promise<EventDetailsWithImage
     }
 
     const data = await response.json();
-    console.log(`Successfully fetched ${Array.isArray(data) ? data.length : 'unknown'} events with images`);
 
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? data : []; 
   } catch (error) {
     console.error('Error fetching events with images:', error);
     throw error;
@@ -292,7 +288,6 @@ export async function getAllEventsWithImagesFormatted(): Promise<EventListItem[]
     console.error('Error getting formatted events from backend:', error);
     // Fallback to old API if backend fails
     try {
-      console.log('Falling back to old event details API...');
       const eventDetails = await getEventDetailsWithImages();
       return transformEventDetailsToListItems(eventDetails);
     } catch (fallbackError) {

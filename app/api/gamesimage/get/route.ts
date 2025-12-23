@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    console.log('Game images fetch request:', body);
 
     // Validate required fields
     const { game_id } = body;
@@ -21,9 +19,6 @@ export async function POST(request: NextRequest) {
       game_id: parseInt(game_id)
     };
 
-    console.log('Fetching game images from external API:', apiPayload);
-    console.log('External API URL:', 'https://ai.nibog.in/webhook/nibog/gamesimage/get');
-
     // Fetch from external API
     const apiResponse = await fetch('https://ai.nibog.in/webhook/nibog/gamesimage/get', {
       method: 'POST',
@@ -32,8 +27,6 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(apiPayload),
     });
-
-    console.log(`External API response status: ${apiResponse.status}`);
 
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
@@ -49,10 +42,6 @@ export async function POST(request: NextRequest) {
     }
 
     const apiResult = await apiResponse.json();
-    console.log('External API success:', {
-      status: apiResponse.status,
-      result: apiResult
-    });
 
     return NextResponse.json(apiResult, { status: 200 });
 

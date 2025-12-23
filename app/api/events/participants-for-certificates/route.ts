@@ -13,12 +13,9 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    console.log(`Fetching participants for event ID: ${eventId}`);
     
     // Try the new API endpoint first
     const apiUrl = `https://ai.nibog.in/webhook/v1/nibog/events/participants?event_id=${eventId}`;
-    console.log(`Using API URL: ${apiUrl}`);
     
     const response = await fetch(
       apiUrl,
@@ -39,14 +36,6 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await response.json();
-
-    // Log the response structure for debugging
-    console.log('Participants API response structure:', {
-      resultType: typeof result,
-      isArray: Array.isArray(result),
-      length: Array.isArray(result) ? result.length : 'N/A',
-      hasParticipants: Array.isArray(result) && result.length > 0 ? 'participants' in result[0] : 'N/A'
-    });
 
     return NextResponse.json(result);
 

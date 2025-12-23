@@ -6,8 +6,6 @@ export async function POST(request: Request) {
     // Parse the request body
     const eventData = await request.json();
 
-    console.log("Server API route: Updating event:", eventData);
-
     // Validate required fields
     if (!eventData.id) {
       return NextResponse.json(
@@ -46,8 +44,6 @@ export async function POST(request: Request) {
 
     // Forward the request to the external API with the correct URL
     const apiUrl = EVENT_API.UPDATE;
-    console.log("Server API route: Calling API URL:", apiUrl);
-    console.log("Server API route: Request payload:", JSON.stringify(eventData, null, 2));
 
     // Validate that games array is properly formatted
     if (!eventData.games.every((game: any) =>
@@ -58,7 +54,6 @@ export async function POST(request: Request) {
       typeof game.max_participants === 'number'
     )) {
       console.error("Server API route: Invalid game data format in request");
-      console.log("Server API route: Games data:", JSON.stringify(eventData.games, null, 2));
     }
 
     const response = await fetch(apiUrl, {
@@ -70,15 +65,11 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Update event response status: ${response.status}`);
-
     if (!response.ok) {
       // If the first attempt fails, try with a different URL format
-      console.log("Server API route: First attempt failed, trying with alternative URL format");
 
       // Try with webhook instead of webhook-test as a fallback
       const alternativeUrl = "https://ai.nibog.in/webhook/v1/nibog/event-game-slots/update";
-      console.log("Server API route: Trying alternative URL:", alternativeUrl);
 
       const alternativeResponse = await fetch(alternativeUrl, {
         method: "POST",
@@ -89,7 +80,6 @@ export async function POST(request: Request) {
         cache: "no-store",
       });
 
-      console.log(`Server API route: Alternative update event response status: ${alternativeResponse.status}`);
 
       if (!alternativeResponse.ok) {
         const errorText = await alternativeResponse.text();
@@ -102,12 +92,10 @@ export async function POST(request: Request) {
 
       // Get the response data from the alternative URL
       const responseText = await alternativeResponse.text();
-      console.log(`Server API route: Raw response from alternative URL: ${responseText}`);
 
       try {
         // Try to parse the response as JSON
         const responseData = JSON.parse(responseText);
-        console.log("Server API route: Updated event:", responseData);
 
         return NextResponse.json(responseData, { status: 200 });
       } catch (parseError) {
@@ -125,12 +113,10 @@ export async function POST(request: Request) {
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
 
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: Updated event:", responseData);
 
       return NextResponse.json(responseData, { status: 200 });
     } catch (parseError) {

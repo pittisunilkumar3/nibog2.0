@@ -5,11 +5,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    console.log("Server API route: Fetching general settings...");
 
     // Call the backend API to get general settings
     const apiUrl = GENERAL_SETTING_API.GET;
-    console.log("Server API route: Calling backend API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -18,8 +16,6 @@ export async function GET() {
       },
       cache: "no-store",
     });
-
-    console.log(`Server API route: Get general settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -32,12 +28,10 @@ export async function GET() {
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
     
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: Retrieved general settings:", responseData);
       
       return NextResponse.json(responseData, { status: 200 });
     } catch (parseError) {

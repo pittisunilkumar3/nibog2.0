@@ -16,10 +16,8 @@ export default function TestGame9Images() {
     setResult(null)
 
     try {
-      console.log('🔍 Testing fetchGameImages(9)...')
       
       const images = await fetchGameImages(9)
-      console.log('✅ Game images fetched:', images)
       
       setResult({
         success: true,
@@ -41,7 +39,6 @@ export default function TestGame9Images() {
     setResult(null)
 
     try {
-      console.log('📡 Testing direct API call to game 9...')
       
       const response = await fetch('/api/gamesimage/get', {
         method: 'POST',
@@ -56,7 +53,6 @@ export default function TestGame9Images() {
       }
 
       const data = await response.json()
-      console.log('📊 Direct API response:', data)
       
       setResult({
         success: true,

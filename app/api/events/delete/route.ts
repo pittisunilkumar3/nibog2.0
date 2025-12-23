@@ -5,14 +5,11 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
 
 export async function POST(request: Request) {
   try {
-    console.log("=== DELETE Event API Route ===");
 
     // Parse the request body
     const data = await request.json();
     const id = Number(data.id);
     
-    console.log("Event ID to delete:", id);
-
     if (!id || isNaN(id) || id <= 0) {
       console.error("Invalid event ID:", id);
       return NextResponse.json(
@@ -37,8 +34,6 @@ export async function POST(request: Request) {
       }
     }
 
-    console.log("Authorization header:", authHeader ? "Present" : "Missing");
-
     if (!authHeader) {
       return NextResponse.json(
         { error: "Authentication required. Please log in." },
@@ -54,18 +49,14 @@ export async function POST(request: Request) {
 
     // Forward the request to the backend API
     const backendUrl = `${BACKEND_URL}/api/events/${id}/delete`;
-    console.log("Calling DELETE:", backendUrl);
 
     const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers,
     });
 
-    console.log("Backend response status:", response.status);
-
     // Get the response data
     const responseText = await response.text();
-    console.log("Backend response:", responseText);
 
     // Try to parse as JSON
     let responseData;

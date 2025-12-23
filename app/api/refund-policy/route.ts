@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
     try {
         const backendUrl = process.env.BACKEND_URL;
-        console.log('API Route: Fetching refund policy from:', backendUrl);
 
         if (!backendUrl) {
             console.error('API Route: BACKEND_URL is missing');
@@ -21,8 +20,6 @@ export async function GET() {
             cache: 'no-store'
         });
 
-        console.log('API Route: Backend response status:', response.status);
-
         if (!response.ok) {
             console.error('API Route: Backend returned error:', response.status);
             return NextResponse.json(
@@ -32,7 +29,6 @@ export async function GET() {
         }
 
         const data = await response.json();
-        console.log('API Route: Backend data received:', JSON.stringify(data).substring(0, 200) + '...');
         return NextResponse.json(data);
     } catch (error) {
         console.error('Error fetching refund policy:', error);
@@ -64,7 +60,6 @@ export async function PUT(request: Request) {
 
         if (authHeader) {
             headers['Authorization'] = authHeader;
-            console.log('API Route: Forwarding authorization header for refund policy');
         }
 
         // Forward the request to the backend

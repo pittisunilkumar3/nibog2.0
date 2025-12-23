@@ -105,7 +105,7 @@ export async function getCertificateTemplateById(id: number): Promise<Certificat
       : '';
 
     const url = `${baseUrl}/api/certificate-templates/get`;
-    console.log('Fetching template from URL:', url);
+
 
     const response = await fetch(url, {
       method: 'POST',
@@ -242,7 +242,6 @@ export async function duplicateCertificateTemplate(
       fields: duplicatedFields,
     };
 
-    console.log('Duplicating template with data:', duplicateData);
     return await createCertificateTemplate(duplicateData);
   } catch (error) {
     console.error('Error duplicating template:', error);

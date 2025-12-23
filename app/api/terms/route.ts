@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
-    console.log('API Route: Fetching terms from:', backendUrl);
 
     const primaryUrl = `${backendUrl}/api/terms`;
     const fallbackWebhook = 'https://ai.nibog.in/webhook/v1/nibog/termsandconditionsget';
@@ -25,8 +24,6 @@ export async function GET() {
       }
     }
 
-    console.log('API Route: Response status after fallbacks:', response ? response.status : 'no-response');
-
     if (!response || !response.ok) {
       const status = response ? response.status : 500;
       const text = response ? await response.text().catch(() => '') : '';
@@ -45,7 +42,6 @@ export async function GET() {
       data = { success: true, terms: { id: 1, html_content: text } };
     }
 
-    console.log('API Route: Backend data received:', JSON.stringify(data).substring(0, 200) + '...');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching terms:', error);
@@ -78,7 +74,6 @@ export async function PUT(request: Request) {
     let forwardedAuth: string | null = null;
     if (authHeader) {
       forwardedAuth = authHeader;
-      console.log('API Route: Forwarding authorization header for terms update');
     } else {
       const cookieHeader = request.headers.get('cookie') || '';
       if (cookieHeader) {
@@ -99,7 +94,7 @@ export async function PUT(request: Request) {
           }
         }
 
-        if (forwardedAuth) console.log('API Route: Extracted auth from cookies and will forward as Authorization header');
+        if (forwardedAuth) {}
       }
     }
 
@@ -111,21 +106,15 @@ export async function PUT(request: Request) {
 
     // Log normalized body for debugging (truncate to avoid huge logs)
     try {
-      console.log('API Route: Forwarding terms update body (truncated):', JSON.stringify(body).substring(0,200));
     } catch (e) { /* ignore stringify errors */ }
 
     // Forward the request to the backend
     try {
-      console.log('API Route: Forwarding headers: ', {
-        'Content-Type': headers['Content-Type'],
-        Authorization: headers['Authorization'] ? 'REDACTED' : 'none'
-      })
-
+      
       // Log whether body likely contains HTML
       try {
         const bodyPreview = (typeof body === 'string') ? body : JSON.stringify(body)
         const hasTags = /<[^>]+>/.test(bodyPreview)
-        console.log(`API Route: Body preview length=${bodyPreview.length}, containsHtml=${hasTags}`)
       } catch (e) { /* ignore */ }
 
       const response = await fetch(`${backendUrl}/api/terms`, {
@@ -136,7 +125,6 @@ export async function PUT(request: Request) {
 
       // Always read response text for logging and try to parse JSON
       const responseText = await response.text().catch(() => '');
-      console.log('API Route: Backend PUT response status:', response.status, 'body (truncated):', responseText.substring ? responseText.substring(0,400) : responseText);
 
       if (!response.ok) {
         let errorMessage = `Backend error: ${response.status}`

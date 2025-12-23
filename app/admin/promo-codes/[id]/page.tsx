@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Edit, Trash, Copy, AlertTriangle, Calendar, Tag, BadgePercent as Percent, DollarSign, Loader2 } from "lucide-react"
+import { ArrowLeft, Edit, Trash, Copy, AlertTriangle, Calendar, Tag, DollarSign, Loader2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -160,7 +160,6 @@ const fetchPromoCodeDetails = async (id: string): Promise<PromoCode> => {
     }
 
     const responseData = await response.json()
-    console.log('API Response:', JSON.stringify(responseData, null, 2))
 
     // The API returns an array with one object, so we need to extract the first item
     let data: any
@@ -428,12 +427,9 @@ export default function PromoCodeDetailPage({ params }: Props) {
     setIsProcessing("delete")
 
     try {
-      console.log(`Deleting promo code with ID: ${promoCodeId}`)
 
       // Call the delete API
       const response = await deletePromoCode(parseInt(promoCodeId))
-
-      console.log("Delete promo code response:", response)
 
       if (response.success) {
         toast({
@@ -605,7 +601,7 @@ export default function PromoCodeDetailPage({ params }: Props) {
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
                     {promoCode.discountType === "percentage" ? (
-                      <Percent className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <span className="mt-0.5 inline-block text-muted-foreground">%</span>
                     ) : (
                       <DollarSign className="mt-0.5 h-4 w-4 text-muted-foreground" />
                     )}

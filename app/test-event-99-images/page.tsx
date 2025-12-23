@@ -16,10 +16,8 @@ export default function TestEvent99Images() {
     setResult(null)
 
     try {
-      console.log('🔍 Testing fetchEventImages(99) with mapping...')
       
       const images = await fetchEventImages(99)
-      console.log('✅ Images fetched:', images)
       
       setResult({
         success: true,
@@ -41,7 +39,6 @@ export default function TestEvent99Images() {
     setResult(null)
 
     try {
-      console.log('📡 Testing direct API call to event 99...')
       
       const response = await fetch('/api/eventimages/get', {
         method: 'POST',
@@ -56,7 +53,6 @@ export default function TestEvent99Images() {
       }
 
       const data = await response.json()
-      console.log('📊 Direct API response:', data)
       
       setResult({
         success: true,
@@ -78,7 +74,6 @@ export default function TestEvent99Images() {
     setResult(null)
 
     try {
-      console.log('📡 Testing working API ID 6...')
       
       const response = await fetch('/api/eventimages/get', {
         method: 'POST',
@@ -93,7 +88,6 @@ export default function TestEvent99Images() {
       }
 
       const data = await response.json()
-      console.log('📊 Working API response:', data)
       
       setResult({
         success: true,

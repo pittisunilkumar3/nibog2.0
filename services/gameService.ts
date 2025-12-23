@@ -29,7 +29,6 @@ export interface Game {
  * @returns Promise with array of games suitable for the specified age
  */
 export async function getGamesByAge(ageInMonths: number): Promise<Game[]> {
-  console.log(`Fetching games for age: ${ageInMonths} months`);
 
   if (isNaN(ageInMonths) || ageInMonths < 0) {
     throw new Error("Invalid age. Age must be a positive number.");
@@ -45,8 +44,6 @@ export async function getGamesByAge(ageInMonths: number): Promise<Game[]> {
       body: JSON.stringify({ age: ageInMonths }),
     });
 
-    console.log(`Get games by age response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -54,7 +51,6 @@ export async function getGamesByAge(ageInMonths: number): Promise<Game[]> {
     }
 
     const data = await response.json();
-    console.log(`Retrieved ${data.length} games for age ${ageInMonths} months`);
 
     return data;
   } catch (error) {
@@ -68,7 +64,6 @@ export async function getGamesByAge(ageInMonths: number): Promise<Game[]> {
  * @returns Promise with array of all games
  */
 export async function getAllGames(): Promise<Game[]> {
-  console.log("Fetching all games");
 
   try {
     // Use our internal API route to avoid CORS issues
@@ -79,8 +74,6 @@ export async function getAllGames(): Promise<Game[]> {
       },
     });
 
-    console.log(`Get all games response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -88,7 +81,6 @@ export async function getAllGames(): Promise<Game[]> {
     }
 
     const data = await response.json();
-    console.log(`Retrieved ${data.length} games`);
 
     return data;
   } catch (error) {

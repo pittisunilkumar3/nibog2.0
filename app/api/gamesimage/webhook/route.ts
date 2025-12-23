@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    console.log('Game image webhook request:', body);
 
     // Validate required fields
     const { game_id, image_url, priority, is_active } = body;
@@ -39,9 +37,6 @@ export async function POST(request: NextRequest) {
       is_active: is_active !== undefined ? is_active : true
     };
 
-    console.log('Sending to external webhook:', webhookPayload);
-    console.log('External webhook URL:', 'https://ai.nibog.in/webhook/nibog/gamesimage/create');
-
     // Send to external webhook
     const webhookResponse = await fetch('https://ai.nibog.in/webhook/nibog/gamesimage/create', {
       method: 'POST',
@@ -50,8 +45,6 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(webhookPayload),
     });
-
-    console.log(`External webhook response status: ${webhookResponse.status}`);
 
     if (!webhookResponse.ok) {
       const errorText = await webhookResponse.text();
@@ -67,10 +60,6 @@ export async function POST(request: NextRequest) {
     }
 
     const webhookResult = await webhookResponse.json();
-    console.log('External webhook success:', {
-      status: webhookResponse.status,
-      result: webhookResult
-    });
 
     return NextResponse.json(webhookResult, { status: 200 });
 

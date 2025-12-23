@@ -18,8 +18,6 @@ export async function GET(request: NextRequest) {
     // Convert to numeric ID to ensure it's not sent as a string or undefined
     const numericCertificateId = parseInt(certificateId, 10);
 
-    console.log(`Fetching certificate with ID: ${certificateId}`);
-
     // Set a timeout to abort the request if it takes too long
     const timeoutMs = 15000; // 15 seconds
     const abortController = new AbortController();
@@ -43,7 +41,6 @@ export async function GET(request: NextRequest) {
       // Clear timeout since request completed
       clearTimeout(timeoutId);
       
-      console.log(`External API response status: ${response.status}`);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -56,7 +53,6 @@ export async function GET(request: NextRequest) {
       }
       
       let result = await response.json();
-      console.log(`Retrieved ${Array.isArray(result) ? result.length : 'unknown'} certificates`);
       
       // Find the specific certificate by ID
       if (Array.isArray(result)) {

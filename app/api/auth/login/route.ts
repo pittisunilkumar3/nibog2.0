@@ -5,8 +5,6 @@ export async function POST(request: Request) {
     // Parse the request body
     const loginData = await request.json();
 
-    console.log("Server API route: User login attempt");
-
     // Validate required fields
     if (!loginData.email) {
       return NextResponse.json(
@@ -33,7 +31,6 @@ export async function POST(request: Request) {
     }
 
     const apiUrl = `${backendUrl}/api/user/login`;
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     // Forward the request to the external API
     const response = await fetch(apiUrl, {
@@ -48,11 +45,10 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Login response status: ${response.status}`);
+
 
     // Parse the response
     const responseData = await response.json();
-    console.log('Server API route: Response data:', JSON.stringify(responseData));
 
     // Handle API error response
     if (!response.ok || !responseData.success) {

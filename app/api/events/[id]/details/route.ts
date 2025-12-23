@@ -21,7 +21,6 @@ export async function GET(
       );
     }
 
-    console.log(`GET /api/events/${id}/details - Fetching event details`);
 
     const response = await fetch(`${BACKEND_URL}/api/events/${id}/details`, {
       method: 'GET',
@@ -48,7 +47,6 @@ export async function GET(
     }
 
     const event = await response.json();
-    console.log(`Retrieved event ${id} details`);
 
     return NextResponse.json(event, {
       status: 200,

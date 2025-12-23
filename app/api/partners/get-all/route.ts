@@ -4,13 +4,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    console.log("Server API route: Fetching partners...");
 
     const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
     const primaryApiUrl = `${BACKEND_URL}/api/partners/get-all`;
     const fallbackApiUrl = `${BACKEND_URL}/api/partners`;
-
-    console.log("Server API route: Calling primary API URL:", primaryApiUrl);
 
     let response = await fetch(primaryApiUrl, {
       method: "GET",
@@ -30,8 +27,6 @@ export async function GET() {
       });
     }
 
-    console.log(`Server API route: Get partners response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Server API route: Error response:", errorText);
@@ -42,7 +37,6 @@ export async function GET() {
     }
 
     const data = await response.json();
-    console.log("Server API route: Partners fetched successfully");
     
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {

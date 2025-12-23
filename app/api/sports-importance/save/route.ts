@@ -2,10 +2,8 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log('Sports importance API: Saving data to external API...');
     
     const body = await request.json();
-    console.log('Sports importance API: Request body:', body);
     
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/sports-importance/save', {
       method: 'POST',
@@ -28,7 +26,6 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log('Sports importance API: Successfully saved data');
     
     return NextResponse.json(data);
   } catch (error) {

@@ -99,11 +99,9 @@ export default function SettingsPage() {
           setGeneralSettingId(data.id)
           setGeneralSettingsExist(true)
           setIsEditingGeneral(false)
-          console.log('✅ General settings loaded successfully:', data)
         } else {
           setGeneralSettingsExist(false)
           setIsEditingGeneral(true)
-          console.log('⚠️ No general settings found, enabling edit mode')
         }
       } catch (error: any) {
         console.error("❌ Failed to fetch general settings:", error)
@@ -586,9 +584,7 @@ export default function SettingsPage() {
                       favicon_path: favicon || undefined
                     }
 
-                    console.log('📤 Sending general settings update:', generalSettingData)
                     const result = await updateGeneralSetting(generalSettingData)
-                    console.log('✅ General settings update result:', result)
 
                     setGeneralSettingsExist(true)
                     setIsEditingGeneral(false)

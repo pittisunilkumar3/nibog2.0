@@ -21,7 +21,6 @@ import { apiUrl } from './apiClient';
  * @returns The general settings data
  */
 export async function getGeneralSetting(): Promise<GeneralSetting | null> {
-  console.log("📥 Fetching general settings from backend...");
 
   try {
     const controller = new AbortController();
@@ -37,7 +36,6 @@ export async function getGeneralSetting(): Promise<GeneralSetting | null> {
     });
 
     clearTimeout(timeoutId);
-    console.log(`Get general settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -45,7 +43,6 @@ export async function getGeneralSetting(): Promise<GeneralSetting | null> {
 
       // If 404, return null instead of throwing an error
       if (response.status === 404) {
-        console.log('⚠️ No general settings found (404)');
         return null;
       }
 
@@ -53,7 +50,6 @@ export async function getGeneralSetting(): Promise<GeneralSetting | null> {
     }
 
     const data = await response.json();
-    console.log("✅ Retrieved general settings:", data);
 
     return data;
   } catch (error) {
@@ -71,7 +67,6 @@ export async function getGeneralSetting(): Promise<GeneralSetting | null> {
  * @returns The response message
  */
 export async function updateGeneralSetting(generalSettingData: Partial<GeneralSetting>): Promise<any> {
-  console.log("📤 Updating general settings:", generalSettingData);
 
   try {
     const controller = new AbortController();
@@ -115,7 +110,6 @@ export async function updateGeneralSetting(generalSettingData: Partial<GeneralSe
     
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('✅ Using authentication token for general settings update');
     } else {
       console.warn('⚠️ No authentication token found for general settings update');
     }
@@ -128,7 +122,6 @@ export async function updateGeneralSetting(generalSettingData: Partial<GeneralSe
     });
 
     clearTimeout(timeoutId);
-    console.log(`Update general settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -137,7 +130,6 @@ export async function updateGeneralSetting(generalSettingData: Partial<GeneralSe
     }
 
     const data = await response.json();
-    console.log("✅ General settings updated successfully:", data);
     return data;
   } catch (error) {
     console.error("❌ Error updating general settings:", error);

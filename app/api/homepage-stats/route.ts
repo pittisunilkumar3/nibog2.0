@@ -13,12 +13,10 @@ let cacheTimestamp = 0;
 
 export async function GET() {
   try {
-    console.log("Homepage stats API: Fetching stats...");
 
     // Check if we have cached data that's still valid
     const now = Date.now();
     if (cachedStats && (now - cacheTimestamp) < CACHE_DURATION) {
-      console.log("Homepage stats API: Returning cached stats");
       return NextResponse.json(cachedStats, { status: 200 });
     }
 
@@ -43,12 +41,6 @@ export async function GET() {
       })
     ]);
 
-    console.log("Homepage stats API: Response statuses:", {
-      users: usersResponse.status,
-      cities: citiesResponse.status,
-      games: gamesResponse.status
-    });
-
     // Initialize counts with fallback values
     let userCount = 1500; // Fallback to current static value
     let cityCount = 21;   // Fallback to current static value  
@@ -60,7 +52,6 @@ export async function GET() {
         const usersData = await usersResponse.json();
         if (Array.isArray(usersData)) {
           userCount = usersData.length;
-          console.log("Homepage stats API: User count:", userCount);
         }
       } catch (error) {
         console.error("Homepage stats API: Error parsing users data:", error);
@@ -76,7 +67,6 @@ export async function GET() {
         if (Array.isArray(citiesData)) {
           // Count only active cities
           cityCount = citiesData.filter(city => city.is_active === true || city.is_active === 1).length;
-          console.log("Homepage stats API: City count:", cityCount);
         }
       } catch (error) {
         console.error("Homepage stats API: Error parsing cities data:", error);
@@ -92,7 +82,6 @@ export async function GET() {
         if (Array.isArray(gamesData)) {
           // Count only active games
           gameCount = gamesData.filter(game => game.is_active !== false).length;
-          console.log("Homepage stats API: Game count:", gameCount);
         }
       } catch (error) {
         console.error("Homepage stats API: Error parsing games data:", error);
@@ -112,8 +101,6 @@ export async function GET() {
     // Cache the results
     cachedStats = stats;
     cacheTimestamp = now;
-
-    console.log("Homepage stats API: Final stats:", stats);
 
     return NextResponse.json(stats, {
       status: 200,

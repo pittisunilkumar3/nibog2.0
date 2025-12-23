@@ -3,11 +3,9 @@ import { sendBookingConfirmationWhatsApp, WhatsAppBookingData } from '@/services
 
 export async function POST(request: Request) {
   try {
-    console.log('📱 WhatsApp API route: Starting booking confirmation request');
 
     // Parse the request body
     const bookingData: WhatsAppBookingData = await request.json();
-    console.log(`📱 WhatsApp API route: Received booking data for ID: ${bookingData.bookingId}`);
 
     // Validate required fields
     const requiredFields = ['bookingId', 'parentName', 'parentPhone', 'childName', 'eventTitle'];
@@ -27,7 +25,6 @@ export async function POST(request: Request) {
     const result = await sendBookingConfirmationWhatsApp(bookingData);
 
     if (result.success) {
-      console.log(`✅ WhatsApp API route: Message sent successfully for booking ${bookingData.bookingId}`);
       return NextResponse.json({
         success: true,
         messageId: result.messageId,

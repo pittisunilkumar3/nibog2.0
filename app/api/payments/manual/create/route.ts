@@ -3,11 +3,9 @@ import { createManualPayment, ManualPaymentData } from '@/services/paymentServic
 
 export async function POST(request: Request) {
   try {
-    console.log('📝 Manual payment API: Starting manual payment creation request');
 
     // Parse the request body
     const paymentData: ManualPaymentData = await request.json();
-    console.log(`📝 Manual payment API: Received payment data for booking ID: ${paymentData.booking_id}`);
 
     // Validate required fields
     const requiredFields = ['booking_id', 'amount', 'payment_method', 'payment_status'];
@@ -38,7 +36,6 @@ export async function POST(request: Request) {
     const result = await createManualPayment(paymentData);
 
     if (result.success) {
-      console.log(`✅ Manual payment API: Payment created successfully for booking ${paymentData.booking_id}`);
       return NextResponse.json({
         success: true,
         payment_id: result.payment_id,

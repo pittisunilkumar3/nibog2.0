@@ -42,15 +42,12 @@ export async function generateSingleCertificate(
  */
 export async function getEventParticipants(eventId: number): Promise<EventParticipantsResponse> {
   try {
-    console.log('Fetching participants for event ID:', eventId);
     const response = await fetch(apiUrl(`/api/events/participants-for-certificates?event_id=${eventId}`), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
-    console.log('Response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -59,7 +56,6 @@ export async function getEventParticipants(eventId: number): Promise<EventPartic
     }
 
     const result: EventParticipantsResponse = await response.json();
-    console.log('Service received data:', result);
     return result;
   } catch (error) {
     console.error('Error fetching participants:', error);
@@ -149,14 +145,10 @@ export async function generateBulkCertificates(
         const matches = gameName.match(/(\d+)/); // Look for numbers in the game name
         if (matches && matches[1]) {
           gameId = parseInt(matches[1], 10);
-          console.log('Extracted game ID from name:', gameId);
         }
       }
       
-      // This will help with debugging the game_id issue
-      console.log('Game ID for certificate:', gameId, 'Type:', typeof gameId);
-      console.log('Game Name:', gameName); 
-      console.log('Participant data:', participant);
+      // Debugging logs removed to keep output clean
       
       // Get parent details for certificate generation
       // Note: Backend workflow will use parent_id to look up the correct user_id if needed
@@ -170,8 +162,6 @@ export async function generateBulkCertificates(
         user_id: participant.parent_id // The backend will validate/lookup the correct user_id
       };
       
-      console.log('Certificate generation request:', request);
-
       const certificate = await generateSingleCertificate(request);
       
       progress.results.push({
@@ -249,8 +239,6 @@ export async function getEventCertificates(eventId: number): Promise<Certificate
  */
 export async function getSingleCertificate(certificateId: number): Promise<CertificateListItem> {
   try {
-    console.log(`Fetching certificate with ID: ${certificateId}`);
-    
     const response = await fetch(`/api/certificates/get-single?certificate_id=${certificateId}`, {
       method: 'GET',
       headers: {
@@ -322,8 +310,6 @@ export async function getAllCertificates(
       const queryString = params.toString() ? `?${params.toString()}` : '';
       const url = `/api/certificates/get-all${queryString}`;
 
-      console.log(`Attempting to fetch certificates (attempt ${attempt}/${maxRetries}):`, url);
-
       // Add timeout and better error handling
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
@@ -352,7 +338,6 @@ export async function getAllCertificates(
         return [];
       }
 
-      console.log(`Successfully fetched ${certificates.length} certificates`);
       return certificates as CertificateListItem[];
 
     } catch (error) {
@@ -366,7 +351,6 @@ export async function getAllCertificates(
 
       // Wait before retrying (exponential backoff)
       const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-      console.log(`Retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }

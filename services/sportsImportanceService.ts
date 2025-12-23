@@ -18,7 +18,6 @@ export interface SportsImportanceData {
  */
 export async function getSportsImportanceData(): Promise<SportsImportanceData> {
   try {
-    console.log('Fetching sports importance data...');
     
     const response = await fetch('/api/sports-importance/get', {
       method: 'GET',
@@ -33,7 +32,6 @@ export async function getSportsImportanceData(): Promise<SportsImportanceData> {
     }
 
     const data = await response.json();
-    console.log('Successfully fetched sports importance data');
     return data;
   } catch (error) {
     console.error('Error fetching sports importance data:', error);
@@ -46,7 +44,6 @@ export async function getSportsImportanceData(): Promise<SportsImportanceData> {
  */
 export async function saveSportsImportanceData(data: SportsImportanceData): Promise<any> {
   try {
-    console.log('Saving sports importance data...');
     
     const response = await fetch('/api/sports-importance/save', {
       method: 'POST',
@@ -63,7 +60,6 @@ export async function saveSportsImportanceData(data: SportsImportanceData): Prom
     }
 
     const result = await response.json();
-    console.log('Successfully saved sports importance data');
     return result;
   } catch (error) {
     console.error('Error saving sports importance data:', error);
@@ -76,7 +72,6 @@ export async function saveSportsImportanceData(data: SportsImportanceData): Prom
  */
 export async function uploadSportsImportanceImage(file: File): Promise<string> {
   try {
-    console.log('Uploading sports importance image...');
     
     const formData = new FormData();
     formData.append('file', file);
@@ -92,7 +87,6 @@ export async function uploadSportsImportanceImage(file: File): Promise<string> {
     }
 
     const result = await response.json();
-    console.log('Successfully uploaded sports importance image');
     return result.url || result.path;
   } catch (error) {
     console.error('Error uploading sports importance image:', error);

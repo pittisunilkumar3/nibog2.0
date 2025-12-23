@@ -15,7 +15,6 @@ export async function PATCH(
     const body = await request.json();
     const { image_url, priority } = body;
 
-    console.log(`PATCH /api/events/${eventId}/update-image - Updating image_url to:`, image_url);
 
     if (!image_url) {
       return NextResponse.json(

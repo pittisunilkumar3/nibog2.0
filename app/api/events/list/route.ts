@@ -11,7 +11,6 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
  */
 export async function GET() {
   try {
-    console.log('GET /api/events/list - Fetching all events with details');
 
     const response = await fetch(`${BACKEND_URL}/api/events/list`, {
       method: 'GET',
@@ -31,7 +30,6 @@ export async function GET() {
     }
 
     const events = await response.json();
-    console.log(`Retrieved ${events.length} events from API`);
 
     return NextResponse.json(events, {
       status: 200,

@@ -10,7 +10,6 @@ const CACHE_DURATION = 30000; // 30 seconds cache
 
 export async function GET(request: Request) {
   try {
-    console.log("Server API route: Fetching all complete bookings...");
 
     // Extract pagination parameters from URL
     const { searchParams } = new URL(request.url);
@@ -18,21 +17,17 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '100', 10);
     const offset = (page - 1) * limit;
 
-    console.log(`Server API route: Pagination - page: ${page}, limit: ${limit}, offset: ${offset}`);
-
     // Create cache key that includes pagination parameters
     const cacheKey = `complete_bookings_${page}_${limit}`;
 
     // Check if we have cached data that's still valid
     const now = Date.now();
     if (cachedData && cachedData.cacheKey === cacheKey && (now - cacheTimestamp) < CACHE_DURATION) {
-      console.log("Server API route: Returning cached paginated complete bookings data");
       return NextResponse.json(cachedData.data, { status: 200 });
     }
 
     // Forward the request to the external API with the original URL
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get-all";
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     // Set a timeout for the fetch request
     const controller = new AbortController();
@@ -49,7 +44,6 @@ export async function GET(request: Request) {
       });
 
       clearTimeout(timeoutId);
-      console.log(`Server API route: Get all complete bookings response status: ${response.status}`);
 
       if (!response.ok) {
         console.error(`Server API route: API request failed with status ${response.status}`);
@@ -62,7 +56,6 @@ export async function GET(request: Request) {
       }
 
       const data = await response.json();
-      console.log(`Server API route: Received ${Array.isArray(data) ? data.length : 'unknown'} complete bookings from API`);
 
       if (!Array.isArray(data)) {
         console.error("Server API route: API response is not an array:", typeof data);
@@ -105,8 +98,6 @@ export async function GET(request: Request) {
         });
       });
 
-      console.log(`Server API route: Flattened to ${flattenedBookings.length} complete booking records`);
-
       // Apply pagination to the flattened data
       const totalCount = flattenedBookings.length;
       const paginatedBookings = flattenedBookings.slice(offset, offset + limit);
@@ -130,7 +121,6 @@ export async function GET(request: Request) {
       };
       cacheTimestamp = now;
 
-      console.log(`Server API route: Returning ${paginatedBookings.length} complete bookings (page ${page}/${result.pagination.totalPages})`);
       return NextResponse.json(result, { status: 200 });
 
     } catch (fetchError: any) {

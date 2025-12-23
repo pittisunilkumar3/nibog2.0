@@ -59,9 +59,6 @@ export default function NewPromoCodePage() {
         // Fetch all games
         const gamesData = await getAllGamesFromEvents()
         setAllGames(gamesData)
-
-        console.log("Loaded events:", eventsData)
-        console.log("Loaded games:", gamesData)
       } catch (error: any) {
         console.error("Error fetching events and games:", error)
         setEventsError(error.message || "Failed to load events and games")
@@ -135,12 +132,8 @@ export default function NewPromoCodePage() {
         events
       );
 
-      console.log("Creating promo code with data:", apiData);
-
       // Call the API to create the promo code
       const response = await createPromoCode(apiData);
-
-      console.log("Promo code creation response:", response);
 
       if (response.success) {
         toast({

@@ -6,8 +6,6 @@ export async function GET(
 ) {
   try {
     const { transactionId } = params;
-    console.log(`=== RETRIEVING PENDING BOOKING ===`);
-    console.log(`Transaction ID: ${transactionId}`);
 
     if (!transactionId) {
       return NextResponse.json(
@@ -29,7 +27,6 @@ export async function GET(
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log(`Pending booking not found for transaction: ${transactionId}`);
         return NextResponse.json(
           { error: "Pending booking not found" },
           { status: 404 }
@@ -51,7 +48,6 @@ export async function GET(
     const now = new Date();
     
     if (now > expiresAt) {
-      console.log(`Pending booking expired for transaction: ${transactionId}`);
       return NextResponse.json(
         { error: "Pending booking has expired" },
         { status: 410 } // Gone
@@ -70,7 +66,6 @@ export async function GET(
       );
     }
 
-    console.log("✅ Pending booking retrieved successfully");
 
     return NextResponse.json({
       success: true,
@@ -96,8 +91,6 @@ export async function DELETE(
 ) {
   try {
     const { transactionId } = params;
-    console.log(`=== DELETING PENDING BOOKING ===`);
-    console.log(`Transaction ID: ${transactionId}`);
 
     if (!transactionId) {
       return NextResponse.json(
@@ -126,7 +119,6 @@ export async function DELETE(
       );
     }
 
-    console.log("✅ Pending booking deleted successfully");
 
     return NextResponse.json({
       success: true,

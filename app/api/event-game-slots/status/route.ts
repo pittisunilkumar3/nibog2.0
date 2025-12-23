@@ -33,8 +33,6 @@ export async function POST(request: Request) {
     const data = await request.json();
     const { slotId, status } = data;
     
-    console.log(`Setting slot ${slotId} status to: ${status}`);
-    
     if (!slotId) {
       return NextResponse.json(
         { error: "Slot ID is required" },
@@ -56,9 +54,6 @@ export async function POST(request: Request) {
     } else {
       slotStatuses[slotId] = status;
     }
-    
-    console.log(`Slot ${slotId} status updated to: ${status}`);
-    console.log('Current slot statuses:', slotStatuses);
     
     return NextResponse.json({ 
       success: true, 
@@ -89,8 +84,6 @@ export async function DELETE(request: Request) {
     
     // Remove status (revert to default 'active')
     delete slotStatuses[slotId];
-    
-    console.log(`Slot ${slotId} status reset to default (active)`);
     
     return NextResponse.json({ 
       success: true, 

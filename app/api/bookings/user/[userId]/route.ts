@@ -9,8 +9,6 @@ export async function GET(
 ) {
   try {
     const userId = params.userId;
-    
-    console.log("Server API route: Starting user profile with bookings request for userId:", userId);
 
     // Validate userId
     if (!userId || isNaN(Number(userId))) {
@@ -22,7 +20,6 @@ export async function GET(
 
     // Call the external API
     const apiUrl = `${API_BASE_URL}/api/bookings/user/${userId}`;
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -31,8 +28,6 @@ export async function GET(
       },
       cache: "no-store",
     });
-
-    console.log(`Server API route: User profile response status: ${response.status}`);
 
     if (response.status === 404) {
       return NextResponse.json(
@@ -51,8 +46,6 @@ export async function GET(
     }
 
     const data = await response.json();
-    console.log(`Server API route: User profile response received successfully`);
-    console.log(`Server API route: User has ${data.data?.bookings?.length || 0} bookings`);
 
     return NextResponse.json(data);
   } catch (error) {

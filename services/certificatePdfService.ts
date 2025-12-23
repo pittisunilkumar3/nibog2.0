@@ -40,8 +40,6 @@ export async function generateCertificatePDFFrontend(
   filename?: string
 ): Promise<void> {
   try {
-    console.log('Generating PDF for certificate:', certificate);
-
     // Use the same template fetching logic as the preview modal
     const template = await getCertificateTemplateById(certificate.template_id);
 
@@ -49,13 +47,8 @@ export async function generateCertificatePDFFrontend(
       throw new Error(`Failed to get certificate template with ID: ${certificate.template_id}`);
     }
 
-    console.log('Using template:', template);
-
     // Generate HTML using the exact same logic as the preview modal
     const html = generateCertificateHTMLFromPreview(template, certificate);
-
-    console.log('Generated HTML length:', html.length);
-    console.log('Generated HTML preview:', html.substring(0, 500) + '...');
 
     // For debugging: show the HTML in a modal first
     // Uncomment the next line to preview the HTML before PDF generation
@@ -325,7 +318,6 @@ function generateCertificateHTMLFromPreview(
 
     // Check if we have new background_style or need to use legacy background_image
     if (template.background_style && template.background_style.type) {
-      console.log('Using new background style:', template.background_style);
 
       if (template.background_style.type === 'image') {
         const imageUrl = template.background_style.image_url || template.background_image;
@@ -341,7 +333,6 @@ function generateCertificateHTMLFromPreview(
         backgroundStyle = `background: linear-gradient(135deg, ${template.background_style.gradient_colors[0]}, ${template.background_style.gradient_colors[1]});`;
       }
     } else if (template.background_image && template.background_image !== 'null' && template.background_image !== null) {
-      console.log('Using legacy background image:', template.background_image);
       // Legacy background image support
       const backgroundImageUrl = template.background_image.startsWith('http')
         ? template.background_image
@@ -349,7 +340,7 @@ function generateCertificateHTMLFromPreview(
       backgroundStyle = `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
     }
 
-    console.log('Final background style:', backgroundStyle);
+
 
     // Generate fields HTML
     let fieldsHTML = '';
@@ -617,7 +608,6 @@ function generateCertificateHTMLFromPreview(
  */
 async function getCertificateTemplate(templateId: number): Promise<CertificateTemplate | null> {
   try {
-    console.log('Fetching template with ID:', templateId);
 
     const response = await fetch('/api/certificate-templates/get', {
       method: 'POST',
@@ -633,8 +623,6 @@ async function getCertificateTemplate(templateId: number): Promise<CertificateTe
 
     const data = await response.json();
     const template = data.template || data;
-
-    console.log('Fetched template:', template);
 
     if (!template) {
       throw new Error('Template not found in response');
@@ -655,8 +643,6 @@ export async function generatePDFFromHTML(
   filename: string
 ): Promise<void> {
   try {
-    console.log('Starting PDF generation for:', filename);
-    console.log('HTML content length:', html.length);
 
     // Create a temporary container
     const tempContainer = document.createElement('div');
@@ -671,12 +657,8 @@ export async function generatePDFFromHTML(
     // Add to DOM temporarily
     document.body.appendChild(tempContainer);
 
-    console.log('Container added to DOM, content:', tempContainer.innerHTML.substring(0, 200));
-
     // Wait for images to load
-    console.log('Waiting for images to load...');
     await waitForImages(tempContainer);
-    console.log('Images loaded, converting to canvas...');
 
     // Convert to canvas
     const canvas = await html2canvas(tempContainer, {
@@ -689,8 +671,6 @@ export async function generatePDFFromHTML(
       scrollX: 0,
       scrollY: 0
     });
-
-    console.log('Canvas created, dimensions:', canvas.width, 'x', canvas.height);
 
     // Remove temporary container
     document.body.removeChild(tempContainer);
@@ -947,7 +927,6 @@ function generateCertificateHTML(
       backgroundStyle = `background: linear-gradient(135deg, ${template.background_style.gradient_colors[0]}, ${template.background_style.gradient_colors[1]});`;
     }
   } else if (template.background_image && template.background_image !== 'null' && template.background_image !== null) {
-    console.log('Using legacy background image:', template.background_image);
     // Legacy background image support
     const backgroundImageUrl = template.background_image.startsWith('http')
       ? template.background_image
@@ -955,7 +934,7 @@ function generateCertificateHTML(
     backgroundStyle = `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
   }
 
-  console.log('Final background style:', backgroundStyle);
+
 
   // Extract data values
   const participantName = data.participant_name || 'John Doe';

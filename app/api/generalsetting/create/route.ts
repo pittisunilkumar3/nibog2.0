@@ -8,8 +8,6 @@ export async function POST(request: Request) {
     // Parse the request body
     const generalSettingData = await request.json();
     
-    console.log("Server API route: Creating general settings:", generalSettingData);
-
     // Validate required fields
     if (!generalSettingData.site_name) {
       return NextResponse.json(
@@ -49,7 +47,6 @@ export async function POST(request: Request) {
     // Call backend API (POST creates new record if not exists, or use PUT to update)
     const apiUrl = GENERAL_SETTING_API.CREATE;
     const forwardAuth = request.headers.get('authorization');
-    console.log("Server API route: Calling backend API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -61,7 +58,6 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Create general settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -74,12 +70,10 @@ export async function POST(request: Request) {
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
     
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: Created general settings:", responseData);
       
       return NextResponse.json(responseData, { status: 201 });
     } catch (parseError) {

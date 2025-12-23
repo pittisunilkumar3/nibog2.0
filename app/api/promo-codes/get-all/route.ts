@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
-    console.log("Server API route: Fetching all promo codes...");
 
     // Forward the request to the external API with the correct URL
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/promocode/get-all";
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     // Set a timeout for the fetch request
     const controller = new AbortController();
@@ -31,7 +29,6 @@ export async function GET() {
 
         // Check if this is a "webhook not registered" error (404)
         if (response.status === 404 && errorText.includes("webhook") && errorText.includes("not registered")) {
-          console.log("Server API route: Webhook not registered - returning empty array as fallback");
 
           // Return empty array when webhook doesn't exist
           // This allows the frontend to work while the API endpoint is being set up
@@ -47,10 +44,8 @@ export async function GET() {
         }
 
         // If the first attempt fails with other errors, try with webhook-test URL
-        console.log("Server API route: First attempt failed, trying with webhook-test URL");
 
         const alternativeUrl = apiUrl.replace("webhook/v1", "webhook-test/v1");
-        console.log("Server API route: Trying alternative URL:", alternativeUrl);
 
         const alternativeResponse = await fetch(alternativeUrl, {
           method: "GET",
@@ -59,8 +54,6 @@ export async function GET() {
           },
           cache: "no-store",
         });
-
-        console.log(`Server API route: Alternative response status: ${alternativeResponse.status}`);
 
         if (!alternativeResponse.ok) {
           const altErrorText = await alternativeResponse.text();
@@ -84,7 +77,6 @@ export async function GET() {
         }
 
         const alternativeData = await alternativeResponse.json();
-        console.log("Server API route: Alternative URL success, promo codes count:", alternativeData.length || 0);
 
         return NextResponse.json(alternativeData, {
           status: 200,
@@ -97,7 +89,6 @@ export async function GET() {
       }
 
       const data = await response.json();
-      console.log("Server API route: Successfully fetched promo codes, count:", data.length || 0);
 
       return NextResponse.json(data, { 
         status: 200,

@@ -17,7 +17,6 @@ export interface EmailSetting {
  * @returns The saved email settings data
  */
 export async function updateEmailSetting(emailSettingData: Partial<EmailSetting>): Promise<any> {
-  console.log("📤 Updating email settings:", emailSettingData);
 
   try {
     const controller = new AbortController();
@@ -58,7 +57,6 @@ export async function updateEmailSetting(emailSettingData: Partial<EmailSetting>
     });
 
     clearTimeout(timeoutId);
-    console.log(`Update email settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -67,7 +65,6 @@ export async function updateEmailSetting(emailSettingData: Partial<EmailSetting>
     }
 
     const data = await response.json();
-    console.log('✅ Email settings updated:', data);
     return data;
   } catch (error) {
     console.error('❌ Error updating email settings:', error);
@@ -81,7 +78,6 @@ export async function updateEmailSetting(emailSettingData: Partial<EmailSetting>
  * @returns The email settings data
  */
 export async function getEmailSetting(): Promise<EmailSetting | null> {
-  console.log("📥 Fetching email settings via /api/email-settings...");
 
   try {
     const controller = new AbortController();
@@ -95,14 +91,12 @@ export async function getEmailSetting(): Promise<EmailSetting | null> {
     });
 
     clearTimeout(timeoutId);
-    console.log(`Get email settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
 
       if (response.status === 404) {
-        console.log('⚠️ No email settings found (404)');
         return null;
       }
 

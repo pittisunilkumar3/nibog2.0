@@ -13,11 +13,8 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Server API route: Fetching events for city ID: ${cityId}`);
-
     // Forward the request to the external API with the correct URL
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/event-registration/getbycityid";
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     // Use POST method with request body as specified in the API documentation
     const response = await fetch(apiUrl, {
@@ -28,8 +25,6 @@ export async function POST(request: Request) {
       body: JSON.stringify({ city_id: cityId }),
       cache: "no-store",
     });
-
-    console.log(`Server API route: Get events by city response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -42,13 +37,11 @@ export async function POST(request: Request) {
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText.substring(0, 200)}...`); // Log first 200 chars
 
     let responseData;
     try {
       // Try to parse the response as JSON
       responseData = JSON.parse(responseText);
-      console.log(`Server API route: Retrieved ${Array.isArray(responseData) ? responseData.length : 'non-array'} events`);
 
       // Ensure we have an array
       if (!Array.isArray(responseData)) {

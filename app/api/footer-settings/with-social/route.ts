@@ -4,13 +4,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    console.log("Server API route: Fetching footer settings with social links...");
 
     // Get the backend URL from environment variable
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
     const apiUrl = `${backendUrl}/api/footer-settings/with-social`;
-    
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -20,11 +17,8 @@ export async function GET() {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Get footer settings response status: ${response.status}`);
-
     if (!response.ok) {
       if (response.status === 404) {
-        console.log("Server API route: No footer settings found (404)");
         return NextResponse.json(
           {
             company_name: "NIBOG",
@@ -52,7 +46,6 @@ export async function GET() {
     }
 
     const data = await response.json();
-    console.log("Server API route: Footer settings fetched successfully:", data);
     
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {

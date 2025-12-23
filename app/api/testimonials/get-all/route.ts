@@ -6,7 +6,6 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    console.log("Server API route: Getting testimonials from external API");
 
     // Call the backend API to get testimonials
     const base = (process.env.BACKEND_URL || "http://localhost:3004").replace(/\/$/, "");
@@ -21,8 +20,6 @@ export async function GET() {
       cache: 'no-store', // Disable caching to get real-time data
     });
 
-    console.log(`External API response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('External API error:', errorText);
@@ -33,13 +30,7 @@ export async function GET() {
     }
 
     const testimonials = await response.json();
-    console.log(`Retrieved ${testimonials.length} testimonials from external API`);
     
-    // Log first testimonial for debugging
-    if (testimonials.length > 0) {
-      console.log('Sample testimonial:', testimonials[0]);
-    }
-
     // Return with cache-busting headers
     return NextResponse.json(testimonials, { 
       status: 200,

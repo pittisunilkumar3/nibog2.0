@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Starting promo code delete request");
 
     // Parse the request body
     const requestData = await request.json();
-    console.log("Server API route: Received request body:", JSON.stringify(requestData, null, 2));
 
     // Validate required fields
     if (!requestData.id) {
@@ -22,11 +20,8 @@ export async function POST(request: Request) {
       id: parseInt(requestData.id)
     };
 
-    console.log("Server API route: Prepared payload:", JSON.stringify(payload, null, 2));
-
     // Call the external API
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/promocode/delete";
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -36,12 +31,9 @@ export async function POST(request: Request) {
       body: JSON.stringify(payload),
     });
 
-    console.log(`Server API route: Delete promo code response status: ${response.status}`);
-
     let responseText;
     try {
       responseText = await response.text();
-      console.log("Server API route: Raw response:", responseText);
     } catch (textError) {
       console.error("Server API route: Error reading response text:", textError);
       return NextResponse.json(
@@ -54,7 +46,6 @@ export async function POST(request: Request) {
     let data;
     try {
       data = JSON.parse(responseText);
-      console.log("Server API route: Parsed response:", data);
     } catch (parseError) {
       console.error("Server API route: Error parsing JSON response:", parseError);
       console.log("Server API route: Raw response text:", responseText);
@@ -77,14 +68,12 @@ export async function POST(request: Request) {
     if (response.ok) {
       // The API returns an array with success object
       if (Array.isArray(data) && data.length > 0 && data[0].success === true) {
-        console.log("Server API route: Promo code deleted successfully");
         return NextResponse.json({
           success: true,
           message: "Promo code deleted successfully",
           data: data[0]
         });
       } else if (data.success === true) {
-        console.log("Server API route: Promo code deleted successfully");
         return NextResponse.json({
           success: true,
           message: "Promo code deleted successfully",

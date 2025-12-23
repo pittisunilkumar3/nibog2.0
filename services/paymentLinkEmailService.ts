@@ -127,11 +127,6 @@ export async function sendPaymentLinkEmail(
   emailData: PaymentLinkEmailData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("📧 Sending payment link email...");
-    console.log(`Recipient: ${emailData.parentEmail}`);
-    console.log(`Booking ID: ${emailData.bookingId}`);
-    console.log(`Amount: ₹${emailData.totalAmount}`);
-
     // Get email settings from your existing API
     const emailSettings = await getEmailSetting();
 
@@ -142,8 +137,6 @@ export async function sendPaymentLinkEmail(
         error: "Email settings not configured. Please configure email settings first."
       };
     }
-
-    console.log("✅ Email settings retrieved successfully");
 
     // Generate HTML email content
     const htmlContent = generatePaymentLinkHTML(emailData);
@@ -172,7 +165,6 @@ export async function sendPaymentLinkEmail(
     }
 
     const result = await response.json();
-    console.log(`📧 Payment link email sent successfully to ${emailData.parentEmail}`);
     
     return {
       success: true

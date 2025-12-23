@@ -84,14 +84,8 @@ export default function EditVenuePage({ params }: Props) {
         capacity: parseInt(capacity),
         is_active: isActive
       }
-
-      console.log("Updating venue with data:", venueData)
-
       // Call the API to update the venue
       const updatedVenue = await updateVenue(venueData)
-
-      console.log("Venue updated successfully:", updatedVenue)
-
       // Additional validation to ensure the update was successful
       if (!updatedVenue) {
         throw new Error("Update returned empty response")

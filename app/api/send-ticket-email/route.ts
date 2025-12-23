@@ -18,8 +18,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`🎫 Manual ticket email request for booking: ${bookingRef || bookingId}`);
-
     // Get ticket details using existing service with retry mechanism
     let ticketDetails;
     let retryCount = 0;
@@ -30,16 +28,13 @@ export async function POST(request: Request) {
       // Retry mechanism to handle database timing issues
       while (retryCount < maxRetries) {
         try {
-          console.log(`🎫 Attempting to fetch ticket details (attempt ${retryCount + 1}/${maxRetries})`);
           ticketDetails = await getTicketDetails(bookingRef);
 
           if (ticketDetails && ticketDetails.length > 0) {
-            console.log(`🎫 Successfully retrieved ${ticketDetails.length} ticket details`);
             break;
           }
 
           if (retryCount < maxRetries - 1) {
-            console.log(`🎫 No ticket details found, waiting ${retryDelay}ms before retry...`);
             await new Promise(resolve => setTimeout(resolve, retryDelay));
           }
         } catch (error) {
@@ -72,7 +67,7 @@ export async function POST(request: Request) {
     const qrCodeData = JSON.stringify({
       ref: bookingRef,
       id: firstTicket.booking_id,
-      name: firstTicket.child_name || firstTicket.child_full_name || 'Child',
+      name: firstTicket.child_name || 'Child',
       game: firstTicket.custom_title || firstTicket.event_title || firstTicket.game_name || 'NIBOG Event',
       slot_id: firstTicket.event_game_slot_id || firstTicket.booking_game_id || 0
     });

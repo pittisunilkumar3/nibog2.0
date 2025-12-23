@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Fetching customer profile for user_id:', user_id)
 
     // Make the request to the external API
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/customer/profile', {
@@ -41,7 +40,6 @@ export async function POST(request: NextRequest) {
 
     // Parse the response
     const data = await response.json()
-    console.log('Customer profile fetched successfully for user_id:', user_id)
 
     // Return the data with CORS headers
     return NextResponse.json(data, {

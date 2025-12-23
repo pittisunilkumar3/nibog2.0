@@ -5,8 +5,6 @@ export async function POST(request: Request) {
     // Parse the request body
     const userData = await request.json();
 
-    console.log("Server API route: Registering user request");
-
     // Validate required fields
     if (!userData.full_name) {
       return NextResponse.json(
@@ -58,7 +56,6 @@ export async function POST(request: Request) {
 
     // Forward the request to the external API
     const apiUrl = `${backendUrl}/api/user/register`;
-    console.log("Server API route: Calling API URL:", apiUrl);
     // console.log("Payload:", JSON.stringify(backendPayload, null, 2)); // Careful with logging passwords
 
     const response = await fetch(apiUrl, {
@@ -70,7 +67,7 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Register user response status: ${response.status}`);
+
 
     // Parse the response
     const responseData = await response.json();

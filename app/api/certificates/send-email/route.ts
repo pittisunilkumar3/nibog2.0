@@ -23,7 +23,6 @@ async function generateCertificateHTML(template: any, certificate: any): Promise
 
     // Check if we have new background_style or need to use legacy background_image
     if (template.background_style && template.background_style.type) {
-      console.log('Using new background style:', template.background_style);
 
       if (template.background_style.type === 'image') {
         const imageUrl = template.background_style.image_url || template.background_image;
@@ -492,8 +491,6 @@ function parseVariables(text: string, data: any): string {
 async function generatePDFWithPuppeteer(html: string): Promise<Buffer> {
   let browser;
   try {
-    console.log('Launching Puppeteer browser...')
-    console.log('HTML content length:', html.length)
 
     // Platform-specific Puppeteer configuration
     const isWindows = process.platform === 'win32'

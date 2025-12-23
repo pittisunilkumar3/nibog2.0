@@ -119,7 +119,6 @@ export default function TermsConditionsPage() {
       setIsLoading(true)
       try {
         const data = await getTerms()
-        console.log('Fetched terms & conditions data:', data)
 
         // Normalize multiple possible shapes:
         // Backend returns { success: true, terms: { html_content, created_at } }
@@ -162,7 +161,6 @@ export default function TermsConditionsPage() {
 
       // Use internal updateTerms service which forwards auth header
       const result = await updateTerms(contentToSave)
-      console.log('Terms & conditions saved successfully:', result)
 
       // Re-fetch the saved content from server to reflect any normalization/sanitization
       try {

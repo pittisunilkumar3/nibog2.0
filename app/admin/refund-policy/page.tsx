@@ -55,7 +55,6 @@ export default function RefundPolicyPage() {
       setIsLoading(true)
       try {
         const data = await getRefundPolicy()
-        console.log('Fetched refund policy data:', data)
 
         if (data && data.success && data.policy) {
           const fetchedContent = data.policy.html_content || data.policy.policy_text || ""
@@ -91,11 +90,10 @@ export default function RefundPolicyPage() {
       const contentToSave = refundContent.websiteContent
 
       const result = await updateRefundPolicy(contentToSave)
-      console.log('Refund policy saved successfully:', result)
 
       setRefundContent(prev => ({
         ...prev,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       }))
 
       setHasChanges(false)

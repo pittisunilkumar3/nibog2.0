@@ -17,11 +17,8 @@ export async function findApiIdForEvent(targetEventId: number): Promise<number |
   // Check cache first
   const cached = mappingCache.get(targetEventId);
   if (cached !== undefined) {
-    console.log(`Using cached mapping: Event ${targetEventId} → API ID ${cached}`);
     return cached;
   }
-
-  console.log(`Searching for API ID that returns images for Event ${targetEventId}...`);
 
   // Search through a reasonable range of API IDs by calling external API directly
   const searchRange = Array.from({ length: 20 }, (_, i) => i + 1); // Test IDs 1-20
@@ -50,7 +47,6 @@ export async function findApiIdForEvent(targetEventId: number): Promise<number |
           );
           
           if (validImages.length > 0) {
-            console.log(`✅ Found mapping: Event ${targetEventId} → API ID ${apiId}`);
             mappingCache.set(targetEventId, apiId);
             return apiId;
           }
@@ -64,7 +60,6 @@ export async function findApiIdForEvent(targetEventId: number): Promise<number |
     await new Promise(resolve => setTimeout(resolve, 10));
   }
 
-  console.log(`❌ No API ID found for Event ${targetEventId}`);
   mappingCache.set(targetEventId, -1); // Cache negative result
   return null;
 }
@@ -75,7 +70,6 @@ export async function findApiIdForEvent(targetEventId: number): Promise<number |
  * @returns Promise<any[]> Array of images for this event
  */
 export async function fetchEventImagesWithMapping(eventId: number): Promise<any[]> {
-  console.log(`Fetching images for Event ${eventId} with mapping...`);
 
   // First, try the direct approach (event ID matches API ID) by calling external API
   try {
@@ -99,7 +93,6 @@ export async function fetchEventImagesWithMapping(eventId: number): Promise<any[
         );
 
         if (validImages.length > 0) {
-          console.log(`✅ Direct mapping worked for Event ${eventId} (found ${validImages.length} images)`);
           return validImages;
         }
       }
@@ -112,7 +105,6 @@ export async function fetchEventImagesWithMapping(eventId: number): Promise<any[
   const correctApiId = await findApiIdForEvent(eventId);
   
   if (correctApiId === null) {
-    console.log(`No images found for Event ${eventId}`);
     return [];
   }
 
@@ -138,7 +130,6 @@ export async function fetchEventImagesWithMapping(eventId: number): Promise<any[
           img.event_id === eventId
         );
 
-        console.log(`✅ Mapped fetch successful for Event ${eventId} (via API ID ${correctApiId}, found ${validImages.length} images)`);
         return validImages;
       }
     }

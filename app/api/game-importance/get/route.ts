@@ -4,15 +4,14 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
-    console.log('Game importance API: Fetching data from external API...');
     
     // Add timestamp to prevent caching
     const timestamp = Date.now();
     const url = new URL(request.url);
     const forceRefresh = url.searchParams.get('refresh') === 'true';
     
-    console.log('Game importance API: Force refresh:', forceRefresh);
-    console.log('Game importance API: Timestamp:', timestamp);
+    
+
     
     const response = await fetch(`https://ai.nibog.in/webhook/v1/nibog/game-importance/get?t=${timestamp}`, {
       method: 'GET',
@@ -76,7 +75,6 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    console.log('Game importance API: Successfully fetched data');
     
     return NextResponse.json(data);
   } catch (error) {

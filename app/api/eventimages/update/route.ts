@@ -29,13 +29,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Event image update request received:', {
-      event_id: parseInt(event_id),
-      image_url,
-      priority: priority ? parseInt(priority) : 1,
-      is_active: is_active !== undefined ? is_active : true
-    })
-
     // Prepare the payload for the external webhook
     const webhookPayload = {
       event_id: parseInt(event_id),
@@ -43,9 +36,6 @@ export async function POST(request: NextRequest) {
       priority: priority ? parseInt(priority) : 1,
       is_active: is_active !== undefined ? is_active : true
     }
-
-    console.log('Sending to external update webhook:', webhookPayload)
-    console.log('External webhook URL:', 'https://ai.nibog.in/webhook/nibog/eventimage/updated')
 
     // Send to external webhook
     const webhookResponse = await fetch('https://ai.nibog.in/webhook/nibog/eventimage/updated', {
@@ -66,7 +56,6 @@ export async function POST(request: NextRequest) {
     }
 
     const webhookResult = await webhookResponse.json()
-    console.log('External webhook response:', webhookResult)
 
     return NextResponse.json({
       success: true,

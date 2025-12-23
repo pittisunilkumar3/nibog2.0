@@ -142,7 +142,6 @@ export default function EditGameTemplate({ params }: Props) {
         )
         : []
 
-      console.log(`📊 Valid images after filtering: ${validImages.length}`, validImages)
       setExistingImages(validImages)
 
       // Get the LATEST image (highest priority or most recent) for editing

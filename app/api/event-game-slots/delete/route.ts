@@ -6,8 +6,6 @@ export async function POST(request: Request) {
     const data = await request.json();
     const id = data.id;
     
-    console.log(`Server API route: Deleting event game slot with ID: ${id}`);
-
     if (!id || isNaN(Number(id)) || Number(id) <= 0) {
       return NextResponse.json(
         { error: "Invalid slot ID. ID must be a positive number." },
@@ -24,8 +22,6 @@ export async function POST(request: Request) {
       body: JSON.stringify({ id: Number(id) }),
     });
 
-    console.log(`External API response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`External API error: ${errorText}`);
@@ -36,7 +32,6 @@ export async function POST(request: Request) {
     }
 
     const result = await response.json();
-    console.log("Server API route: Event game slot deleted successfully:", result);
 
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {

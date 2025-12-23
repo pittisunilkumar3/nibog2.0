@@ -10,31 +10,7 @@ export async function POST(request: Request) {
       user_agent: request.headers.get('user-agent'),
     }
     
-    // Enhanced logging with better structure
-    console.log('📧 BULK EMAIL SESSION STARTED:', {
-      session_id: enriched.session_id,
-      timestamp: enriched.timestamp,
-      total_recipients: enriched.total,
-      success_count: enriched.success,
-      failure_count: enriched.failure,
-      success_rate: enriched.total > 0 ? ((enriched.success / enriched.total) * 100).toFixed(2) + '%' : '0%',
-      sample_recipients: enriched.sample || []
-    })
-
-    // In production, you would save this to a database
-    // Example structure for database storage:
-    /*
-    await db.bulk_email_logs.create({
-      session_id: enriched.session_id,
-      timestamp: enriched.timestamp,
-      total_recipients: enriched.total,
-      success_count: enriched.success,
-      failure_count: enriched.failure,
-      sample_data: JSON.stringify(enriched.sample),
-      user_agent: enriched.user_agent,
-      ip_address: request.headers.get('x-forwarded-for') || 'unknown'
-    })
-    */
+    
 
     return NextResponse.json({ 
       success: true, 

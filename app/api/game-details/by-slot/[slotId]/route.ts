@@ -19,7 +19,6 @@ export async function GET(
       );
     }
 
-    console.log(`Fetching game details for slot ID: ${slotId}`);
 
     // Call the existing event-game-slot API to get slot details
     const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/event-game-slot/get', {

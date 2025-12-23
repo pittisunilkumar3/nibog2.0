@@ -5,9 +5,6 @@ export async function POST(request: Request) {
     // Parse the request body
     const data = await request.json();
     
-    console.log(`Server API route: Updating event game slot with data:`, data);
-    console.log(`Server API route: Status field in request:`, data.status);
-
     // Validate required fields
     if (!data.id) {
       return NextResponse.json(
@@ -25,8 +22,6 @@ export async function POST(request: Request) {
       body: JSON.stringify(data),
     });
 
-    console.log(`External API response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`External API error: ${errorText}`);
@@ -37,8 +32,6 @@ export async function POST(request: Request) {
     }
 
     const result = await response.json();
-    console.log("Server API route: Event game slot updated successfully:", result);
-    console.log("Server API route: Status in response:", result.status || result[0]?.status);
 
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {

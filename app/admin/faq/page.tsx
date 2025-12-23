@@ -44,10 +44,8 @@ export default function FAQListPage() {
     const fetchFAQs = async () => {
       try {
         setLoading(true)
-        console.log('🔄 Fetching FAQs from API...')
         
         const data = await getAllFAQs()
-        console.log('✅ FAQs fetched:', data)
         
         // Transform FAQ to FAQItem format
         const transformedData: FAQItem[] = data.map(faq => ({
@@ -128,7 +126,6 @@ export default function FAQListPage() {
     }
 
     try {
-      console.log(`🗑️ Attempting to delete FAQ ID: ${id}`)
       
       // Call the actual API to delete FAQ
       const result = await deleteFAQ(id)
@@ -141,8 +138,6 @@ export default function FAQListPage() {
           title: "FAQ Deleted Successfully! ✅",
           description: "The FAQ has been permanently deleted.",
         })
-        
-        console.log(`✅ FAQ ${id} deleted from UI`)
       }
     } catch (error) {
       console.error('❌ Error deleting FAQ:', error)

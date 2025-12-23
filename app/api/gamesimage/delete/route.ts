@@ -21,17 +21,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Game image delete request received:', {
-      game_id: parseInt(game_id)
-    })
 
     // Prepare the payload for the external webhook
     const webhookPayload = {
       game_id: parseInt(game_id)
     }
-
-    console.log('Sending to external delete webhook:', webhookPayload)
-    console.log('External webhook URL:', 'https://ai.nibog.in/webhook/nibog/gamesimage/delete')
 
     // Send to external webhook
     const webhookResponse = await fetch('https://ai.nibog.in/webhook/nibog/gamesimage/delete', {
@@ -52,7 +46,6 @@ export async function POST(request: NextRequest) {
     }
 
     const webhookResult = await webhookResponse.json()
-    console.log('External delete webhook response:', webhookResult)
 
     return NextResponse.json({
       success: true,

@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 
 export async function DELETE(request: Request) {
   try {
-    console.log("Server API route: Deleting testimonial via external API");
 
     // Parse the request body
     const { id } = await request.json();
-    console.log(`Server API route: Deleting testimonial with ID: ${id}`);
 
     if (!id || isNaN(Number(id)) || Number(id) <= 0) {
       return NextResponse.json(
@@ -27,8 +25,6 @@ export async function DELETE(request: Request) {
       cache: 'no-store'
     });
 
-    console.log(`Server API route: Delete testimonial response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Backend API error:', errorText);
@@ -39,7 +35,6 @@ export async function DELETE(request: Request) {
     }
 
     const data = await response.json();
-    console.log("Server API route: Delete operation successful:", data);
 
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {

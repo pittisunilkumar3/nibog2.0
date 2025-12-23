@@ -19,15 +19,6 @@ export async function GET(request: NextRequest) {
     const event_id = searchParams.get('event_id');
     const is_active = searchParams.get('is_active');
 
-    console.log('GET /api/testimonials - Fetching testimonials with filters:', {
-      limit,
-      offset,
-      status,
-      city_id,
-      event_id,
-      is_active
-    });
-
     // Build query string for external API
     const queryParams = new URLSearchParams();
     if (status) queryParams.append('status', status);
@@ -40,8 +31,6 @@ export async function GET(request: NextRequest) {
     // Call external API to get all testimonials using configured BACKEND_URL
     const base = (BACKEND_URL || '').replace(/\/$/, '');
     const apiUrl = `${base}/api/testimonials?${queryParams.toString()}`;
-
-    console.log(`GET /api/testimonials - Calling backend: ${apiUrl}`);
 
     // If the backend is down, fetch() will throw; catch it and return a clear 503 so
     // the frontend can gracefully fall back to sample data instead of failing.
@@ -68,7 +57,6 @@ export async function GET(request: NextRequest) {
       console.warn(`Primary testimonials endpoint ${apiUrl} returned ${response.status}. Body: ${primaryBody}`);
 
       const fallback = process.env.BACKEND_FALLBACK_URL.replace(/\/$/, '') + `/testimonials/get-all`;
-      console.log(`Attempting fallback testimonials endpoint: ${fallback}`);
       try {
         response = await fetch(fallback, {
           method: 'GET',
@@ -226,8 +214,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    console.log('POST /api/testimonials - Creating testimonial:', body);
 
     // Prepare payload for external API
     const payload = {

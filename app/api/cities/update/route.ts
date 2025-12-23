@@ -3,11 +3,9 @@ import { CITY_API } from '@/config/api';
 
 export async function POST(request: Request) {
   try {
-    console.log("Server API route: Updating city...");
 
     // Parse the request body
     const cityData = await request.json();
-    console.log("Server API route: City data received:", cityData);
 
     // Validate required fields
     if (!cityData.id || !cityData.city_name || !cityData.state) {
@@ -34,7 +32,6 @@ export async function POST(request: Request) {
 
     // Forward the request to the external API
     const apiUrl = CITY_API.UPDATE;
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -43,8 +40,6 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify(normalizedData),
     });
-
-    console.log(`Server API route: Update city response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -67,7 +62,6 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log("Server API route: Update city response data:", data);
 
     return NextResponse.json(data);
   } catch (error: any) {

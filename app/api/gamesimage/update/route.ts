@@ -29,13 +29,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Game image update request received:', {
-      game_id: parseInt(game_id),
-      image_url,
-      priority: priority ? parseInt(priority) : 1,
-      is_active: is_active !== undefined ? is_active : true
-    })
-
     // Prepare the payload for the external webhook
     const webhookPayload = {
       game_id: parseInt(game_id),
@@ -43,10 +36,6 @@ export async function POST(request: NextRequest) {
       priority: priority ? parseInt(priority) : 1,
       is_active: is_active !== undefined ? is_active : true
     }
-
-    console.log('🔄 Calling games image update endpoint:', webhookPayload)
-    console.log('📡 External webhook URL:', 'https://ai.nibog.in/webhook/nibog/gamesimage/update')
-    console.log('💡 Using the correct update endpoint as specified by user')
 
     // Call the correct update endpoint as specified by user
     const webhookResponse = await fetch('https://ai.nibog.in/webhook/nibog/gamesimage/update', {
@@ -56,8 +45,6 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(webhookPayload),
     })
-
-    console.log(`📊 External webhook response status: ${webhookResponse.status}`)
 
     if (!webhookResponse.ok) {
       const errorText = await webhookResponse.text()
@@ -69,7 +56,6 @@ export async function POST(request: NextRequest) {
     }
 
     const webhookResult = await webhookResponse.json()
-    console.log('✅ External update webhook response:', webhookResult)
 
     return NextResponse.json({
       success: true,

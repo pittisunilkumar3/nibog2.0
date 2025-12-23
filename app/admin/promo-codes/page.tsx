@@ -197,12 +197,9 @@ export default function PromoCodesPage() {
     setIsProcessing(id)
 
     try {
-      console.log(`Deleting promo code with ID: ${id}`)
 
       // Call the delete API
       const response = await deletePromoCode(parseInt(id))
-
-      console.log("Delete promo code response:", response)
 
       if (response.success) {
         // Remove the deleted promo code from the list
@@ -354,14 +351,14 @@ export default function PromoCodesPage() {
       label: "Delete Selected",
       icon: <Trash className="h-4 w-4" />,
       onClick: (selectedPromoCodes) => {
-        console.log("Bulk delete:", selectedPromoCodes)
+        // TODO: Implement bulk delete handler
       },
       variant: 'destructive'
     }
   ]
 
   // Define export columns
-  const exportColumns: ExportColumn[] = [
+  const exportColumns: ExportColumn<PromoCode>[] = [
     { key: 'code', label: 'Code' },
     { key: 'description', label: 'Description' },
     { key: 'discountType', label: 'Type' },

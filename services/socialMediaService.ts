@@ -15,7 +15,6 @@ export interface SocialMedia {
  * @returns The saved social media data
  */
 export async function updateSocialMedia(socialMediaData: Partial<SocialMedia>): Promise<any> {
-  console.log("📤 Updating social media settings:", socialMediaData);
 
   try {
     // Create abort controller for timeout
@@ -59,7 +58,6 @@ export async function updateSocialMedia(socialMediaData: Partial<SocialMedia>): 
     });
 
     clearTimeout(timeoutId);
-    console.log(`Update social media response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -68,7 +66,6 @@ export async function updateSocialMedia(socialMediaData: Partial<SocialMedia>): 
     }
 
     const data = await response.json();
-    console.log('✅ Social media updated:', data);
     return data;
   } catch (error) {
     console.error('❌ Failed to update social media:', error);
@@ -82,7 +79,6 @@ export async function updateSocialMedia(socialMediaData: Partial<SocialMedia>): 
  * @returns The social media data
  */
 export async function getSocialMedia(): Promise<SocialMedia | null> {
-  console.log("📥 Fetching social media from backend...");
 
   try {
     const controller = new AbortController();
@@ -97,8 +93,6 @@ export async function getSocialMedia(): Promise<SocialMedia | null> {
 
     clearTimeout(timeoutId);
 
-    console.log(`Get social media response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -107,7 +101,6 @@ export async function getSocialMedia(): Promise<SocialMedia | null> {
     }
 
     const data = await response.json();
-    console.log('✅ Retrieved social media:', data);
     return data;
   } catch (error) {
     console.error('❌ Error fetching social media:', error);

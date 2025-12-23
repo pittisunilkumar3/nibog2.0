@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('File deletion request received:', { filePath })
 
     // Attempt to delete the file
     const deleted = await deleteFile(filePath)

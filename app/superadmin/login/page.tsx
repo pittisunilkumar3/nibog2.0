@@ -43,7 +43,6 @@ export default function SuperAdminLoginPage() {
     setErrorMessage("") // Clear any previous error messages
 
     try {
-      console.log('Attempting login with:', { email })
 
       // Regular API-based authentication flow
       const response = await fetch('/api/auth/proxy/login', {
@@ -55,9 +54,7 @@ export default function SuperAdminLoginPage() {
         credentials: 'include'
       })
 
-      console.log('Login response status:', response.status)
       const data = await response.json()
-      console.log('Login response data:', data)
 
       // Check if login was successful
       if (!data.success) {
@@ -77,7 +74,6 @@ export default function SuperAdminLoginPage() {
       // Store user data and token in localStorage, sessionStorage and cookies
       const userData = data.employee
       const authToken = data.token
-      console.log('Storing user data and token')
       localStorage.setItem('superadmin', JSON.stringify(userData))
       sessionStorage.setItem('superadmin', JSON.stringify(userData))
       // Store the authentication token for API calls
@@ -91,7 +87,6 @@ export default function SuperAdminLoginPage() {
       document.cookie = `superadmin-token=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60 * 60 * 24 * 7}`
 
 
-      console.log('Login successful, redirecting to', redirectTo)
       // Force a full page reload to ensure cookies are properly set
       window.location.href = redirectTo
     } catch (error) {

@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
     const offset = url.searchParams.get('offset') || '0';
     const status = url.searchParams.get('status');
     
-    console.log(`Fetching certificates with params: eventId=${eventId}, limit=${limit}, offset=${offset}, status=${status}`);
     
     // Build the query parameters for the external API
     let apiUrl = 'https://ai.nibog.in/webhook/v1/nibog/certificates/get-all';
@@ -33,8 +32,6 @@ export async function GET(request: NextRequest) {
       apiUrl += '?' + params.toString();
     }
     
-    console.log(`Making request to external API: ${apiUrl}`);
-    
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
@@ -52,8 +49,6 @@ export async function GET(request: NextRequest) {
       // Clear timeout since request completed
       clearTimeout(timeoutId);
       
-      console.log(`External API response status: ${response.status}`);
-      
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`n8n certificates/get-all error (${response.status}):`, errorText);
@@ -66,7 +61,6 @@ export async function GET(request: NextRequest) {
       }
       
       let result = await response.json();
-      console.log(`Retrieved ${Array.isArray(result) ? result.length : 'unknown'} certificates`);
       
       // Ensure required fields exist in the certificates data
       if (Array.isArray(result)) {

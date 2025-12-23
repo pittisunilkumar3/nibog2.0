@@ -7,11 +7,9 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    console.log("Server API route: Fetching social media...");
 
     // Forward the request to the external API with the correct URL
     const apiUrl = SOCIAL_MEDIA_API.GET;
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -21,15 +19,11 @@ export async function GET() {
       cache: "no-store",
     });
 
-    console.log(`Server API route: Get social media response status: ${response.status}`);
-
     if (!response.ok) {
       // If the first attempt fails, try with a different URL format
-      console.log("Server API route: First attempt failed, trying with alternative URL format");
 
       // Try with webhook-test instead of webhook
       const alternativeUrl = apiUrl.replace("webhook/v1", "webhook-test/v1");
-      console.log("Server API route: Trying alternative URL:", alternativeUrl);
 
       const alternativeResponse = await fetch(alternativeUrl, {
         method: "GET",
@@ -38,8 +32,6 @@ export async function GET() {
         },
         cache: "no-store",
       });
-
-      console.log(`Server API route: Alternative get social media response status: ${alternativeResponse.status}`);
 
       if (!alternativeResponse.ok) {
         const errorText = await alternativeResponse.text();
@@ -52,12 +44,10 @@ export async function GET() {
 
       // Get the response data from the alternative URL
       const responseText = await alternativeResponse.text();
-      console.log(`Server API route: Raw response from alternative URL: ${responseText}`);
       
       try {
         // Try to parse the response as JSON
         const responseData = JSON.parse(responseText);
-        console.log("Server API route: Retrieved social media:", responseData);
         
         return NextResponse.json(responseData, { status: 200 });
       } catch (parseError) {
@@ -75,12 +65,10 @@ export async function GET() {
 
     // Get the response data
     const responseText = await response.text();
-    console.log(`Server API route: Raw response: ${responseText}`);
     
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
-      console.log("Server API route: Retrieved social media:", responseData);
       
       return NextResponse.json(responseData, { status: 200 });
     } catch (parseError) {

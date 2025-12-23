@@ -21,7 +21,6 @@ export async function GET(
       );
     }
 
-    console.log(`GET /api/city/${city_id}/events - Fetching events for city`);
 
     const response = await fetch(`${BACKEND_URL}/api/city/${city_id}/events`, {
       method: 'GET',
@@ -41,7 +40,6 @@ export async function GET(
     }
 
     const result = await response.json();
-    console.log(`Retrieved events for city ${city_id}`);
 
     // Ensure consistent response format
     if (result.success && result.data) {

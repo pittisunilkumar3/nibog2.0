@@ -4,11 +4,9 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    console.log("Server API route: Fetching all cities...");
 
     // Forward the request to the external API with the correct URL
     const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/city/get-all";
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     let response;
     try {
@@ -22,11 +20,9 @@ export async function GET() {
         cache: "no-store",
       });
 
-      console.log(`Server API route: External API response status: ${response.status} ${response.statusText}`);
       
       // Get the response as text first to handle potential non-JSON responses
       const responseText = await response.text();
-      console.log('Server API route: Raw response (first 200 chars):', responseText.substring(0, 200));
       
       // Check if response is HTML (error page)
       const contentType = response.headers.get('content-type') || '';
@@ -71,7 +67,6 @@ export async function GET() {
         );
       }
 
-      console.log(`Server API route: Successfully retrieved ${data.length} cities`);
       return NextResponse.json(data, { status: 200 });
 
     } catch (error: any) {

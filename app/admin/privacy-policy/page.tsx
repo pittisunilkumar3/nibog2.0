@@ -81,7 +81,6 @@ export default function PrivacyPolicyPage() {
       try {
         // Use the privacy policy service
         const data = await getPrivacyPolicy()
-        console.log('Fetched privacy policy data:', data)
 
         // Check if data exists and has content
         if (data && data.success && data.policy) {
@@ -124,7 +123,6 @@ export default function PrivacyPolicyPage() {
 
       // Use the privacy policy service which handles authentication
       const result = await updatePrivacyPolicy(contentToSave)
-      console.log('Privacy policy saved successfully:', result)
 
       // Update last updated timestamp
       setPrivacyContent(prev => ({

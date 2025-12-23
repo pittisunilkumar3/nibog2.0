@@ -5,7 +5,6 @@ export async function POST(request: Request) {
     // Parse the request body
     const data = await request.json();
     
-    console.log(`Server API route: Creating event game slot with data:`, data);
 
     // Validate required fields
     const requiredFields = ['event_id', 'game_id', 'start_time', 'end_time', 'max_participants'];
@@ -27,7 +26,6 @@ export async function POST(request: Request) {
       body: JSON.stringify(data),
     });
 
-    console.log(`External API response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -39,7 +37,6 @@ export async function POST(request: Request) {
     }
 
     const result = await response.json();
-    console.log("Server API route: Event game slot created successfully:", result);
 
     return NextResponse.json(result, { status: 201 });
   } catch (error: any) {

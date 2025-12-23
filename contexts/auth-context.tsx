@@ -62,7 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Logout function
   const logout = useCallback(async () => {
-    console.log('Logout initiated - performing cleanup');
 
     // Try server-side logout (clears httpOnly cookies if any)
     try {
@@ -165,18 +164,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('[AuthContext] Checking authentication...');
         const authenticated = isClientAuthenticated();
-        console.log('[AuthContext] Is authenticated:', authenticated);
         
         if (authenticated && typeof window !== 'undefined') {
           const storedUser = localStorage.getItem('nibog-user') || localStorage.getItem('user');
-          console.log('[AuthContext] Stored user found:', !!storedUser);
           
           if (storedUser) {
             const userData = JSON.parse(storedUser);
             setUser(userData);
-            console.log('[AuthContext] User set:', userData.email);
             
             // Migrate old key to new key
             if (localStorage.getItem('user')) {
@@ -185,12 +180,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           } else {
             // Session exists but no user data, clear session
-            console.log('[AuthContext] Session exists but no user data, clearing');
             clearSession();
             setUser(null);
           }
         } else {
-          console.log('[AuthContext] Not authenticated');
           setUser(null);
         }
       } catch (error) {
@@ -198,7 +191,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       } finally {
         setIsLoading(false);
-        console.log('[AuthContext] Auth check complete');
       }
     }
 

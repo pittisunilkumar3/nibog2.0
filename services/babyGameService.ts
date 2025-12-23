@@ -253,7 +253,6 @@ export async function deleteBabyGame(id: number): Promise<{ success: boolean }> 
  */
 export async function uploadBabyGameImage(file: File): Promise<string> {
   try {
-    console.log('Uploading baby game image...');
 
     const formData = new FormData();
     formData.append('file', file);
@@ -269,7 +268,6 @@ export async function uploadBabyGameImage(file: File): Promise<string> {
     }
 
     const result = await response.json();
-    console.log('Successfully uploaded baby game image:', result.path);
     return result.path;
   } catch (error) {
     console.error('Error uploading baby game image:', error);
@@ -289,7 +287,6 @@ export async function uploadGameImage(file: File): Promise<{
   originalName: string;
   size: number;
 }> {
-  console.log("Uploading game image:", file.name);
 
   try {
     const formData = new FormData();
@@ -300,8 +297,6 @@ export async function uploadGameImage(file: File): Promise<{
       body: formData,
     });
 
-    console.log(`Upload game image response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -309,7 +304,6 @@ export async function uploadGameImage(file: File): Promise<{
     }
 
     const data = await response.json();
-    console.log("Game image uploaded:", data);
 
     return data;
   } catch (error) {
@@ -332,7 +326,6 @@ export async function sendGameImageToWebhook(
   priority: number,
   isActive: boolean = true
 ): Promise<any> {
-  console.log("Sending game image to webhook:", { gameId, imageUrl, priority, isActive });
 
   try {
     const response = await fetch('/api/gamesimage/webhook', {
@@ -348,8 +341,6 @@ export async function sendGameImageToWebhook(
       }),
     });
 
-    console.log(`Game image webhook response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error response: ${errorText}`);
@@ -357,7 +348,6 @@ export async function sendGameImageToWebhook(
     }
 
     const data = await response.json();
-    console.log("Game image webhook success:", data);
 
     return data;
   } catch (error) {
@@ -372,7 +362,6 @@ export async function sendGameImageToWebhook(
  * @returns Promise with array of game images
  */
 export async function fetchGameImages(gameId: number): Promise<any[]> {
-  console.log("🎮 Fetching game images for game ID:", gameId);
 
   try {
     const response = await fetch('/api/gamesimage/get', {
@@ -385,8 +374,6 @@ export async function fetchGameImages(gameId: number): Promise<any[]> {
       }),
     });
 
-    console.log(`📡 Fetch game images response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ API Error response: ${errorText}`);
@@ -394,7 +381,6 @@ export async function fetchGameImages(gameId: number): Promise<any[]> {
     }
 
     const data = await response.json();
-    console.log("✅ Game images fetched:", data);
 
     // Enhanced filtering to handle empty objects and invalid data
     if (Array.isArray(data)) {
@@ -407,13 +393,11 @@ export async function fetchGameImages(gameId: number): Promise<any[]> {
         img.image_url.trim() !== ''
       );
 
-      console.log(`📊 Valid game images after filtering: ${validImages.length}`, validImages);
       return validImages;
     }
 
     // Handle case where API returns empty object or null
-    console.log("⚠️ API returned non-array data:", typeof data);
-    return [];
+    return []; 
   } catch (error) {
     console.error("❌ Error fetching game images:", error);
     throw error;
@@ -426,7 +410,6 @@ export async function fetchGameImages(gameId: number): Promise<any[]> {
  * @returns Promise with delete result
  */
 export async function deleteGameImages(gameId: number): Promise<any> {
-  console.log("🗑️ Deleting game images for game ID:", gameId);
 
   try {
     const response = await fetch('/api/gamesimage/delete', {
@@ -439,8 +422,6 @@ export async function deleteGameImages(gameId: number): Promise<any> {
       }),
     });
 
-    console.log(`Delete game images response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Delete error response: ${errorText}`);
@@ -448,7 +429,6 @@ export async function deleteGameImages(gameId: number): Promise<any> {
     }
 
     const data = await response.json();
-    console.log("✅ Game images delete success:", data);
 
     return data;
   } catch (error) {
@@ -471,7 +451,6 @@ export async function updateGameImage(
   priority: number,
   isActive: boolean = true
 ): Promise<any> {
-  console.log("🔄 Updating game image using create strategy:", { gameId, imageUrl, priority, isActive });
 
   try {
     // Use the update API route which internally calls the create endpoint
@@ -488,8 +467,6 @@ export async function updateGameImage(
       }),
     });
 
-    console.log(`📡 Update game image response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ Update API error response: ${errorText}`);
@@ -497,7 +474,6 @@ export async function updateGameImage(
     }
 
     const data = await response.json();
-    console.log("✅ Game image update success:", data);
 
     return data;
   } catch (error) {
@@ -516,6 +492,5 @@ export async function updateGameImageLegacy(
   priority: number,
   isActive: boolean = true
 ): Promise<any> {
-  console.log("⚠️ Using legacy update function - redirecting to new implementation");
   return updateGameImage(gameId, imageUrl, priority, isActive);
 }

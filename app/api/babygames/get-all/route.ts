@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const apiUrl = BABY_GAMES_REST_API.BASE;
-    console.log(`📡 Fetching all baby games from: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
       method: "GET",

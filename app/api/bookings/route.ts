@@ -9,7 +9,6 @@ export async function GET(request: Request) {
     const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
     const apiUrl = `${BACKEND_URL}/api/bookings`;
     
-    console.log('Fetching all bookings from backend:', apiUrl);
     
     const response = await fetch(apiUrl, {
       method: 'GET',

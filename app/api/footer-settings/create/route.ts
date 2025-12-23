@@ -6,10 +6,7 @@ export async function POST(request: Request) {
   try {
     const footerData = await request.json();
     
-    console.log("Server API route: Creating footer settings:", footerData);
-
     const apiUrl = 'https://ai.nibog.in/webhook/v1/nibog/footer_setting/post';
-    console.log("Server API route: Calling API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -19,8 +16,6 @@ export async function POST(request: Request) {
       body: JSON.stringify(footerData),
       cache: "no-store",
     });
-
-    console.log(`Server API route: Create footer settings response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -32,7 +27,6 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log("Server API route: Footer settings created successfully");
     
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) {

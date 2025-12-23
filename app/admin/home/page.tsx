@@ -126,7 +126,6 @@ export default function HomeSection() {
     if (!window.confirm("Delete this image from the slider?")) return
 
     try {
-      console.log("Deleting image with ID:", meta.id)
       const success = await deleteHomepageSection(meta.id)
 
       if (success) {

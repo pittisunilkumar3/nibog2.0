@@ -50,8 +50,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Fetching certificate preview for certificate_id: ${certificate_id}, template_id: ${template_id}`);
-
     // First, fetch the certificate data
     const certificateResponse = await fetch(
       `https://ai.nibog.in/webhook/v1/nibog/certificates/get`,
@@ -81,7 +79,6 @@ export async function POST(request: NextRequest) {
     let template: CertificateTemplate;
     try {
       template = await getCertificateTemplateById(template_id);
-      console.log('Using template:', template.name);
     } catch (templateError) {
       console.error('Error fetching template:', templateError);
       return NextResponse.json({ error: 'Failed to fetch certificate template' }, { status: 500 });
@@ -119,7 +116,6 @@ function generateCertificateHTML(
 
   // Check if we have new background_style or need to use legacy background_image
   if (template.background_style && template.background_style.type) {
-    console.log('Using new background style:', template.background_style);
 
     if (template.background_style.type === 'image') {
       const imageUrl = template.background_style.image_url || template.background_image;
@@ -135,7 +131,6 @@ function generateCertificateHTML(
       backgroundStyle = `background: linear-gradient(135deg, ${template.background_style.gradient_colors[0]}, ${template.background_style.gradient_colors[1]});`;
     }
   } else if (template.background_image && template.background_image !== 'null' && template.background_image !== null) {
-    console.log('Using legacy background image:', template.background_image);
     // Legacy background image support
     const backgroundImageUrl = template.background_image.startsWith('http')
       ? template.background_image
@@ -143,7 +138,7 @@ function generateCertificateHTML(
     backgroundStyle = `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
   }
 
-  console.log('Final background style:', backgroundStyle);
+
 
   // Extract data values
   const participantName = certificate.child_name || certificate.certificate_data?.participant_name || 'Participant';

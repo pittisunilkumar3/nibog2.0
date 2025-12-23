@@ -78,15 +78,6 @@ export const getAppUrl = (): string => {
 // Determine if we're in production mode
 // Check both server-side and client-side environment variables
 const phonepeEnv = process.env.PHONEPE_ENVIRONMENT || process.env.NEXT_PUBLIC_PHONEPE_ENVIRONMENT || 'sandbox';
-console.log('PhonePe Environment Variable:', phonepeEnv);
-console.log('All Environment Variables:', {
-  PHONEPE_ENVIRONMENT: process.env.PHONEPE_ENVIRONMENT,
-  NEXT_PUBLIC_PHONEPE_ENVIRONMENT: process.env.NEXT_PUBLIC_PHONEPE_ENVIRONMENT,
-  NODE_ENV: process.env.NODE_ENV,
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  VERCEL_ENV: process.env.VERCEL_ENV
-});
-console.log('Resolved APP_URL:', getAppUrl());
 const isProduction = phonepeEnv === 'production';
 
 // Environment-specific API endpoints
@@ -357,18 +348,10 @@ export function validatePhonePeConfig(): { isValid: boolean; errors: string[] } 
 export function logPhonePeConfig(): void {
   const validation = validatePhonePeConfig();
 
-  console.log('=== PhonePe Configuration ===');
-  console.log(`Environment: ${PHONEPE_CONFIG.ENVIRONMENT}`);
-  console.log(`Merchant ID: ${PHONEPE_CONFIG.MERCHANT_ID ? `✓ Set (${PHONEPE_CONFIG.MERCHANT_ID.substring(0, 8)}...)` : '✗ Missing'}`);
-  console.log(`Salt Key: ${PHONEPE_CONFIG.SALT_KEY ? '✓ Set' : '✗ Missing'}`);
-  console.log(`Salt Index: ${PHONEPE_CONFIG.SALT_INDEX ? `✓ Set (${PHONEPE_CONFIG.SALT_INDEX})` : '✗ Missing'}`);
-  console.log(`App URL: ${PHONEPE_CONFIG.APP_URL}`);
-  console.log(`Test Mode: ${PHONEPE_CONFIG.IS_TEST_MODE ? 'Enabled' : 'Disabled'}`);
-  console.log(`API Endpoint: ${PHONEPE_CONFIG.API_ENDPOINTS.INITIATE}`);
+  // Logging removed to avoid leaking sensitive config in production environments.
 
-  // Show endpoint type
+  // Show endpoint type (kept for internal checks without logging)
   const isProdEndpoint = PHONEPE_CONFIG.API_ENDPOINTS.INITIATE.includes('api.phonepe.com/apis/hermes');
-  console.log(`Endpoint Type: ${isProdEndpoint ? 'PRODUCTION' : 'SANDBOX'}`);
 
   if (!validation.isValid) {
     console.error('PhonePe Configuration Errors:', validation.errors);
@@ -378,7 +361,6 @@ export function logPhonePeConfig(): void {
       throw new Error(`PhonePe Configuration Error: ${criticalErrors.join(', ')}`);
     }
   } else {
-    console.log('✓ PhonePe configuration is valid');
+    // Configuration valid — no console output to avoid exposing sensitive information
   }
-  console.log('=============================');
 }

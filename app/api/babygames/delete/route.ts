@@ -15,9 +15,6 @@ export async function POST(request: Request) {
     }
 
     const apiUrl = `${BABY_GAMES_REST_API.BASE}/${id}`;
-    console.log(`📡 Deleting baby game ${id} at: ${apiUrl}`);
-    console.log(`🔑 Auth header received: ${authHeader ? 'Present (' + authHeader.substring(0, 15) + '...)' : 'Missing'}`);
-
     const response = await fetch(apiUrl, {
       method: "DELETE",
       headers: {
