@@ -323,10 +323,30 @@ export async function DELETE(
       );
     }
 
-
-
     // Use BACKEND_URL to call the backend API directly
     const base = (BACKEND_URL || '').replace(/\/$/, '');
+    
+    // First, get the testimonial to retrieve image_url before deletion
+    const getUrl = `${base}/api/testimonials/${id}`;
+    let testimonialData: any = null;
+    
+    try {
+      const getResponse = await fetch(getUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
+      
+      if (getResponse.ok) {
+        const result = await getResponse.json();
+        testimonialData = result.data || result;
+      }
+    } catch (err) {
+      console.warn('Could not fetch testimonial data before deletion:', err);
+    }
+    
     const deleteUrl = `${base}/api/testimonials/${id}`;
 
 
@@ -368,6 +388,31 @@ export async function DELETE(
 
     const data = await response.json();
 
+    // Delete the image file if it exists
+    if (testimonialData && testimonialData.image_url) {
+      try {
+        const { unlink } = await import('fs/promises');
+        const { join } = await import('path');
+        
+        // Extract the relative path from image_url
+        let imagePath = testimonialData.image_url;
+        
+        // Remove leading slash if present
+        if (imagePath.startsWith('/')) {
+          imagePath = imagePath.substring(1);
+        }
+        
+        // Construct the full file path
+        const fullPath = join(process.cwd(), imagePath);
+        
+        // Delete the file
+        await unlink(fullPath);
+        console.log(`Deleted image file: ${fullPath}`);
+      } catch (fileErr) {
+        // Log error but don't fail the deletion if file doesn't exist
+        console.warn('Could not delete image file:', fileErr);
+      }
+    }
 
     // Check if the response indicates success
     if (data && data.success) {

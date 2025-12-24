@@ -225,30 +225,30 @@ export default function NewTestimonialPage() {
       // Format date to match API requirement (YYYY-MM-DD)
       const formattedDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
-      // Prepare payload for API
+      // Get authentication token
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null;
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
+      // Prepare payload for backend API with image_url included
+      // Store only relative path, not full URL
       const payload = {
         name: name.trim(),
-        city_id: selectedCityId, // Send city ID as integer
+        city_id: selectedCityId,
         event_id: parseInt(selectedEventId),
         rating: parseInt(rating),
         testimonial: testimonialText.trim(),
         submitted_at: formattedDate,
         status: "Published",
+        image_url: uploadedImagePath || null, // Store relative path only
         priority: priority,
         is_active: 1
       }
 
-      // Form data prepared (debug log removed)
-      // Payload prepared (debug log removed)
+      console.log('Sending payload to backend:', payload);
 
-      // Get authentication token (support adminToken in localStorage)
-      const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || localStorage.getItem('token') || sessionStorage.getItem('token')) : null;
-      // Token usage info (debug log removed)
-      if (!token) {
-        throw new Error('No authentication token found. Please log in again.');
-      }
-
-      // Step 1: Create testimonial
+      // Call Next.js API route which proxies to backend (avoids CORS issues)
       const response = await fetch('/api/testimonials', {
         method: 'POST',
         headers: {
@@ -265,59 +265,11 @@ export default function NewTestimonialPage() {
       }
 
       const testimonialResponse = await response.json()
-      // Testimonial API response received (debug log removed)
-
-      // Handle array response from testimonial API
-      const testimonialData = Array.isArray(testimonialResponse) ? testimonialResponse[0] : testimonialResponse
-      // Testimonial data extracted (debug log removed)
-
-      // Step 2: MANDATORY - Associate image with the testimonial
-      // Both testimonial creation AND image association must succeed
-      if (uploadedImagePath && testimonialData && testimonialData.id) {
-        // Image association step started (debug log removed)
-
-        const imagePayload = {
-          testimonial_id: testimonialData.id,
-          image_url: uploadedImagePath,
-          priority: priority,
-          is_active: true
-        }
-
-        // Image payload prepared (debug log removed)
-
-        const imageResponse = await fetch('/api/testimonials/images/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(imagePayload)
-        })
-
-        if (!imageResponse.ok) {
-          const imageErrorData = await imageResponse.text();
-          console.error('Image API error response:', imageErrorData);
-          // FAIL the entire process if image association fails
-          throw new Error('Failed to associate image with testimonial: ' + imageErrorData);
-        }
-
-        const imageResponse_data = await imageResponse.json()
-        // Handle array response from testimonial images API
-        const imageData = Array.isArray(imageResponse_data) ? imageResponse_data[0] : imageResponse_data
-        // Image associated successfully (debug log removed)
-        // Testimonial and image creation succeeded (debug log removed)
-      } else if (uploadedImagePath && (!testimonialData || !testimonialData.id)) {
-        // Image was uploaded but testimonial ID is missing
-        console.error('❌ CRITICAL ERROR: Testimonial ID missing for image association');
-        console.error('Testimonial response was:', testimonialResponse);
-        throw new Error('Testimonial was created but ID is missing for image association');
-      } else if (!uploadedImagePath) {
-        // No image was uploaded, testimonial creation alone is sufficient
-        // Testimonial created successfully (no image to associate) (debug log removed)
-      }
+      console.log('Testimonial created successfully:', testimonialResponse);
 
       setIsLoading(false)
 
-      // Redirect to the testimonials list ONLY after both APIs succeed
+      // Redirect to the testimonials list after successful creation
       router.push("/admin/testimonials")
 
     } catch (error) {

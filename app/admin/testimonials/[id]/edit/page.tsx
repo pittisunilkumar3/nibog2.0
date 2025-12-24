@@ -167,6 +167,12 @@ export default function EditTestimonialPage({ params }: Props) {
           setDate(testimonialData.submitted_at.split('T')[0]) // Extract date from ISO string
           setPriority(testimonialData.priority || 1)
           
+          // Set existing image from testimonial data
+          if (testimonialData.image_url) {
+            setExistingImageUrl(testimonialData.image_url)
+            setUploadedImagePath(testimonialData.image_url)
+          }
+          
           // Set event after events are loaded for the city
           if (testimonialData.event_id) {
             setEvent(testimonialData.event_id.toString())
@@ -183,56 +189,8 @@ export default function EditTestimonialPage({ params }: Props) {
     }
   }, [testimonialId])
 
-  // Fetch existing testimonial image data
-  useEffect(() => {
-    const fetchTestimonialImage = async () => {
-      try {
-        // Fetching existing testimonial image (debug log removed)
-
-        const response = await fetch('/api/testimonials/images/get-single', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            testmonial_id: parseInt(testimonialId)
-          })
-        })
-
-        if (!response.ok) {
-          // If no image found, that's okay (debug log removed)
-          return
-        }
-
-        const data = await response.json()
-        // Existing testimonial image data received (debug log removed)
-
-        // Handle array response (API returns array)
-        const imageData = Array.isArray(data) ? data[0] : data
-
-        if (imageData && imageData.image_url) {
-          // Loading existing image (debug log removed)
-
-          // For existing images, store the URL separately and don't set imagePreview
-          // imagePreview should only be used for new uploads (data URLs)
-          setExistingImageUrl(imageData.image_url)
-          setUploadedImagePath(imageData.image_url)
-          setPriority(imageData.priority || 1)
-
-          // Loaded existing image and priority (debug logs removed)
-        } else {
-          // No existing image found for testimonial (debug log removed)
-        }
-      } catch (error) {
-        console.error('Error fetching testimonial image:', error)
-        // Don't show error to user - it's okay if no image exists
-      }
-    }
-
-    if (testimonialId) {
-      fetchTestimonialImage()
-    }
-  }, [testimonialId])
+  // Note: Image URL is now fetched along with testimonial data above
+  // No need for separate image fetch API call
 
   // Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
