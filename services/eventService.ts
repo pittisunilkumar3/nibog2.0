@@ -1369,20 +1369,39 @@ export async function sendEventImageToWebhook(
  * @param eventId The event ID
  * @returns Promise with array of event images
  */
+import { buildServeImageUrl } from '@/lib/imageUtils'
+
 export async function fetchEventImages(eventId: number): Promise<any[]> {
+  console.log(`[eventService.fetchEventImages] Fetching images for event ${eventId}`);
 
   try {
     // Import the mapping function dynamically to avoid circular dependencies
     const { fetchEventImagesWithMapping } = await import('@/lib/eventImageMapping');
 
+    console.log(`[eventService.fetchEventImages] Calling fetchEventImagesWithMapping...`);
     const images = await fetchEventImagesWithMapping(eventId);
 
-    return images;
+    console.log(`[eventService.fetchEventImages] Received ${images.length} images from mapping function`);
+
+    // Normalize image_url for UI previews
+    const normalized = Array.isArray(images) ? images.map(img => {
+      if (img && typeof img === 'object' && img.image_url) {
+        // Convert image_url into a served URL usable in <img src>
+        const servedUrl = buildServeImageUrl(img.image_url, 'upload/eventimages/');
+        console.log(`[eventService.fetchEventImages] Normalized image URL: ${img.image_url} -> ${servedUrl}`);
+        return { ...img, image_url: servedUrl }
+      }
+      return img
+    }) : []
+
+    console.log(`[eventService.fetchEventImages] ✅ Returning ${normalized.length} normalized images`);
+    return normalized;
   } catch (error) {
-    console.error("Error fetching event images:", error);
+    console.error("[eventService.fetchEventImages] ❌ Error fetching event images:", error);
 
     // Fallback to direct API call if mapping fails
     try {
+      console.log(`[eventService.fetchEventImages] Attempting fallback to /api/eventimages/get...`);
 
       const response = await fetch('/api/eventimages/get', {
         method: 'POST',
@@ -1394,11 +1413,16 @@ export async function fetchEventImages(eventId: number): Promise<any[]> {
         }),
       });
 
+      console.log(`[eventService.fetchEventImages] Fallback API response status: ${response.status}`);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[eventService.fetchEventImages] Fallback API failed: ${response.status} - ${errorText}`);
         throw new Error(`API failed: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log(`[eventService.fetchEventImages] Fallback API returned:`, data);
 
       if (Array.isArray(data)) {
         const validImages = data.filter(img =>
@@ -1407,12 +1431,23 @@ export async function fetchEventImages(eventId: number): Promise<any[]> {
           img.id !== undefined &&
           img.image_url !== undefined
         );
-        return validImages;
+
+        console.log(`[eventService.fetchEventImages] Found ${validImages.length} valid images from fallback`);
+
+        // Convert to served URLs
+        const normalized = validImages.map(img => ({ 
+          ...img, 
+          image_url: buildServeImageUrl(img.image_url, 'upload/eventimages/') 
+        }));
+
+        console.log(`[eventService.fetchEventImages] ✅ Returning ${normalized.length} images from fallback`);
+        return normalized;
       }
 
+      console.log(`[eventService.fetchEventImages] ⚠️ No valid images in fallback response`);
       return [];
     } catch (fallbackError) {
-      console.error("Fallback fetch also failed:", fallbackError);
+      console.error("[eventService.fetchEventImages] ❌ Fallback fetch also failed:", fallbackError);
       return [];
     }
   }
