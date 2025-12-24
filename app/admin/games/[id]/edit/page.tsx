@@ -280,6 +280,8 @@ export default function EditGameTemplate({ params }: Props) {
 
       // Show saved state
       setIsSaved(true)
+      // Notify admin page to refresh instantly
+      localStorage.setItem('nibog_games_admin_update', Date.now().toString());
       setTimeout(() => {
         setIsSaved(false)
         router.push(`/admin/games`)

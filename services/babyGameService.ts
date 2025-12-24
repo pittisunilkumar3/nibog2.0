@@ -77,11 +77,16 @@ export async function createBabyGame(gameData: BabyGame): Promise<BabyGame> {
  */
 export async function getAllBabyGames(): Promise<BabyGame[]> {
   try {
-    // Use our internal API route on the client, but call backend URL when running on server
-    const response = await fetch(apiUrl('/api/babygames/get-all'), {
+    // Add timestamp to bust cache
+    const timestamp = Date.now();
+    const url = apiUrl(`/api/babygames/get-all?t=${timestamp}`);
+    const response = await fetch(url, {
       method: "GET",
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
       },
     });
 

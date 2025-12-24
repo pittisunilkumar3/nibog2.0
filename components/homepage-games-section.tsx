@@ -7,9 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-// Cache configuration
-const GAMES_CACHE_KEY = 'nibog_games_data';
-const GAMES_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 interface Game {
   id: number;
@@ -33,23 +30,18 @@ function HomepageGamesSectionComponent() {
 
   const fetchGames = async () => {
     try {
-      // Check sessionStorage cache first
-      const cached = sessionStorage.getItem(GAMES_CACHE_KEY);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < GAMES_CACHE_EXPIRY) {
-          setGames(data);
-          setIsLoading(false);
-          return;
-        }
-      }
-
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/games-with-images', {
+      // Add timestamp to bust cache
+      const timestamp = Date.now();
+      const response = await fetch(`/api/games-with-images?t=${timestamp}`, {
         method: 'GET',
-        next: { revalidate: 300 }, // Revalidate every 5 minutes
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
       });
 
       if (!response.ok) {
@@ -58,19 +50,17 @@ function HomepageGamesSectionComponent() {
 
       const data = await response.json();
 
-      // Cache the response
-      sessionStorage.setItem(GAMES_CACHE_KEY, JSON.stringify({
-        data,
-        timestamp: Date.now()
-      }));
+      if (!Array.isArray(data) || data.length === 0) {
+        setGames([]);
+        setIsLoading(false);
+        return;
+      }
 
       setGames(data);
 
     } catch (error) {
       console.error('❌ Homepage: Error fetching games:', error);
       setError(error instanceof Error ? error.message : 'Failed to load games');
-
-      // Set fallback games data
       setGames([]);
     } finally {
       setIsLoading(false);
@@ -132,6 +122,8 @@ function HomepageGamesSectionComponent() {
     return colors[index % colors.length];
   };
 
+
+  // Debug output for API data and errors
   if (isLoading) {
     return (
       <section className="relative py-20 bg-gradient-to-br from-lavender-100 via-mint-50 to-coral-50 dark:from-lavender-900/20 dark:via-mint-900/20 dark:to-coral-900/20 overflow-hidden">
@@ -150,7 +142,6 @@ function HomepageGamesSectionComponent() {
                 Loading exciting games for your little champions...
               </p>
             </div>
-
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
                 <Card key={i} className="card-baby-gradient overflow-hidden h-full animate-pulse">
@@ -182,7 +173,6 @@ function HomepageGamesSectionComponent() {
                 {error ? 'Unable to load games at the moment' : 'No games available'}
               </p>
             </div>
-
             <div className="mt-8">
               <Button
                 size="lg"
@@ -286,5 +276,5 @@ function HomepageGamesSectionComponent() {
   );
 }
 
-// Memoize to prevent unnecessary re-renders
-export default memo(HomepageGamesSectionComponent);
+// Export without memo to ensure updates are always reflected
+export default HomepageGamesSectionComponent;

@@ -35,11 +35,13 @@ export default function GameTemplatesPage() {
   const [selectedStatus, setSelectedStatus] = useState("all")
   const { toast } = useToast()
 
-  // Fetch games from API
+  // Fetch games from API with cache busting
   const fetchGames = async () => {
     try {
       setError(null)
+      console.log('🔄 Fetching games at:', new Date().toISOString())
       const data = await getAllBabyGames()
+      console.log('✅ Fetched games:', data.length)
       setGames(data)
     } catch (err: any) {
       const errorMsg = err.message || "Failed to fetch games"
@@ -58,6 +60,16 @@ export default function GameTemplatesPage() {
   useEffect(() => {
     setIsLoading(true)
     fetchGames()
+
+    // Listen for localStorage event to trigger refresh after add/edit
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'nibog_games_admin_update') {
+        fetchGames();
+        localStorage.removeItem('nibog_games_admin_update');
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, [])
 
   // Handle refresh
@@ -73,7 +85,7 @@ export default function GameTemplatesPage() {
   const handleDeleteGame = async (id: number) => {
     try {
       await deleteBabyGame(id)
-      setGames(games.filter(game => game.id !== id))
+      await fetchGames(); // Refetch from backend for instant update
       toast({
         title: "Game Deleted",
         description: "The game has been deleted successfully.",

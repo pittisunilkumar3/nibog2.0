@@ -138,6 +138,8 @@ export default function NewGameTemplate() {
       })
 
       // Redirect to list
+      // Notify admin page to refresh instantly
+      localStorage.setItem('nibog_games_admin_update', Date.now().toString());
       setTimeout(() => {
         router.push("/admin/games")
       }, 2000)
