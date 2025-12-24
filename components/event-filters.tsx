@@ -123,7 +123,5 @@ export default function EventFilters() {
     venues.length > 0,
   ].filter(Boolean).length
 
-  return (
-    <div>Test</div>
-  )
+  return null
 }

@@ -1204,7 +1204,7 @@ export async function uploadEventImage(file: File): Promise<{
   }
 }
 
-export async function deleteEvent(id: number): Promise<{ success: boolean } | Array<{ success: boolean }>> {
+export async function deleteEvent(id: number, imageUrl?: string): Promise<{ success: boolean } | Array<{ success: boolean }>> {
 
   // Ensure id is a number
   const numericId = Number(id);
@@ -1260,7 +1260,10 @@ export async function deleteEvent(id: number): Promise<{ success: boolean } | Ar
     };
 
     // Use our internal API route to avoid CORS issues
-    const requestBody = { id: numericId };
+    const requestBody: any = { id: numericId };
+    if (imageUrl) {
+      requestBody.image_url = imageUrl;
+    }
 
     const response = await fetch('/api/events/delete', {
       method: "POST",
