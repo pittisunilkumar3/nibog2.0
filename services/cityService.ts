@@ -218,3 +218,90 @@ export const deleteCity = async (id: number): Promise<{ success: boolean; messag
     throw error;
   }
 };
+
+/**
+ * Interface for booking info with events and games
+ */
+export interface BookingCity {
+  id: number;
+  city_name: string;
+  state: string;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+  total_events: number;
+  events: BookingEvent[];
+}
+
+export interface BookingEvent {
+  id: number;
+  title: string;
+  description: string;
+  city_id: number;
+  venue_id: number;
+  venue_name: string;
+  venue_address: string;
+  venue_capacity: number;
+  event_date: string;
+  status: string;
+  is_active: number;
+  image_url: string;
+  priority: number;
+  created_at: string;
+  updated_at: string;
+  games_with_slots: BookingGameSlot[];
+}
+
+export interface BookingGameSlot {
+  slot_id: number;
+  game_id: number;
+  game_name: string;
+  game_image: string;
+  game_description: string;
+  custom_title: string;
+  custom_description: string;
+  duration_minutes: number;
+  categories: string;
+  start_time: string;
+  end_time: string;
+  price: string;
+  max_participants: number;
+  booked_count: number;
+  available_slots: number;
+  is_available: boolean;
+  min_age: number;
+  max_age: number;
+  note: string;
+  is_active: number;
+}
+
+/**
+ * Get all cities with booking information (events, games, slots, availability)
+ * @returns Promise with array of cities with booking details
+ */
+export const getCitiesWithBookingInfo = async (): Promise<BookingCity[]> => {
+  try {
+    const response = await fetch('/api/city/booking-info/list', {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error fetching booking info: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success || !Array.isArray(result.data)) {
+      throw new Error('Invalid response format from booking info API');
+    }
+
+    return result.data;
+  } catch (error: any) {
+    console.error(`[Booking Info API] Fetch failed:`, error.message);
+    throw error;
+  }
+};

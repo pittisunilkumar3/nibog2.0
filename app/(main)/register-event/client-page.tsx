@@ -32,7 +32,7 @@ const AddOnSelector = dynamic(() => import("@/components/add-on-selector"), {
 import { fetchAllAddOnsFromExternalApi } from "@/services/addOnService"
 import type { AddOn } from "@/types"
 import type { AddOn as AddOnType } from "@/types"
-import { getAllCities } from "@/services/cityService"
+import { getAllCities, getCitiesWithBookingInfo, BookingCity, BookingEvent, BookingGameSlot } from "@/services/cityService"
 import { getEventsByCityId, getGamesByAgeAndEvent, getEventById, EventListItem, EventGameListItem } from "@/services/eventService"
 import { getGamesByAge, Game } from "@/services/gameService"
 import { registerBooking, formatBookingDataForAPI } from "@/services/bookingRegistrationService"
@@ -102,6 +102,7 @@ export default function RegisterEventClientPage() {
   const [cities, setCities] = useState<{ id: string | number; name: string }[]>([])
   const [isLoadingCities, setIsLoadingCities] = useState<boolean>(true) // Start as true to show loading state immediately
   const [cityError, setCityError] = useState<string | null>(null)
+  const [bookingCities, setBookingCities] = useState<BookingCity[]>([])
   const [apiEvents, setApiEvents] = useState<EventListItem[]>([])
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false)
   const [eventError, setEventError] = useState<string | null>(null)
@@ -130,6 +131,44 @@ export default function RegisterEventClientPage() {
 
   // Get authentication state from auth context
   const { isAuthenticated, user } = useAuth()
+  
+  // Fetch cities with booking info on component mount
+  useEffect(() => {
+    async function loadCitiesWithBookingInfo() {
+      setIsLoadingCities(true);
+      setCityError(null);
+      try {
+        const bookingData = await getCitiesWithBookingInfo();
+        setBookingCities(bookingData);
+        
+        // Extract city list for dropdown
+        const cityList = bookingData.map(city => ({
+          id: city.id,
+          name: city.city_name
+        }));
+        setCities(cityList);
+      } catch (error) {
+        console.error('Failed to load cities with booking info:', error);
+        setCityError('Failed to load cities. Please try again.');
+        
+        // Fallback to basic city list if booking info fails
+        try {
+          const basicCities = await getAllCities();
+          const cityList = basicCities.map(city => ({
+            id: city.id || 0,
+            name: city.city_name
+          }));
+          setCities(cityList);
+        } catch (fallbackError) {
+          console.error('Failed to load basic cities:', fallbackError);
+        }
+      } finally {
+        setIsLoadingCities(false);
+      }
+    }
+    
+    loadCitiesWithBookingInfo();
+  }, []);
   
   // Fetch add-ons from external API
   useEffect(() => {
@@ -186,9 +225,11 @@ export default function RegisterEventClientPage() {
   }, [])
 
   // Calculate child's age based on event date
-  const calculateAge = (birthDate: Date) => {
-    const ageInMonths = differenceInMonths(eventDate, birthDate)
-    return ageInMonths
+  const calculateAge = (birthDate: Date, eventDateToUse?: Date) => {
+    // Use the provided event date or fall back to the state event date
+    const dateToCompare = eventDateToUse || eventDate;
+    const ageInMonths = differenceInMonths(dateToCompare, birthDate);
+    return ageInMonths;
   }
 
   // Calculate total price of selected games with memoization to prevent unnecessary recalculations
@@ -284,33 +325,24 @@ export default function RegisterEventClientPage() {
 
   // Handle DOB change
   const handleDobChange = (date: Date | undefined) => {
-    // Additional validation and debugging (logs removed)
-    if (date) {
-      const isValidDate = date instanceof Date && !isNaN(date.getTime());
-      if (isValidDate) {
-        // formatted date available via formatDateForAPI(date) if needed
-      }
-    }
-
     setDob(date)
-
-    // State is updated; debug logs removed
 
     if (date) {
       // Calculate child's age in months based on the event date
-      const ageInMonths = calculateAge(date)
-      setChildAgeMonths(ageInMonths)
+      const ageInMonths = calculateAge(date, eventDate);
+      setChildAgeMonths(ageInMonths);
 
-      // If an event is already selected, fetch games for this age
+      // If an event is already selected, filter games for this age
       if (selectedEventType) {
         const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
         if (selectedApiEvent) {
-          fetchGamesByEventAndAge(selectedApiEvent.event_id, ageInMonths);
+          loadGamesForEvent(selectedApiEvent, ageInMonths);
         }
       }
     } else {
       // Reset age if DOB is cleared
-      setChildAgeMonths(null)
+      setChildAgeMonths(null);
+      setEligibleGames([]);
     }
   }
 
@@ -320,8 +352,16 @@ export default function RegisterEventClientPage() {
 
     // Recalculate child's age based on the new event date
     if (dob) {
-      const ageInMonths = differenceInMonths(date, dob)
-      setChildAgeMonths(ageInMonths)
+      const ageInMonths = calculateAge(dob, date);
+      setChildAgeMonths(ageInMonths);
+      
+      // Reload games with the new age
+      if (selectedEventType) {
+        const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
+        if (selectedApiEvent) {
+          loadGamesForEvent(selectedApiEvent, ageInMonths);
+        }
+      }
     }
   }
 
@@ -428,7 +468,7 @@ export default function RegisterEventClientPage() {
     }
   }, []);
 
-  // Handle city change and fetch events for the selected city
+  // Handle city change and load events from booking info
   const handleCityChange = async (city: string) => {
     setSelectedCity(city)
     setSelectedEventType("") // Reset event type when city changes
@@ -437,15 +477,77 @@ export default function RegisterEventClientPage() {
     setEligibleGames([]) // Reset eligible games
     setSelectedGames([]) // Reset selected games
 
-    // Find city ID from the cities list
-    const cityObj = cities.find(c => c.name === city)
-    if (!cityObj) return
+    // Find city in booking data
+    const cityData = bookingCities.find(c => c.city_name === city);
+    if (!cityData) {
+      setEventError("No events found for this city");
+      return;
+    }
 
-    const cityId = Number(cityObj.id)
+    const cityId = cityData.id;
     setSelectedCityId(cityId);
 
-    // Fetch events for the selected city
-    await fetchEventsForCity(cityId, city);
+    // Use events from booking info instead of fetching separately
+    if (cityData.events && cityData.events.length > 0) {
+      // Convert booking events to EventListItem format
+      const convertedEvents: EventListItem[] = cityData.events.map(event => ({
+        event_id: event.id,
+        event_title: event.title,
+        event_description: event.description,
+        event_date: event.event_date,
+        event_status: event.status,
+        event_created_at: event.created_at,
+        event_updated_at: event.updated_at,
+        city_id: event.city_id,
+        city_name: city,
+        state: cityData.state,
+        city_is_active: cityData.is_active === 1,
+        city_created_at: cityData.created_at,
+        city_updated_at: cityData.updated_at,
+        venue_id: event.venue_id,
+        venue_name: event.venue_name,
+        venue_address: event.venue_address,
+        venue_capacity: event.venue_capacity,
+        venue_is_active: true,
+        venue_created_at: '',
+        venue_updated_at: '',
+        games: [],
+        games_with_slots: event.games_with_slots
+      }));
+
+      setApiEvents(convertedEvents);
+
+      // Convert to eligible events format
+      const eligibleEventsList = convertedEvents.map(event => ({
+        id: event.event_id.toString(),
+        title: event.event_title,
+        description: event.event_description,
+        minAgeMonths: 0,
+        maxAgeMonths: 84,
+        date: event.event_date.split('T')[0],
+        time: "9:00 AM - 8:00 PM",
+        venue: event.venue_name || "Venue TBD",
+        city: event.city_name,
+        price: 1800,
+        image: "/images/baby-crawling.jpg"
+      }));
+
+      setEligibleEvents(eligibleEventsList);
+
+      // Get unique dates
+      const dates = eligibleEventsList.map(event => new Date(event.date));
+      const uniqueDates = Array.from(new Set(dates.map(date => date.toISOString())))
+        .map(dateStr => new Date(dateStr));
+      setAvailableDates(uniqueDates);
+
+      if (uniqueDates.length > 0) {
+        setEventDate(uniqueDates[0]);
+      }
+    } else {
+      setEventError("No events available for this city");
+      setEligibleEvents([]);
+      setAvailableDates([]);
+    }
   }
 
   // Handle event type change
@@ -465,47 +567,18 @@ export default function RegisterEventClientPage() {
     const selectedApiEvent = apiEvents.find(event => event.event_title === eventType);
 
     if (selectedApiEvent) {
-      // Try to get proper venue information using the event details API
-      try {
-        const eventWithVenue = await getEventWithVenueDetails(selectedApiEvent.event_id);
-
-        if (eventWithVenue && eventWithVenue.venue && eventWithVenue.venue.venue_name) {
-          // Update the selectedApiEvent with proper venue information
-          selectedApiEvent.venue_name = eventWithVenue.venue.venue_name;
-          selectedApiEvent.venue_address = eventWithVenue.venue.address;
-        }
-      } catch (error) {
-        console.error('Error fetching detailed venue information:', error);
-        // Continue with existing venue data
-      }
-    }
-
-    if (selectedApiEvent) {
-
-      // Create a mock event from the API event data to maintain compatibility with the rest of the form
-      // Try multiple possible venue field names
-      const selectedApiEventAny = selectedApiEvent as any;
-      const venueValue = selectedApiEvent.venue_name ||
-                       selectedApiEventAny.venue ||
-                       selectedApiEventAny.location ||
-                       selectedApiEventAny.address ||
-                       selectedApiEventAny.place ||
-                       selectedApiEventAny.site ||
-                       selectedApiEventAny.event_venue ||
-                       "Venue TBD";
-
       const mockEvent = {
         id: selectedApiEvent.event_id.toString(),
         title: selectedApiEvent.event_title,
         description: selectedApiEvent.event_description,
-        minAgeMonths: 5, // Default values since API might not have these
-        maxAgeMonths: 84, // Default values since API might not have these
-        date: selectedApiEvent.event_date.split('T')[0], // Format the date
-        time: "9:00 AM - 8:00 PM", // Default time
-        venue: venueValue,
+        minAgeMonths: 0,
+        maxAgeMonths: 84,
+        date: selectedApiEvent.event_date.split('T')[0],
+        time: "9:00 AM - 8:00 PM",
+        venue: selectedApiEvent.venue_name || "Venue TBD",
         city: selectedApiEvent.city_name,
-        price: 1800, // Default price
-        image: "/images/baby-crawling.jpg", // Default image
+        price: 1800,
+        image: "/images/baby-crawling.jpg",
       };
 
       // Set this as the only eligible event
@@ -514,20 +587,68 @@ export default function RegisterEventClientPage() {
 
       // Set event date
       if (selectedApiEvent.event_date) {
-        const eventDate = new Date(selectedApiEvent.event_date);
-        setEventDate(eventDate);
-        setAvailableDates([eventDate]);
+        const eventDateObj = new Date(selectedApiEvent.event_date);
+        setEventDate(eventDateObj);
+        setAvailableDates([eventDateObj]);
 
-        // If DOB is set, use the already calculated age (based on current date)
-        if (dob && childAgeMonths !== null) {
-          // Fetch games for this event and child age
-          fetchGamesByEventAndAge(selectedApiEvent.event_id, childAgeMonths);
+        // If DOB is set, recalculate age based on the selected event date
+        if (dob) {
+          const ageInMonths = calculateAge(dob, eventDateObj);
+          setChildAgeMonths(ageInMonths);
+          
+          // Load games with age filtering
+          loadGamesForEvent(selectedApiEvent, ageInMonths);
         }
       }
     } else {
-      // If no matching event found, clear eligible events
       setEligibleEvents([]);
     }
+  }
+  
+  // Load games for event with age filtering
+  const loadGamesForEvent = (event: EventListItem, childAgeMonths: number) => {
+    if (!event.games_with_slots || event.games_with_slots.length === 0) {
+      setEligibleGames([]);
+      setGameError("No games available for this event");
+      return;
+    }
+
+    // Filter games based on child's age in months
+    const ageFilteredSlots = event.games_with_slots.filter((slot: BookingGameSlot) => {
+      const minAgeMonths = slot.min_age;
+      const maxAgeMonths = slot.max_age;
+      return childAgeMonths >= minAgeMonths && childAgeMonths <= maxAgeMonths;
+    });
+
+    if (ageFilteredSlots.length === 0) {
+      setEligibleGames([]);
+      setGameError(`No games available for age ${Math.floor(childAgeMonths / 12)} years ${childAgeMonths % 12} months`);
+      return;
+    }
+
+    // Convert to Game format
+    const formattedGames: Game[] = ageFilteredSlots.map((slot: BookingGameSlot) => ({
+      id: slot.slot_id,
+      game_id: slot.game_id,
+      game_title: slot.game_name,
+      game_description: slot.game_description,
+      min_age: slot.min_age,
+      max_age: slot.max_age,
+      game_duration_minutes: slot.duration_minutes,
+      categories: [],
+      custom_price: parseFloat(slot.price),
+      slot_price: parseFloat(slot.price),
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      custom_title: slot.custom_title || slot.game_name,
+      custom_description: slot.custom_description || slot.game_description,
+      max_participants: slot.max_participants,
+      slot_id: slot.slot_id,
+      note: slot.note || null
+    }));
+
+    setEligibleGames(formattedGames);
+    setGameError(null);
   }
   
   // Fetch games based on event ID and child age
