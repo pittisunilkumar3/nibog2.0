@@ -1,1 +1,0 @@
-const fs = require('fs'); const buf = fs.readFileSync('booking_info_clean2.json'); console.log(buf.slice(0,16)); console.log(buf.slice(0,128).toString('utf8'));

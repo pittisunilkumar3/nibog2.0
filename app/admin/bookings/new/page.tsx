@@ -587,10 +587,7 @@ export default function NewBookingPage() {
         throw new Error("Please complete the event and game selection")
       }
 
-      // SINGLE GAME VALIDATION: Ensure exactly one game is selected (matching frontend)
-      if (selectedGames.length !== 1) {
-        throw new Error(`Invalid game selection. Expected exactly 1 game, but found ${selectedGames.length}. Please select exactly one game.`)
-      }
+      // Allow multiple game selections for admin: at least one game must be selected
 
       if (!childAgeMonths) {
         throw new Error("Please enter child's date of birth")
@@ -625,26 +622,19 @@ export default function NewBookingPage() {
         throw new Error("Selected event not found")
       }
 
-      // SINGLE GAME VALIDATION: Ensure exactly one game is selected (matching frontend)
-      if (selectedGames.length !== 1) {
-        throw new Error(`Invalid game selection. Expected exactly 1 game, but found ${selectedGames.length}. Please select exactly one game.`)
-      }
-
       // Get selected games objects (using slot_id for selection, matching frontend)
       const selectedGamesObj = selectedGames
         .map(selection => {
           const game = eligibleGames.find(game => game.id === selection.slotId)
           if (!game) {
             console.error(`❌ Game slot with ID ${selection.slotId} not found in eligible games!`)
-          } else {
-            // Found game slot (debug log removed)
           }
           return game
         })
         .filter(game => game !== undefined);
 
       if (selectedGamesObj.length === 0) {
-        throw new Error("No valid games selected. Please select exactly one game.")
+        throw new Error("No valid games selected. Please select at least one game.")
       }
 
       if (selectedGamesObj.length !== selectedGames.length) {
@@ -689,6 +679,9 @@ export default function NewBookingPage() {
         payment_status: paymentMethod === "Cash payment" ? "Paid" : "Pending"
       };
 
+      // Determine booking status: confirm immediately if payment is already paid (e.g., Cash payment)
+      const bookingStatus = payment.payment_status === "Paid" ? "Confirmed" : "Pending";
+
       // Final bookingData payload matching documentation
       const bookingData = {
         parent_name: parentName,
@@ -696,7 +689,7 @@ export default function NewBookingPage() {
         phone: phoneDigits,
         event_id: selectedApiEvent.event_id,
         booking_ref: generateBookingRef(),
-        status: "Pending",
+        status: "Confirmed",
         total_amount: totalAmount,
         children,
         payment
@@ -704,12 +697,13 @@ export default function NewBookingPage() {
 
       // Creating booking with data (debug log removed)
 
-      // Call the booking creation API using the backend base URL from .env
-      const response = await fetch(BOOKING_API.CREATE, {
+      // Call the booking creation API via local server API route to avoid CORS
+      const response = await fetch('/api/bookings/register', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include', // include cookies if auth is stored in cookies
         body: JSON.stringify(bookingData),
       })
 
