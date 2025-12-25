@@ -9,14 +9,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-
-import { ArrowLeft, Save, Loader2, CreditCard, CheckCircle, Mail, MessageCircle, ExternalLink } from "lucide-react"
+import { ArrowLeft, Save, Loader2, CreditCard, CheckCircle, Mail, MessageCircle, ExternalLink, CalendarIcon, Info } from "lucide-react"
 import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 import { useToast } from "@/hooks/use-toast"
 import { BOOKING_API, PAYMENT_API } from "@/config/api"
-import { getAllCities, City } from "@/services/cityService"
+import { getAllCities, City, getCitiesWithBookingInfo, BookingCity } from "@/services/cityService"
 import { getAllAddOns, AddOn, AddOnVariant } from "@/services/addOnService"
 import { generateConsistentBookingRef, generateManualBookingRef } from "@/utils/bookingReference"
 import { sendBookingConfirmationFromServer, BookingConfirmationData } from "@/services/emailNotificationService"
@@ -48,6 +51,7 @@ interface EventListItem {
   city_id: number;
   venue_id: number;
   venue_name?: string;
+  games_with_slots?: any[]; // Array of game slots with age restrictions
 }
 
 // Interface for game from API (matching frontend structure exactly)
@@ -184,7 +188,8 @@ export default function NewBookingPage() {
   // Child Information
   const [childName, setChildName] = useState("")
   const [childDateOfBirth, setChildDateOfBirth] = useState("")
-  const [childGender, setChildGender] = useState("")
+  const [dob, setDob] = useState<Date>()  // For Calendar Popover
+  const [childGender, setChildGender] = useState("female")  // Default to female
   const [schoolName, setSchoolName] = useState("")
 
   // Payment Method Selection
@@ -198,6 +203,7 @@ export default function NewBookingPage() {
 
   // Data state (matching user panel structure)
   const [cities, setCities] = useState<{ id: string | number; name: string }[]>([])
+  const [bookingCities, setBookingCities] = useState<BookingCity[]>([])
   const [apiEvents, setApiEvents] = useState<EventListItem[]>([])
   const [eligibleGames, setEligibleGames] = useState<EligibleGame[]>([])
   const [addOns, setAddOns] = useState<AddOn[]>([])
@@ -244,11 +250,25 @@ export default function NewBookingPage() {
   }
 
   // Handle DOB change (matching user panel logic)
-  const handleDobChange = (dateString: string) => {
-    setChildDateOfBirth(dateString)
+  const handleDobChange = (dateString: string | Date) => {
+    console.log('🎂 DOB Change triggered:', dateString)
+    // Handle both string and Date inputs
+    let dateStr: string
+    let dateObj: Date
+    
+    if (typeof dateString === 'string') {
+      dateStr = dateString
+      dateObj = new Date(dateString)
+    } else {
+      dateObj = dateString
+      dateStr = format(dateObj, 'yyyy-MM-dd')
+    }
+    
+    setChildDateOfBirth(dateStr)
+    setDob(dateObj)
 
-    if (dateString) {
-      const date = new Date(dateString)
+    if (dateStr) {
+      const date = dateObj
       
       // Find the selected event to get the event date
       const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
@@ -258,18 +278,20 @@ export default function NewBookingPage() {
       const ageInMonths = calculateAge(date, eventDate)
       setChildAgeMonths(ageInMonths)
 
-      // Child DOB debug logs removed
+      console.log('📊 Age calculated:', ageInMonths, 'months')
+      console.log('🎪 Selected event type:', selectedEventType)
+      console.log('📋 Available API events:', apiEvents.length)
 
-      // If an event is already selected, fetch games for this age
+      // If an event is already selected, load games filtered by age
       if (selectedEventType) {
         if (selectedApiEvent) {
-          // Fetching games for selected event (debug logs removed)
-          fetchGamesByEventAndAge(selectedApiEvent.event_id, ageInMonths);
+          console.log('✅ Loading games for event:', selectedApiEvent.event_id, 'age:', ageInMonths)
+          loadGamesForEvent(selectedApiEvent, ageInMonths);
         } else {
           console.warn(`⚠️ Selected event type "${selectedEventType}" not found in API events`);
         }
       } else {
-        // No event selected yet (debug logs removed)
+        console.log('ℹ️ No event selected yet - games will be loaded when event is selected')
       }
     } else {
       // Reset age if DOB is cleared
@@ -376,18 +398,34 @@ export default function NewBookingPage() {
         setIsLoadingCities(true)
         setCityError(null)
 
-        const citiesData = await getAllCities()
+        // Use booking info API that includes events and games_with_slots
+        const bookingData = await getCitiesWithBookingInfo()
+        setBookingCities(bookingData)
 
         // Map the API response to the format expected by the dropdown
-        const formattedCities = citiesData.map(city => ({
-          id: city.id || 0,
+        const formattedCities = bookingData.map(city => ({
+          id: city.id,
           name: city.city_name
         }))
 
         setCities(formattedCities)
+        console.log('✅ Loaded cities with booking info:', formattedCities.length, 'cities')
       } catch (error: any) {
         console.error("❌ Failed to fetch cities:", error)
         setCityError("Failed to load cities. Please try again.")
+        
+        // Fallback to basic city list if booking info fails
+        try {
+          const basicCities = await getAllCities()
+          const formattedCities = basicCities.map(city => ({
+            id: city.id || 0,
+            name: city.city_name
+          }))
+          setCities(formattedCities)
+        } catch (fallbackError) {
+          console.error('Failed to load basic cities:', fallbackError)
+        }
+        
         toast({
           title: "Cities Loading Error",
           description: "Failed to load cities. Please refresh the page.",
@@ -427,6 +465,7 @@ export default function NewBookingPage() {
 
   // Handle city change and fetch events for the selected city (matching user panel logic)
   const handleCityChange = async (cityId: string) => {
+    console.log('🏙️ City changed to:', cityId)
     setSelectedCityId(cityId)
     setSelectedEventType("") // Reset event type when city changes
     setSelectedGames([]) // Reset selected games
@@ -434,71 +473,108 @@ export default function NewBookingPage() {
 
     if (!cityId) return
 
-    // Fetch events for the selected city
-    try {
-      setIsLoadingEvents(true);
-      setEventError(null);
-
-      const eventsData = await getEventsByCityId(Number(cityId));
-
-      // Validate API response
-      if (!Array.isArray(eventsData)) {
-        throw new Error('Invalid events data format: expected an array');
-      }
-
-      if (eventsData.length === 0) {
-        setApiEvents([]);
-        setEventError("No events available for this city.");
-        return;
-      }
-
-      // Normalize API event shapes to `EventListItem` and validate
-      const mappedEvents: EventListItem[] = eventsData
-        .map((eventAny: any) => {
-          // If API already returns full EventListItem shape, use it
-          if (eventAny && typeof eventAny.event_id === 'number' && eventAny.event_title) {
-            return eventAny as EventListItem
-          }
-
-          // Handle simplified API response like { id, title }
-          return {
-            event_id: Number(eventAny.id || eventAny.event_id || 0),
-            event_title: eventAny.title || eventAny.event_title || 'Untitled Event',
-            event_description: eventAny.description || eventAny.event_description || '',
-            event_date: eventAny.event_date || eventAny.eventDate || '',
-            event_status: eventAny.status || eventAny.event_status || 'upcoming',
-            city_id: Number(eventAny.city_id || cityId || 0),
-            venue_id: Number(eventAny.venue_id || 0),
-            venue_name: eventAny.venue_name || eventAny.venue || undefined,
-          }
-        })
-        .filter(e => e.event_id && e.event_title) // keep only valid entries
-
-      setApiEvents(mappedEvents);
-
-      // No need to filter events by age anymore - games will be fetched separately
-      // when both event and DOB are selected
-
-    } catch (error: any) {
-      console.error(`❌ Failed to fetch events for city ID ${cityId}:`, error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to load events. Please try again.";
-      setEventError(errorMessage);
-
-      toast({
-        title: "Events Loading Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-
-      // Clear events on error
-      setApiEvents([]);
-    } finally {
-      setIsLoadingEvents(false);
+    // Use events from booking cities data (already includes games_with_slots)
+    const cityData = bookingCities.find(c => c.id.toString() === cityId.toString())
+    
+    if (!cityData) {
+      console.error('❌ City not found in booking cities data')
+      setEventError("No events found for this city")
+      return
     }
+
+    console.log('✅ Found city data with', cityData.events?.length || 0, 'events')
+
+    if (cityData.events && cityData.events.length > 0) {
+      // Convert booking events to EventListItem format
+      const convertedEvents: EventListItem[] = cityData.events.map(event => ({
+        event_id: event.id,
+        event_title: event.title,
+        event_description: event.description,
+        event_date: event.event_date,
+        event_status: event.status,
+        event_created_at: event.created_at,
+        event_updated_at: event.updated_at,
+        city_id: event.city_id,
+        city_name: cityData.city_name,
+        state: cityData.state,
+        city_is_active: cityData.is_active === 1,
+        city_created_at: cityData.created_at,
+        city_updated_at: cityData.updated_at,
+        venue_id: event.venue_id,
+        venue_name: event.venue_name,
+        venue_address: event.venue_address,
+        venue_capacity: event.venue_capacity,
+        venue_is_active: true,
+        venue_created_at: '',
+        venue_updated_at: '',
+        games: [],
+        games_with_slots: event.games_with_slots // Include games_with_slots!
+      }))
+
+      setApiEvents(convertedEvents)
+      console.log('✅ Set', convertedEvents.length, 'events with games_with_slots')
+    } else {
+      setApiEvents([])
+      setEventError("No events available for this city")
+    }
+  }
+
+  // Load games for event by filtering games_with_slots by age (matching register-event page)
+  const loadGamesForEvent = (event: EventListItem, childAgeMonths: number) => {
+    console.log('🎮 Loading games for event:', event.event_title, 'age:', childAgeMonths, 'months')
+    
+    if (!event.games_with_slots || event.games_with_slots.length === 0) {
+      console.log('⚠️ No games_with_slots in event data')
+      setEligibleGames([])
+      setGameError("No games available for this event")
+      return
+    }
+
+    console.log('📦 Event has', event.games_with_slots.length, 'game slots')
+
+    // Filter games based on child's age in months
+    const ageFilteredSlots = event.games_with_slots.filter((slot: any) => {
+      const minAgeMonths = slot.min_age
+      const maxAgeMonths = slot.max_age
+      const isEligible = childAgeMonths >= minAgeMonths && childAgeMonths <= maxAgeMonths
+      console.log(`  ${slot.game_name} (${slot.start_time}-${slot.end_time}): age ${minAgeMonths}-${maxAgeMonths} months, eligible: ${isEligible}`)
+      return isEligible
+    })
+
+    console.log('✅ Found', ageFilteredSlots.length, 'age-eligible game slots')
+
+    if (ageFilteredSlots.length === 0) {
+      setEligibleGames([])
+      setGameError(`No games available for age ${Math.floor(childAgeMonths / 12)} years ${childAgeMonths % 12} months`)
+      return
+    }
+
+    // Convert to EligibleGame format
+    const formattedGames: EligibleGame[] = ageFilteredSlots.map((slot: any) => ({
+      id: slot.slot_id,
+      game_id: slot.game_id,
+      title: slot.custom_title || slot.game_name,
+      description: slot.custom_description || slot.game_description,
+      price: parseFloat(slot.price),
+      slot_price: parseFloat(slot.price),
+      custom_price: parseFloat(slot.price),
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      custom_title: slot.custom_title || slot.game_name,
+      custom_description: slot.custom_description || slot.game_description,
+      max_participants: slot.max_participants - (slot.booked_count || 0), // Remaining capacity
+      slot_id: slot.slot_id,
+      game_name: slot.game_name
+    }))
+
+    setEligibleGames(formattedGames)
+    setGameError(null)
+    console.log('✅ Set', formattedGames.length, 'eligible games')
   }
 
   // Handle event type selection (matching user panel logic)
   const handleEventTypeChange = (eventType: string) => {
+    console.log('🎪 Event type changed to:', eventType)
     setSelectedEventType(eventType)
     setSelectedGames([]) // Reset selected games
     setEligibleGames([]) // Reset eligible games
@@ -507,10 +583,10 @@ export default function NewBookingPage() {
     const selectedApiEvent = apiEvents.find(event => event.event_title === eventType);
 
     if (selectedApiEvent) {
-      // Selected event found (debug logs removed)
+      console.log('✅ Event found:', selectedApiEvent)
 
-      // If DOB is set, recalculate age based on event date
-      if (childDateOfBirth) {
+      // If DOB is set, load games filtered by age
+      if (childDateOfBirth && childAgeMonths !== null) {
         const birthDate = new Date(childDateOfBirth);
         const eventDate = selectedApiEvent.event_date ? new Date(selectedApiEvent.event_date) : undefined;
         
@@ -518,12 +594,12 @@ export default function NewBookingPage() {
         const ageInMonths = calculateAge(birthDate, eventDate);
         setChildAgeMonths(ageInMonths);
         
-        // Recalculated age and fetching games (debug logs removed)
+        console.log('📊 Recalculated age for event date:', ageInMonths, 'months')
         
-        // Fetch games for this event and child age
-        fetchGamesByEventAndAge(selectedApiEvent.event_id, ageInMonths);
+        // Load games from event's games_with_slots filtered by age
+        loadGamesForEvent(selectedApiEvent, ageInMonths);
       } else {
-        // Child date of birth not set; cannot fetch games yet (debug logs removed)
+        console.log('⚠️ Child DOB not set yet - cannot load games')
       }
     } else {
       // If no matching event found, clear eligible games
@@ -534,8 +610,10 @@ export default function NewBookingPage() {
 
   // Fetch games based on event ID and child age (matching user panel logic)
   const fetchGamesByEventAndAge = async (eventId: number, childAge: number) => {
+    console.log('🎮 fetchGamesByEventAndAge called with:', { eventId, childAge })
+    
     if (!eventId || childAge === null || childAge === undefined) {
-      // Skipping games fetch - missing required data (debug log removed)
+      console.log('⚠️ Skipping games fetch - missing data:', { eventId, childAge })
       return;
     }
 
@@ -549,21 +627,24 @@ export default function NewBookingPage() {
     setGameError("");
 
     try {
-      // Fetching games for event (debug logs removed)
+      console.log('📡 Calling getGamesByAgeAndEvent API...')
 
       // Call the new API to get games by age and event
       const gamesData = await getGamesByAgeAndEvent(eventId, childAge);
 
+      console.log('📦 API Response:', gamesData)
 
       if (gamesData && gamesData.length > 0) {
-        // Games found; raw data logged (debug logs removed)
+        console.log('✅ Games found:', gamesData.length, 'games')
 
         // Format games data to match the expected structure - API returns games with slots array
         const formattedGames: EligibleGame[] = [];
 
         gamesData.forEach((game: any) => {
+          console.log('🎯 Processing game:', game.game_id, game.title)
           // Each game now has a slots array - process each slot as a separate selectable item
           if (game.slots && Array.isArray(game.slots)) {
+            console.log('  📋 Found', game.slots.length, 'slots for game', game.game_id)
             game.slots.forEach((slot: any) => {
               formattedGames.push({
                 id: Number(slot.slot_id || 0), // Use slot_id as number (matching frontend)
@@ -583,6 +664,7 @@ export default function NewBookingPage() {
               });
             });
           } else {
+            console.log('  ⚠️ No slots array found, using fallback format')
             // Fallback for games without slots array (backward compatibility)
             formattedGames.push({
               id: Number(game.slot_id || game.id || 0),
@@ -603,11 +685,12 @@ export default function NewBookingPage() {
           }
         });
 
-        // Formatted games (debug logs removed)
+        console.log('✅ Formatted', formattedGames.length, 'game slots')
 
         // Set the formatted games (this is separate from eligibleEvents which contains event details)
         setEligibleGames(formattedGames);
       } else {
+        console.log('⚠️ No games returned from API')
         setEligibleGames([]);
       }
     } catch (error) {
@@ -636,7 +719,7 @@ export default function NewBookingPage() {
     }
   }
 
-  // Handle game selection with slot selection - SINGLE SELECTION ONLY (matching frontend exactly)
+  // Handle game selection with slot selection - MULTIPLE SELECTION for admin panel
   const handleGameSelection = (slotId: number) => {
     // Find the game associated with this slot
     const selectedSlot = eligibleGames.find((g) => g.id === slotId);
@@ -647,22 +730,22 @@ export default function NewBookingPage() {
 
     const gameId = selectedSlot.game_id;
 
-    // SINGLE SELECTION LOGIC: Only allow one game/slot selection at a time (matching frontend)
+    // MULTIPLE SELECTION LOGIC: Allow selecting multiple games/slots
     setSelectedGames((prev) => {
       // Check if this exact slot is already selected
-      const isCurrentlySelected = prev.length === 1 && prev[0].slotId === slotId;
+      const existingIndex = prev.findIndex(item => item.slotId === slotId);
 
       let newSelectedGames: Array<{ gameId: number; slotId: number }>;
 
-      if (isCurrentlySelected) {
-        // If clicking the same slot that's already selected, deselect it
-        newSelectedGames = [];
+      if (existingIndex !== -1) {
+        // If slot is already selected, deselect it (remove from array)
+        newSelectedGames = prev.filter((_, index) => index !== existingIndex);
       } else {
-        // Replace any existing selection with this new selection (SINGLE SELECTION)
-        newSelectedGames = [{ gameId, slotId }];
+        // Add this new selection to existing selections
+        newSelectedGames = [...prev, { gameId, slotId }];
       }
 
-      // Clear promo code when games selection changes (matching frontend)
+      // Clear promo code when games selection changes
       if (appliedPromoCode) {
         setAppliedPromoCode("");
         setDiscountAmount(0);
@@ -1657,31 +1740,42 @@ export default function NewBookingPage() {
               <CardDescription>Enter the parent details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="parentName">Parent Name</Label>
+              <div className="space-y-3">
+                <Label htmlFor="parentName" className="flex items-center gap-2 text-sm font-bold">
+                  <span>Parent's Full Name</span>
+                  <span className="text-xs text-skyblue-700 bg-skyblue-100 px-2 py-0.5 rounded-full border border-skyblue-300">Required</span>
+                </Label>
                 <Input
                   id="parentName"
                   value={parentName}
                   onChange={(e) => setParentName(e.target.value)}
-                  placeholder="Enter parent name"
+                  placeholder="Enter parent's full name"
                   required
+                  className="border-2 border-skyblue-200 focus:border-skyblue-400 focus:ring-2 focus:ring-skyblue-200 bg-white hover:bg-skyblue-50 h-12 text-base rounded-xl transition-all duration-200"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+              <div className="space-y-3">
+                <Label htmlFor="email" className="flex items-center gap-2 text-sm font-bold">
+                  <span>Email Address</span>
+                  <span className="text-xs text-coral-700 bg-coral-100 px-2 py-0.5 rounded-full border border-coral-300">Required</span>
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter email address"
+                  placeholder="name@example.com"
                   required
+                  className="border-2 border-coral-200 focus:border-coral-400 focus:ring-2 focus:ring-coral-200 bg-white hover:bg-coral-50 h-12 text-base rounded-xl transition-all duration-200"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-bold">
+                  <span>Mobile Number</span>
+                  <span className="text-xs text-mint-700 bg-mint-100 px-2 py-0.5 rounded-full border border-mint-300">Required</span>
+                </Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -1699,11 +1793,11 @@ export default function NewBookingPage() {
                     value = value.slice(0, 10)
                     setPhone(value)
                   }}
-                  placeholder="Enter 10-digit mobile number (or +91XXXXXXXXXX)"
+                  placeholder="Enter your 10-digit mobile number"
                   required
                   maxLength={13}
                   pattern="[0-9]{10}"
-                  className="font-mono"
+                  className="border-2 border-mint-200 focus:border-mint-400 focus:ring-2 focus:ring-mint-200 bg-white hover:bg-mint-50 h-12 text-base rounded-xl transition-all duration-200 font-mono"
                 />
                 {phone && phone.length !== 10 && (
                   <p className="text-sm text-red-600">
@@ -1725,27 +1819,61 @@ export default function NewBookingPage() {
               <CardDescription>Enter the child details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="childName">Child Name</Label>
+              <div className="space-y-3">
+                <Label htmlFor="childName" className="flex items-center gap-2 text-sm font-bold">
+                  <span>Child's Full Name</span>
+                  <span className="text-xs text-skyblue-700 bg-skyblue-100 px-2 py-0.5 rounded-full border border-skyblue-300">Required</span>
+                </Label>
                 <Input
                   id="childName"
                   value={childName}
                   onChange={(e) => setChildName(e.target.value)}
-                  placeholder="Enter child name"
+                  placeholder="Enter your child's full name"
                   required
+                  className="border-2 border-skyblue-200 focus:border-skyblue-400 focus:ring-2 focus:ring-skyblue-200 bg-white hover:bg-skyblue-50 h-12 text-base rounded-xl transition-all duration-200"
                 />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="childDateOfBirth">Date of Birth</Label>
-                  <Input
-                    id="childDateOfBirth"
-                    type="date"
-                    value={childDateOfBirth}
-                    onChange={(e) => handleDobChange(e.target.value)}
-                    required
-                  />
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2 text-sm font-bold">
+                    <span>Child's Date of Birth</span>
+                    <span className="text-xs text-coral-700 bg-coral-100 px-2 py-0.5 rounded-full border border-coral-300">Required</span>
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal transition-all duration-200 h-12 text-base rounded-xl border-2",
+                          !dob
+                            ? "border-coral-200 hover:border-coral-300 hover:bg-coral-50"
+                            : "border-coral-400 bg-coral-50 hover:bg-coral-100"
+                        )}
+                      >
+                        <CalendarIcon className={cn("mr-2 h-4 w-4", dob ? "text-primary" : "text-muted-foreground")} />
+                        <span className="truncate">{dob ? format(dob, "PPP") : "Select date of birth"}</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={dob}
+                        onSelect={(date) => date && handleDobChange(date)}
+                        disabled={(date) => {
+                          const minDate = new Date(2000, 0, 1);
+                          const maxDate = new Date(new Date().getFullYear() + 10, 11, 31);
+                          return date < minDate || date > maxDate;
+                        }}
+                        initialFocus
+                        fromYear={2000}
+                        toYear={new Date().getFullYear() + 10}
+                        captionLayout="dropdown"
+                        defaultMonth={dob || new Date()}
+                        className="p-3"
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {childAgeMonths !== null && (
                     <p className="text-sm text-muted-foreground">
                       Child's age: {childAgeMonths} months
@@ -1768,28 +1896,61 @@ export default function NewBookingPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="childGender">Gender</Label>
-                  <Select value={childGender} onValueChange={setChildGender} required>
-                    <SelectTrigger id="childGender">
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2 text-sm font-bold">
+                    <span>Gender</span>
+                    <span className="text-xs text-primary/70">Required</span>
+                  </Label>
+                  <RadioGroup
+                    value={childGender}
+                    onValueChange={setChildGender}
+                    className="flex gap-4 p-2 border border-dashed rounded-md border-primary/20 bg-white/80"
+                  >
+                    <div className="flex items-center space-x-2 flex-1 p-2 rounded-md hover:bg-primary/5 transition-colors duration-200">
+                      <RadioGroupItem value="male" id="male" className="text-blue-500" />
+                      <Label htmlFor="male" className="cursor-pointer">Male</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 flex-1 p-2 rounded-md hover:bg-primary/5 transition-colors duration-200">
+                      <RadioGroupItem value="female" id="female" className="text-pink-500" />
+                      <Label htmlFor="female" className="cursor-pointer">Female</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="schoolName">School Name (Optional)</Label>
+              {/* Display child's age in months when DOB is selected */}
+              {dob && childAgeMonths !== null && (
+                <div className="mt-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 shadow-sm">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 bg-blue-100 rounded-full p-1 mr-2">
+                      <Info className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-blue-800">Child's Age: </span>
+                      <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{childAgeMonths} months</span>
+                      <span className="text-xs text-blue-600 ml-2">({Math.floor(childAgeMonths / 12)} years, {childAgeMonths % 12} months)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <Label htmlFor="schoolName" className="flex items-center gap-2 text-sm font-bold">
+                  <span>School Name</span>
+                  <span className="text-xs text-mint-700 bg-mint-100 px-2 py-0.5 rounded-full border border-mint-300">Optional</span>
+                </Label>
                 <Input
                   id="schoolName"
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
-                  placeholder="Enter school name"
+                  placeholder={childAgeMonths && childAgeMonths < 36 ? "Home, Daycare, or Playschool" : "Enter school name"}
+                  className="border-2 border-mint-200 focus:border-mint-400 focus:ring-2 focus:ring-mint-200 bg-white hover:bg-mint-50 h-12 text-base rounded-xl transition-all duration-200"
                 />
+                {childAgeMonths && childAgeMonths < 36 && (
+                  <p className="text-xs mt-2 p-3 bg-gradient-to-r from-skyblue-50 to-coral-50 rounded-xl border-2 border-skyblue-200">
+                    💡 For children under 3 years, you can enter "Home", "Daycare", or the name of their playschool
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1953,31 +2114,23 @@ export default function NewBookingPage() {
                   </div>
                 ) : (
                   <>
-                    {/* Selection Status Indicator (matching frontend) */}
+                    {/* Selection Status Indicator - Updated for multiple selection */}
                     <div className={`mb-4 p-3 rounded-lg border text-sm ${
                       selectedGames.length === 0
                         ? "bg-gray-50 border-gray-200 text-gray-600"
-                        : selectedGames.length === 1
-                        ? "bg-green-50 border-green-200 text-green-700"
-                        : "bg-red-50 border-red-200 text-red-700"
+                        : "bg-green-50 border-green-200 text-green-700"
                     }`}>
                       <div className="flex items-center gap-2">
                         {selectedGames.length === 0 && (
                           <>
                             <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                            <span>No game selected - Please select one game and time slot</span>
+                            <span>No game selected - Please select at least one game and time slot</span>
                           </>
                         )}
-                        {selectedGames.length === 1 && (
+                        {selectedGames.length > 0 && (
                           <>
                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                            <span>✓ One game selected - Ready to continue</span>
-                          </>
-                        )}
-                        {selectedGames.length > 1 && (
-                          <>
-                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                            <span>⚠ Multiple games selected - Please select only one</span>
+                            <span>✓ {selectedGames.length} game slot{selectedGames.length > 1 ? 's' : ''} selected - Ready to continue</span>
                           </>
                         )}
                       </div>
@@ -2039,11 +2192,11 @@ export default function NewBookingPage() {
                               {/* Slot Selection */}
                               <div className="space-y-2">
                                 <Label className="text-sm font-medium">
-                                  Select Time Slot {slots.length > 1 ? '(Choose one)' : ''}:
+                                  Select Time Slot(s) {slots.length > 1 ? '(You can select multiple)' : ''}:
                                 </Label>
                                 <div className="grid gap-2">
                                   {slots.map((slot) => {
-                                    const isSelected = selectedSlotForGame?.slotId === slot.id;
+                                    const isSelected = selectedGames.some(selection => selection.slotId === slot.id);
                                     return (
                                       <div
                                         key={slot.id}
@@ -2058,8 +2211,7 @@ export default function NewBookingPage() {
                                       >
                                         <div className="flex items-center space-x-3">
                                           <input
-                                            type="radio"
-                                            name="game-slot-selection"
+                                            type="checkbox"
                                             checked={isSelected}
                                             onChange={() => slot.max_participants > 0 && handleGameSelection(slot.id)}
                                             disabled={slot.max_participants <= 0}
