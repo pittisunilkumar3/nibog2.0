@@ -57,28 +57,61 @@ const protectedApiRoutes = [
 ];
 
 // Define JWT payload interface
-interface JwtPayload {
-  email: string;
-  role: string;
-  // Add other fields as needed
+// Helper to check if a JWT is expired
+function isTokenExpired(token?: string | null): boolean {
+  if (!token || token === 'undefined' || token === 'null' || token === '') return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return false; // Not a JWT
+
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (payload && typeof payload.exp === 'number') {
+      const now = Math.floor(Date.now() / 1000);
+      return payload.exp <= (now + 5); // 5s buffer
+    }
+    return false;
+  } catch (error) {
+    return false;
+  }
 }
 
 // Verify superadmin from session cookie
 const verifySuperadmin = async (token: string | undefined): Promise<SuperadminUser | null> => {
   if (!token) return null;
-  
+
   try {
-    // Parse the session data from the cookie
-    const sessionData = JSON.parse(token);
-    
-    // Verify if the user is a superadmin
-    if (sessionData?.is_superadmin) {
-      return {
-        id: sessionData.id,
-        email: sessionData.email,
-        is_superadmin: sessionData.is_superadmin,
-        role: 'superadmin',
-      };
+    // Check expiry
+    if (isTokenExpired(token)) return null;
+
+    // Try parsing as JSON first (legacy format)
+    try {
+      const sessionData = JSON.parse(decodeURIComponent(token));
+      if (sessionData && typeof sessionData === 'object' && (sessionData.is_superadmin || sessionData.role === 'superadmin')) {
+        return {
+          id: sessionData.id || sessionData.user_id,
+          email: sessionData.email,
+          is_superadmin: true,
+          role: 'superadmin',
+        };
+      }
+    } catch (e) {
+      // Not JSON, check if it's a JWT
+      if (token.includes('.')) {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          try {
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            if (payload && (payload.is_superadmin || payload.role === 'superadmin' || payload.role === 'admin')) {
+              return {
+                id: payload.id || payload.user_id || 0,
+                email: payload.email,
+                is_superadmin: true,
+                role: 'superadmin',
+              };
+            }
+          } catch (e2) { }
+        }
+      }
     }
     return null;
   } catch (error) {
@@ -99,7 +132,7 @@ export async function middleware(request: NextRequest) {
 
   // Create response with no-cache headers by default
   const response = NextResponse.next();
-  
+
   // Add no-cache headers to all responses to prevent local caching
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   response.headers.set('Pragma', 'no-cache');
@@ -183,13 +216,11 @@ export async function middleware(request: NextRequest) {
   if (isAdminPath) {
     // For login pages
     if (pathname === '/superadmin/login' || pathname === '/admin/login') {
-      // If already logged in, redirect to admin or the specified redirect URL
-      if (superadminToken) {
+      // If already logged in AND NOT EXPIRED, redirect to admin or the specified redirect URL
+      if (superadminToken && !isTokenExpired(superadminToken)) {
         const redirectPath = searchParams.get('redirect') || '/admin';
         const redirect = NextResponse.redirect(new URL(redirectPath, request.url));
         redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-        redirect.headers.set('Pragma', 'no-cache');
-        redirect.headers.set('Expires', '0');
         return redirect;
       }
       return response;
@@ -233,15 +264,13 @@ export async function middleware(request: NextRequest) {
   if (isUserProtectedPath) {
     // Debug logs removed for production readiness
 
-    // If user is not authenticated, redirect to login
-    if (!userSession) {
+    // If user is not authenticated OR EXPIRED, redirect to login
+    if (!userSession || isTokenExpired(userSession)) {
       const loginUrl = new URL('/login', request.url);
       // Preserve the original intended URL for redirect after login
       loginUrl.searchParams.set('callbackUrl', pathname + (request.nextUrl.search || ''));
       const redirect = NextResponse.redirect(loginUrl);
       redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-      redirect.headers.set('Pragma', 'no-cache');
-      redirect.headers.set('Expires', '0');
       return redirect;
     }
 
@@ -250,22 +279,18 @@ export async function middleware(request: NextRequest) {
 
   // Handle login page - redirect if already authenticated
   if (pathname === '/login') {
-    if (userSession) {
+    if (userSession && !isTokenExpired(userSession)) {
       // Regular user is logged in, redirect to home or callback URL
       const callbackUrl = searchParams.get('callbackUrl') || '/';
       const redirect = NextResponse.redirect(new URL(callbackUrl, request.url));
       redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-      redirect.headers.set('Pragma', 'no-cache');
-      redirect.headers.set('Expires', '0');
       return redirect;
     }
-    if (superadminToken) {
+    if (superadminToken && !isTokenExpired(superadminToken)) {
       // Superadmin is logged in, redirect to admin
       const redirectPath = searchParams.get('redirect') || '/admin';
       const redirect = NextResponse.redirect(new URL(redirectPath, request.url));
       redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-      redirect.headers.set('Pragma', 'no-cache');
-      redirect.headers.set('Expires', '0');
       return redirect;
     }
     // Not logged in, allow access to login page
@@ -277,15 +302,13 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // If it's a protected API route and no session, return 401
-  if (isProtectedApiRoute && !userSession && !superadminToken) {
+  // If it's a protected API route and no valid session, return 401
+  if (isProtectedApiRoute && (!userSession || isTokenExpired(userSession)) && (!superadminToken || isTokenExpired(superadminToken))) {
     const errorResponse = NextResponse.json(
       { message: 'Unauthorized' },
       { status: 401 }
     );
     errorResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-    errorResponse.headers.set('Pragma', 'no-cache');
-    errorResponse.headers.set('Expires', '0');
     return errorResponse;
   }
 
