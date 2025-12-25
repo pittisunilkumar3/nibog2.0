@@ -1,8 +1,8 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { setSession, clearSession, isClientAuthenticated, getSession, isTokenExpired } from '@/lib/auth/session' 
+import { useRouter, usePathname } from 'next/navigation'
+import { setSession, clearSession, isClientAuthenticated, getSession, isTokenExpired } from '@/lib/auth/session'
 
 // Define the user type based on the API response
 interface User {
@@ -39,8 +39,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
-  login: () => {},
-  logout: () => {},
+  login: () => { },
+  logout: () => { },
   isAuthenticated: false,
 })
 
@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const pathname = usePathname()
 
   // Login function
   const login = useCallback((userData: User, token: string) => {
@@ -96,11 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let interval: number | undefined
 
-      const checkToken = async () => {
+    const checkToken = async () => {
       try {
         const token = await getSession()
         if (token && isTokenExpired(token)) {
-          console.info('Token expired - auto logging out and reloading')
+          console.info('[AuthContext] Token expired - auto logging out')
 
           // Best-effort server-side logout to clear httpOnly cookies
           try {
@@ -125,8 +126,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           setUser(null)
 
-          // Force full reload so the app/middleware re-evaluates auth state
-          window.location.reload()
+          // Redirect to login instead of reloading to prevent loops
+          // ONLY if not already on the login page
+          if (pathname !== '/login') {
+            window.location.href = '/login?reason=expired'
+          }
         }
       } catch (e) {
         console.warn('Error checking token expiry:', e)
@@ -142,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [logout])
+  }, [logout, pathname])
 
   // Listen for storage changes to sync logout across tabs
   useEffect(() => {
@@ -165,18 +169,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         const authenticated = isClientAuthenticated();
-        
+
         if (authenticated && typeof window !== 'undefined') {
+          // Verify token expiry before setting user
+          const token = await getSession();
+          if (!token || isTokenExpired(token)) {
+            console.info('[AuthContext] Entry check: Token invalid or expired. Clearing session.');
+            clearSession();
+            setUser(null);
+            setIsLoading(false);
+            return;
+          }
+
           const storedUser = localStorage.getItem('nibog-user') || localStorage.getItem('user');
-          
+
           if (storedUser) {
-            const userData = JSON.parse(storedUser);
-            setUser(userData);
-            
-            // Migrate old key to new key
-            if (localStorage.getItem('user')) {
-              localStorage.setItem('nibog-user', storedUser);
-              localStorage.removeItem('user');
+            try {
+              const userData = JSON.parse(storedUser);
+              setUser(userData);
+
+              // Migrate old key to new key
+              if (localStorage.getItem('user')) {
+                localStorage.setItem('nibog-user', storedUser);
+                localStorage.removeItem('user');
+              }
+            } catch (e) {
+              console.error('[AuthContext] Error parsing user data:', e);
+              setUser(null);
             }
           } else {
             // Session exists but no user data, clear session

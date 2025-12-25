@@ -63,13 +63,14 @@ export const isClientAuthenticated = (): boolean => {
 
 // Check if a JWT token is expired. Returns false for non-JWT / opaque tokens.
 export function isTokenExpired(token?: string | null): boolean {
-  if (!token) return true; // missing token -> treat as expired
+  if (!token || token === 'undefined' || token === 'null' || token === '') return true;
 
   try {
     // JWTs have three parts separated by dots
     const parts = token.split('.')
     if (parts.length !== 3) {
-      // Not a JWT; we cannot reliably determine expiration
+      // Not a JWT; we cannot reliably determine expiration from the string alone
+      // We assume it's an opaque token that is handled by the server
       return false
     }
 
@@ -77,18 +78,21 @@ export function isTokenExpired(token?: string | null): boolean {
     const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
     const decoded = atob(payloadBase64)
     const payload = JSON.parse(decoded)
+
     if (payload && typeof payload.exp === 'number') {
       const now = Math.floor(Date.now() / 1000)
-      return payload.exp <= now
+      // Buffer of 5 seconds to prevent edge cases
+      return payload.exp <= (now + 5)
     }
 
     // No exp claim - assume not expired
     return false
   } catch (error) {
     console.warn('Failed to parse token for expiry check:', error)
-    return false
+    // If it looks like a JWT but fails parsing, treat as expired for safety
+    return token.includes('.')
   }
-} 
+}
 
 // Server-side authentication check
 export async function isServerAuthenticated() {
@@ -127,13 +131,13 @@ export function setSession(token: string) {
   }
   try {
     localStorage.setItem(SESSION_COOKIE_NAME, token);
-    
+
     // Sync with cookies for server-side access - set with proper expiry
     const maxAge = 60 * 60 * 24 * 7; // 7 days in seconds
     // Ensure Secure flag only when the page is served over HTTPS (otherwise cookie won't be sent)
     const secure = (typeof window !== 'undefined' && window.location && window.location.protocol === 'https:') ? 'Secure; ' : '';
     document.cookie = `${SESSION_COOKIE_NAME}=${token}; path=/; max-age=${maxAge}; ${secure}SameSite=Lax`;
-    
+
     // Verify cookie was set
     const cookieSet = document.cookie.split(';').some(c => c.trim().startsWith(`${SESSION_COOKIE_NAME}=`));
   } catch (error) {
