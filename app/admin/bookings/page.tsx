@@ -76,6 +76,11 @@ export default function BookingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState<number | null>(null)
 
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   // Date filter state
   const [fromDate, setFromDate] = useState<string>("")
   const [toDate, setToDate] = useState<string>("")
@@ -418,26 +423,41 @@ export default function BookingsPage() {
     }
   }
 
-  // Handle delete booking
+  // Handle delete booking - show confirmation dialog
   const handleDeleteBooking = async (booking: Booking) => {
+    setBookingToDelete(booking)
+    setDeleteDialogOpen(true)
+  }
+
+  // Confirm delete booking
+  const confirmDeleteBooking = async () => {
+    if (!bookingToDelete) return
+
     try {
-      setIsProcessing(booking.booking_id)
-      await deleteBooking(booking.booking_id)
+      setIsDeleting(true)
+      setIsProcessing(bookingToDelete.booking_id)
+      
+      const result = await deleteBooking(bookingToDelete.booking_id)
 
       // Remove the booking from the list
-      setBookings(bookings.filter(b => b.booking_id !== booking.booking_id))
+      setBookings(bookings.filter(b => b.booking_id !== bookingToDelete.booking_id))
 
       toast({
         title: "Success",
-        description: `Booking #${booking.booking_id} has been deleted.`,
+        description: result.message || `Booking #${bookingToDelete.booking_id} has been deleted.`,
       })
+      
+      setDeleteDialogOpen(false)
+      setBookingToDelete(null)
     } catch (error: any) {
+      console.error('Error deleting booking:', error)
       toast({
         title: "Error",
         description: error.message || "Failed to delete booking.",
         variant: "destructive",
       })
     } finally {
+      setIsDeleting(false)
       setIsProcessing(null)
     }
   }
@@ -830,6 +850,68 @@ export default function BookingsPage() {
         onRefresh={fetchBookings}
         className="min-h-[400px]"
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Booking #{bookingToDelete?.booking_id}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to delete this booking? This action cannot be undone.</p>
+              {bookingToDelete && (
+                <div className="mt-4 p-4 bg-muted rounded-lg space-y-2 text-sm">
+                  <div className="font-medium">Booking Details:</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-muted-foreground">Parent:</span>
+                    <span className="font-medium">{bookingToDelete.parent_name}</span>
+                    
+                    <span className="text-muted-foreground">Event:</span>
+                    <span className="font-medium">{bookingToDelete.event_title}</span>
+                    
+                    <span className="text-muted-foreground">Child:</span>
+                    <span className="font-medium">{bookingToDelete.child_full_name}</span>
+                    
+                    <span className="text-muted-foreground">Status:</span>
+                    <span>{getStatusBadge(bookingToDelete.booking_status)}</span>
+                  </div>
+                </div>
+              )}
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm font-medium text-destructive">The following will be deleted:</p>
+                <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                  <li>Booking record and all children enrollments</li>
+                  <li>All game/slot assignments</li>
+                  <li>Payment records</li>
+                  <li>Parent record (if no other bookings exist)</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteBooking}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Booking
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

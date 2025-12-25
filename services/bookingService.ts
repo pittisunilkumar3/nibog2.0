@@ -1112,16 +1112,14 @@ export async function createBooking(bookingData: {
  * @param bookingId The booking ID to delete
  * @returns Promise with success response
  */
-export async function deleteBooking(bookingId: number): Promise<{ success: boolean }> {
+export async function deleteBooking(bookingId: number): Promise<{ success: boolean; message?: string }> {
   try {
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/bookings/delete', {
-      method: "POST",
+    // Use the new REST API endpoint: DELETE /api/bookings/:id
+    const response = await fetch(`/api/bookings/${bookingId}`, {
+      method: "DELETE",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        booking_id: bookingId
-      }),
     });
 
     if (!response.ok) {
@@ -1142,12 +1140,11 @@ export async function deleteBooking(bookingId: number): Promise<{ success: boole
 
     const data = await response.json();
 
-    // The API returns [{ "success": true }]
-    if (Array.isArray(data) && data.length > 0) {
-      return data[0];
-    } else if (!Array.isArray(data) && data.success !== undefined) {
-      return data;
-    }
+    // The API returns { "success": true, "message": "Booking deleted successfully" }
+    return {
+      success: data.success || true,
+      message: data.message || "Booking deleted successfully"
+    };
 
     throw new Error("Invalid response format from delete booking API");
   } catch (error: any) {
