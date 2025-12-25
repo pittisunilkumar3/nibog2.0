@@ -1,47 +1,15 @@
 # Testimonials API 📣
 
-**Base URL (Next.js API):** `/api/testimonials`  
-**Full Development URL:** `http://localhost:3000/api/testimonials`  
-**Production URL:** `https://yourdomain.com/api/testimonials`  
-**Backend URL (internal):** `http://localhost:3004/api/testimonials`
+**Base URL:** http://localhost:3004/api/testimonials
 
 ---
 
 ## Overview
 User-submitted testimonials for events (optional image). Public endpoints allow listing and fetching testimonials; protected endpoints (employee auth) allow creating, updating, and deleting testimonials.
 
-**Architecture:** Next.js API routes (`/api/testimonials/*`) proxy requests to the backend server (`BACKEND_URL=http://localhost:3004`). Clients should call the Next.js API routes, not the backend directly.
-
-> **Note:** Replace `http://localhost:3000` with your production domain when deployed. The relative paths (`/api/testimonials`) work in both development and production.
-
 ---
 ## Authentication
 - **Protected endpoints** require **Bearer** token authentication from an employee account (see `document/employee.md`).
-
----
-
-## Endpoints Summary
-
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|---------------|-------------|
-| GET | `/api/testimonials` | No | List all testimonials (supports filters) |
-| GET | `/api/testimonials/{id}` | No | Get single testimonial by ID |
-| POST | `/api/testimonials` | Yes | Create new testimonial |
-| PUT | `/api/testimonials/{id}` | Yes | Update existing testimonial |
-| DELETE | `/api/testimonials/{id}` | Yes | Delete testimonial |
-| GET | `/api/testimonials/get-all` | No | Get all testimonials (legacy) |
-| POST | `/api/testimonials/get` | No | Get testimonial by ID (POST body) |
-| POST | `/api/testimonials/create` | Yes | Create testimonial (external webhook) |
-| POST | `/api/testimonials/update` | Yes | Update testimonial (external webhook) |
-| DELETE | `/api/testimonials/delete` | Yes | Delete testimonial (external webhook) |
-
-**Query Parameters (for list endpoint):**
-- `limit` (default: 20) - Number of results per page
-- `offset` (default: 0) - Pagination offset
-- `status` - Filter by status: `Published`, `Pending`, `Rejected`
-- `city_id` - Filter by city ID
-- `event_id` - Filter by event ID
-- `is_active` - Filter by active status: `1` or `0`
 
 ---
 
@@ -50,15 +18,15 @@ User-submitted testimonials for events (optional image). Public endpoints allow 
 - **name** (string) — **required** when creating
 - **city_id** (int) — optional, refers to `cities.id`
 - **city_name** (string) — included when `city_id` is present
-- **event_id** (int) — **required** when creating, refers to `events.id`
-- **event_name** (string) — included in responses when `event_id` is present
-- **rating** (int) — **required** when creating, 1 to 5
-- **testimonial** (text) — **required** when creating
-- **submitted_at** (date) — defaults to current date if omitted (format: YYYY-MM-DD)
-- **status** (enum) — `Published`, `Pending`, `Rejected` (default: `Published`)
+- **event_id** (int) — optional, refers to `events.id`
+- **event_name** (string) — included when `event_id` is present (GET/list responses include `event_name` and `city_name` when available)
+- **rating** (int) — 1 to 5
+- **testimonial** (text)
+- **submitted_at** (date) — defaults to current date if omitted
+- **status** (enum) — `Published`, `Pending`, `Rejected` (default: `Pending`)
 - **image_url** (string) — optional URL to image
-- **priority** (int) — sorting priority (higher first, default: 0)
-- **is_active** (tinyint) — 1 (true) or 0 (false, default: 1)
+- **priority** (int) — sorting priority (higher first)
+- **is_active** (tinyint) — 1 (true) or 0 (false)
 - **created_at**, **updated_at** (timestamps)
 
 ---
@@ -67,7 +35,7 @@ User-submitted testimonials for events (optional image). Public endpoints allow 
 
 ### Create (JSON)
 ```
-POST /api/testimonials
+POST http://localhost:3004/api/testimonials
 Headers: Authorization: Bearer {token}
 Content-Type: application/json
 
@@ -87,7 +55,7 @@ Content-Type: application/json
 
 ### Create (multipart file upload)
 ```
-POST /api/testimonials
+POST http://localhost:3004/api/testimonials
 Headers: Authorization: Bearer {token}
 Content-Type: multipart/form-data
 
@@ -102,7 +70,7 @@ Content-Type: multipart/form-data
 
 ### Update (partial)
 ```
-PUT /api/testimonials/123
+PUT http://localhost:3004/api/testimonials/123
 Headers: Authorization: Bearer {token}
 Content-Type: application/json
 
@@ -180,15 +148,15 @@ Content-Type: application/json
 JavaScript (fetch):
 ```javascript
 async function listTestimonials() {
-  const res = await fetch('/api/testimonials?limit=10');
+  const res = await fetch('http://localhost:3004/api/testimonials?limit=10');
   return res.json();
 }
 ```
 
-Node (axios) - Server-side:
+Node (axios):
 ```javascript
 const axios = require('axios');
-axios.get('http://localhost:3000/api/testimonials?status=Published').then(r => console.log(r.data));
+axios.get('http://localhost:3004/api/testimonials?status=Published').then(r => console.log(r.data));
 ```
 
 If you'd like, I can also apply this full-payload + full-response template to `event.md` and `booking.md`, or generate a consolidated API index linking all docs.
@@ -238,17 +206,17 @@ Content-Type: application/json
 
 List (filter by status/event/city):
 ```
-curl -X GET "http://localhost:3000/api/testimonials?status=Published&event_id=12&city_id=3"
+curl -X GET "http://localhost:3004/api/testimonials?status=Published&event_id=12&city_id=3"
 ```
 
 Get single testimonial:
 ```
-curl -X GET "http://localhost:3000/api/testimonials/123"
+curl -X GET "http://localhost:3004/api/testimonials/123"
 ```
 
 Create (JSON):
 ```
-curl -X POST "http://localhost:3000/api/testimonials" \
+curl -X POST "http://localhost:3004/api/testimonials" \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -288,25 +256,6 @@ curl -X DELETE "http://localhost:3004/api/testimonials/123" \
 ```
 
 > Tip: the current API stores `image_url` directly; if you want automatic file uploads that return `image_url`, I can implement an upload endpoint and update docs accordingly.
-
----
-
-## Environment Configuration
-
-The Next.js API routes proxy requests to your backend server. Configure in `.env`:
-
-```env
-# Backend API URL (where testimonials data is stored)
-BACKEND_URL=http://localhost:3004
-
-# Optional: External webhook/API for testimonials (if using third-party service)
-# TESTIMONIALS_API_URL=https://external-api.example.com/webhook/v1/nibog/testimonials/get
-# WEBHOOK_URL=https://external-api.example.com
-```
-
-**Default behavior:**
-- All API routes (`/api/testimonials/*`) forward requests to `${BACKEND_URL}/api/testimonials/*`
-- If `TESTIMONIALS_API_URL` or `WEBHOOK_URL` is set, the `/api/testimonials/get` endpoint will try the external service first, then fall back to backend
 
 ---
 
