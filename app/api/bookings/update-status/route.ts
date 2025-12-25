@@ -4,17 +4,45 @@ export async function POST(request: Request) {
   try {
 
     // Parse the request body
-    const { bookingId, paymentStatus } = await request.json();
+    // Support both paymentStatus (for updating payment) and status (for updating booking status)
+    const { bookingId, paymentStatus, status } = await request.json();
 
-    // Validate required fields
-    if (!bookingId || !paymentStatus) {
+    // Validate required fields - bookingId is always required and at least one of paymentStatus/status must be present
+    if (!bookingId || (!paymentStatus && !status)) {
       return NextResponse.json(
-        { error: "Missing required fields: bookingId and paymentStatus are required" },
+        { error: "Missing required fields: bookingId and paymentStatus or status are required" },
         { status: 400 }
       );
     }
 
-    // Try to update the booking using the general update endpoint
+    // If a booking status (friendly string like 'Confirmed') is provided, call the update-status endpoint
+    if (status) {
+      const statusResponse = await fetch("https://ai.nibog.in/webhook/v1/nibog/bookingsevents/update-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          booking_id: bookingId,
+          status: status
+        }),
+        cache: "no-store",
+      });
+
+      if (!statusResponse.ok) {
+        const statusErrorText = await statusResponse.text();
+        console.error(`External API status update error: ${statusErrorText}`);
+        return NextResponse.json(
+          { error: `Status update failed: ${statusResponse.status}` },
+          { status: statusResponse.status }
+        );
+      }
+
+      const statusData = await statusResponse.json();
+      return NextResponse.json({ ...statusData, message: `Booking status updated to ${status}` }, { status: 200 });
+    }
+
+    // Otherwise, proceed with payment status update (legacy behavior)
     const updateUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/update";
 
     const response = await fetch(updateUrl, {

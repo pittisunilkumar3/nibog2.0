@@ -2,10 +2,103 @@
 
 ## Endpoints Overview
 
+
 1. [Create Booking](#create-booking) - `POST /api/bookings`
-2. [Get All Bookings](#get-all-bookings) - `GET /api/bookings`
-3. [Get Single Booking](#get-single-booking) - `GET /api/bookings/:id`
-4. [Get User Profile with Bookings](#get-user-profile-with-bookings) - `GET /api/bookings/user/:userId`
+2. [Edit Booking](#edit-booking) - `PATCH /api/bookings/:id`
+3. [Get All Bookings](#get-all-bookings) - `GET /api/bookings`
+4. [Get Single Booking](#get-single-booking) - `GET /api/bookings/:id`
+5. [Get User Profile with Bookings](#get-user-profile-with-bookings) - `GET /api/bookings/user/:userId`
+---
+
+## Edit Booking
+
+**PATCH** `/api/bookings/:id`
+
+Edit an existing booking and its related data (parent, children, games, payment). Now supports granular editing of children and games.
+
+### Request Example
+```bash
+curl -X PATCH http://localhost:3004/api/bookings/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "Confirmed",
+    "total_amount": 1999,
+    "parent": { "id": 12, "name": "Sarah Williams", "email": "sarah.w@test.com", "phone": "9998887776" },
+    "children": [
+      {
+        "child_id": 14, // update existing child
+        "full_name": "Emma Williams",
+        "date_of_birth": "2019-04-10",
+        "gender": "Female",
+        "school_name": "Green Valley School",
+        "booking_games": [
+          {
+            "booking_game_id": 12, // update existing game
+            "game_id": 1,
+            "slot_id": 8,
+            "game_price": 1799
+          },
+          {
+            "game_id": 2, // add new game for this child
+            "slot_id": 9,
+            "game_price": 999
+          }
+        ],
+        "delete_booking_game_ids": [13] // delete game with id 13 for this child
+      },
+      {
+        "full_name": "New Child",
+        "date_of_birth": "2020-01-01",
+        "gender": "Male",
+        "school_name": "ABC School",
+        "booking_games": [
+          { "game_id": 3, "slot_id": 10, "game_price": 500 }
+        ]
+      }
+    ],
+    "delete_child_ids": [15], // delete child with id 15
+    "payment": {
+      "payment_id": 7,
+      "transaction_id": "TXN555444333",
+      "amount": 1999,
+      "payment_method": "UPI",
+      "payment_status": "Paid"
+    }
+  }'
+```
+
+### Success Response
+
+**200 OK**
+```json
+{
+  "message": "Booking updated successfully",
+  "data": { /* ...full updated booking object... */ }
+}
+```
+
+### Error Responses
+
+**400 Bad Request**
+```json
+{ "error": "Booking ID is required" }
+```
+**404 Not Found**
+```json
+{ "error": "Booking not found" }
+```
+**500 Internal Server Error**
+```json
+{ "error": "Error message describing what went wrong" }
+```
+
+### Notes
+- You can update, add, or delete children and games using `child_id`, `booking_game_id`, `delete_child_ids`, and `delete_booking_game_ids`.
+- If a child or game object includes its ID, it will be updated. If no ID is provided, a new record will be created.
+- To delete, provide the relevant IDs in `delete_child_ids` or `delete_booking_game_ids`.
+- If payment is provided, the payment record is updated.
+- All relationships and foreign keys are maintained.
+- Returns the full updated booking object on success.
 
 ---
 

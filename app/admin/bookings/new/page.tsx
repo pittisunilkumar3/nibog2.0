@@ -655,8 +655,8 @@ export default function NewBookingPage() {
       const processedAddons: any[] = []
       // Removed add-ons from booking payload
 
-      // Create booking data matching the expected API structure
-      // Build children array for payload
+      // Create booking data matching the expected API structure (booking.md format)
+      // booking_games should be INSIDE each child object (NOT at root level with child_id)
       const children = [
         {
           full_name: childName,
@@ -682,7 +682,7 @@ export default function NewBookingPage() {
       // Determine booking status: confirm immediately if payment is already paid (e.g., Cash payment)
       const bookingStatus = payment.payment_status === "Paid" ? "Confirmed" : "Pending";
 
-      // Final bookingData payload matching documentation
+      // Final bookingData payload matching API documentation from booking.md
       const bookingData = {
         parent_name: parentName,
         email: email,
@@ -694,6 +694,9 @@ export default function NewBookingPage() {
         children,
         payment
       };
+
+      console.log("=== Booking Request Data ===");
+      console.log(JSON.stringify(bookingData, null, 2));
 
       // Creating booking with data (debug log removed)
 
@@ -707,20 +710,57 @@ export default function NewBookingPage() {
         body: JSON.stringify(bookingData),
       })
 
+      const responseText = await response.text()
+      console.log("Raw response text:", responseText)
+
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Booking creation failed:", errorText)
-        throw new Error(`Failed to create booking: ${response.status} ${response.statusText}`)
+        let errorMessage = `Failed to create booking: ${response.status} ${response.statusText}`
+        try {
+          const errorData = JSON.parse(responseText)
+          if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch (e) {
+          // Response is not JSON, use the text directly
+          if (responseText) {
+            errorMessage += `: ${responseText}`
+          }
+        }
+        console.error("Booking creation failed:", errorMessage)
+        throw new Error(errorMessage)
       }
 
-      const result = await response.json()
-      // Booking created successfully (debug log removed)
+      let result
+      try {
+        result = JSON.parse(responseText)
+      } catch (e) {
+        console.error("Failed to parse response as JSON:", responseText)
+        throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}`)
+      }
+      console.log("=== Booking API Response ===", result)
+      console.log("Response type:", typeof result)
+      console.log("Is array:", Array.isArray(result))
+      console.log("Response keys:", Object.keys(result || {}))
 
-      // Extract booking ID from the response (webhook returns an array)
-      const bookingId = Array.isArray(result) ? result[0]?.booking_id : result.booking_id
+      // Extract booking ID from the response
+      // Handle multiple response formats:
+      // 1. Direct object: { booking_id: 123 }
+      // 2. Array: [{ booking_id: 123 }]
+      // 3. Message object: { message: "...", booking_id: 123 }
+      let bookingId = null
+      
+      if (Array.isArray(result)) {
+        bookingId = result[0]?.booking_id
+      } else if (result && typeof result === 'object') {
+        bookingId = result.booking_id || result.bookingId || result.id
+      }
+      
       if (!bookingId) {
-        throw new Error("Booking created but no booking ID returned")
+        console.error("Could not extract booking ID from response:", result)
+        throw new Error(`Booking created but no booking ID returned. Response: ${JSON.stringify(result)}`)
       }
+      
+      console.log("Extracted booking ID:", bookingId)
 
       // Store booking details for confirmation
       setCreatedBookingId(bookingId)

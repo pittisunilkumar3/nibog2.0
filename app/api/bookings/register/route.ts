@@ -21,12 +21,22 @@ export async function POST(request: Request) {
 
     // Get the response data
     const responseText = await response.text();
+    
+    console.log("=== Backend API Response ===");
+    console.log("Status:", response.status);
+    console.log("Response text:", responseText.substring(0, 1000)); // Log first 1000 chars
 
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
+      
+      console.log("Parsed response data:", responseData);
+      console.log("Response type:", typeof responseData);
+      console.log("Is array:", Array.isArray(responseData));
+      console.log("Response keys:", Object.keys(responseData || {}));
 
-      return NextResponse.json(responseData, { status: 200 });
+      // Return with the same status code from the backend
+      return NextResponse.json(responseData, { status: response.status });
     } catch (parseError) {
       console.error("Server API route: Error parsing response:", parseError);
       // If parsing fails but we got a 200 status, consider it a success

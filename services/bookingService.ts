@@ -287,12 +287,11 @@ export async function updateBookingStatus(bookingId: number, status: string): Pr
  */
 export async function getBookingById(bookingId: string | number): Promise<Booking> {
   try {
-    // Create an AbortController for timeout
+    // Backwards compatible convenience method that returns a normalized summary Booking (first child flattened)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-    // Use our internal API route to avoid CORS issues
-    const response = await fetch(`/api/bookings/get/${bookingId}`, {
+    const response = await fetch(`/api/bookings/${bookingId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -303,17 +302,96 @@ export async function getBookingById(bookingId: string | number): Promise<Bookin
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      // If it's a 404, the booking doesn't exist
       if (response.status === 404) {
         throw new Error(`Booking with ID ${bookingId} not found`);
       }
-
-      // For other errors, throw immediately without fallback to prevent loops
-      throw new Error(`Failed to fetch booking: ${response.status}`);
+      const text = await response.text();
+      throw new Error(`Failed to fetch booking: ${response.status} - ${text}`);
     }
 
-    const data = await response.json();
-    return data;
+    const payload = await response.json();
+    const source = payload && payload.data ? payload.data : payload;
+
+    // Keep the existing normalization (summary with first child)
+    const child = (Array.isArray(source.children) && source.children.length > 0) ? source.children[0] : undefined;
+    const payment = (Array.isArray(source.payments) && source.payments.length > 0) ? source.payments[0] : undefined;
+    const venue = source.event && source.event.venue ? source.event.venue : undefined;
+
+    const booking: Booking = {
+      booking_id: source.booking_id || source.id || 0,
+      booking_ref: source.booking_ref || source.bookingRef || "",
+      booking_status: source.booking_status || source.status || "",
+      total_amount: source.total_amount || source.totalAmount || source.total || "",
+      payment_method: source.payment_method || source.paymentMethod || (payment?.payment_method ?? ""),
+      payment_status: source.payment_status || source.paymentStatus || (payment?.payment_status ?? ""),
+      terms_accepted: !!source.terms_accepted,
+      booking_is_active: source.booking_is_active ?? true,
+      booking_created_at: source.booking_date || source.created_at || source.booking_created_at || "",
+      booking_updated_at: source.updated_at || source.booking_updated_at || "",
+      cancelled_at: source.cancelled_at ?? null,
+      completed_at: source.completed_at ?? null,
+      parent_id: source.parent?.id ?? source.parent_id ?? 0,
+      parent_name: source.parent?.name || source.parent_name || source.parent_name || "",
+      parent_email: source.parent?.email || source.parent_email || "",
+      parent_additional_phone: source.parent?.phone || source.parent_additional_phone || "",
+      parent_is_active: source.parent?.is_active ?? true,
+      parent_created_at: source.parent?.created_at || "",
+      parent_updated_at: source.parent?.updated_at || "",
+      child_id: child?.child_id ?? child?.id ?? source.child_id ?? 0,
+      child_full_name: child?.full_name || child?.child_full_name || source.child_full_name || "",
+      child_date_of_birth: child?.date_of_birth || child?.child_date_of_birth || source.child_date_of_birth || "",
+      child_school_name: child?.school_name || source.child_school_name || "",
+      child_gender: child?.gender || child?.child_gender || source.child_gender || "",
+      child_age: child?.age || child?.child_age || source.child_age || "",
+      child_is_active: child?.is_active ?? true,
+      child_created_at: child?.created_at || child?.child_created_at || "",
+      child_updated_at: child?.updated_at || child?.child_updated_at || "",
+      game_name: (child && Array.isArray(child.booking_games) && child.booking_games.length > 0)
+        ? child.booking_games[0].game_name || child.booking_games[0].game_name
+        : source.game_name || "",
+      game_description: source.game_description || "",
+      game_min_age: source.min_age ?? 0,
+      game_max_age: source.max_age ?? 0,
+      game_duration_minutes: source.duration_minutes ?? 0,
+      game_categories: source.game_categories || [],
+      game_is_active: true,
+      game_created_at: "",
+      game_updated_at: "",
+      event_id: source.event?.id ?? source.event_id ?? 0,
+      event: source.event ?? null,
+      event_title: source.event?.name || source.event_title || "",
+      event_description: source.event?.description || source.event_description || "",
+      event_event_date: source.event?.date || source.event_date || source.event_event_date || "",
+      event_status: source.event?.status || source.event_status || "",
+      event_created_at: source.event?.created_at || "",
+      event_updated_at: source.event?.updated_at || "",
+      user_full_name: source.user?.full_name || source.user_full_name || "",
+      user_email: source.user?.email || source.user_email || "",
+      user_phone: source.user?.phone || source.user_phone || "",
+      user_city_id: source.user?.city_id ?? source.user_city_id ?? 0,
+      user_accepted_terms: !!source.user?.accepted_terms,
+      user_terms_accepted_at: source.user?.terms_accepted_at || null,
+      user_is_active: source.user?.is_active ?? true,
+      user_is_locked: source.user?.is_locked ?? false,
+      user_locked_until: source.user?.locked_until || null,
+      user_deactivated_at: source.user?.deactivated_at || null,
+      user_created_at: source.user?.created_at || "",
+      user_updated_at: source.user?.updated_at || "",
+      user_last_login_at: source.user?.last_login_at || null,
+      city_name: venue?.city || source.city_name || "",
+      city_state: venue?.state || source.city_state || "",
+      city_is_active: true,
+      city_created_at: "",
+      city_updated_at: "",
+      venue_name: venue?.name || source.venue_name || "",
+      venue_address: venue?.address || source.venue_address || "",
+      venue_capacity: venue?.capacity ?? source.venue_capacity ?? 0,
+      venue_is_active: true,
+      venue_created_at: "",
+      venue_updated_at: "",
+    };
+
+    return booking;
   } catch (error: any) {
     // Handle timeout errors
     if (error.name === 'AbortError') {
@@ -321,6 +399,34 @@ export async function getBookingById(bookingId: string | number): Promise<Bookin
     }
 
     // Re-throw the error without fallback to prevent infinite loops
+    throw error;
+  }
+}
+
+// New: fetch the full booking object (raw structure including children/booking_games/payments)
+export async function getBookingDetail(bookingId: string | number): Promise<any> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch(`/api/bookings/${bookingId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      if (response.status === 404) throw new Error(`Booking with ID ${bookingId} not found`);
+      const text = await response.text();
+      throw new Error(`Failed to fetch booking detail: ${response.status} - ${text}`);
+    }
+
+    const payload = await response.json();
+    return payload && payload.data ? payload.data : payload;
+  } catch (error: any) {
+    if (error.name === 'AbortError') throw new Error('Request timeout - the booking service is taking too long to respond');
     throw error;
   }
 }
