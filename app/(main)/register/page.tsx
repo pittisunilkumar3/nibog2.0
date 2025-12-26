@@ -98,6 +98,8 @@ export default function RegisterPage() {
       setIsLoading(true)
       setError("")
 
+      console.log('Google credential received:', credentialResponse.credential?.substring(0, 20) + '...')
+
       // Send the Google credential to our backend via our API route
       const response = await fetch('/api/auth/google/callback', {
         method: 'POST',
@@ -109,19 +111,23 @@ export default function RegisterPage() {
         }),
       })
 
+      console.log('API response status:', response.status)
       const data = await response.json()
+      console.log('API response data:', data)
 
       if (!response.ok) {
+        console.error('API error:', data)
         throw new Error(data.error || 'Google sign-in failed')
       }
 
-      // Check if user data is available
-      if (!data || !data.data) {
-        throw new Error('Invalid response from server')
+      // Check if user data is available - handle both direct data and nested data structures
+      const userData = data.data || data
+      const token = data.token || userData.token
+      
+      if (!userData || !userData.user_id) {
+        console.error('Invalid response structure:', data)
+        throw new Error('Invalid response from server. Please try again.')
       }
-
-      const userData = data.data
-      const token = data.token
 
       // Store user data in localStorage
       const userDataForStorage = {

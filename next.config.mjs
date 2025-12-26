@@ -92,17 +92,13 @@ const nextConfig = {
           },
         ],
       },
-      // HTML pages - short cache with revalidation + CORS for Google OAuth
+      // HTML pages - short cache with revalidation
       {
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
             value: 'public, max-age=60, stale-while-revalidate=300',
-          },
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups',
           },
         ],
       },
