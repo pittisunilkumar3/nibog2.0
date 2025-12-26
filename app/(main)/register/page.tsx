@@ -141,14 +141,20 @@ export default function RegisterPage() {
         accepted_terms: userData.accepted_terms,
         terms_accepted_at: userData.terms_accepted_at,
         is_active: userData.is_active,
-        role: userData.role || 'user',
+        is_locked: userData.is_locked || false,
+        locked_until: userData.locked_until || null,
+        deactivated_at: userData.deactivated_at || null,
         created_at: userData.created_at,
-        updated_at: userData.updated_at
+        updated_at: userData.updated_at,
+        last_login_at: userData.last_login_at || null
       }
 
       localStorage.setItem('user', JSON.stringify(userDataForStorage))
       localStorage.setItem('token', token)
       localStorage.setItem('authMethod', 'google')
+
+      // Update auth context (if using AuthContext)
+      // login(userDataForStorage, token)
 
       // Success notification
       toast({
