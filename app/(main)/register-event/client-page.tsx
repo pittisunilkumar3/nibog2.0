@@ -486,6 +486,7 @@ export default function RegisterEventClientPage() {
   const handleCityChange = async (city: string) => {
     console.log('[handleCityChange] Selected city:', city);
     console.log('[handleCityChange] Available bookingCities:', bookingCities);
+    console.log('[handleCityChange] bookingCities length:', bookingCities.length);
     
     setSelectedCity(city)
     setSelectedEventType("") // Reset event type when city changes
@@ -493,6 +494,8 @@ export default function RegisterEventClientPage() {
     setEligibleEvents([]) // Reset eligible events
     setEligibleGames([]) // Reset eligible games
     setSelectedGames([]) // Reset selected games
+    setIsLoadingEvents(true) // Set loading state
+    setEventError(null) // Clear any previous errors
 
     // Reset promocode when city changes
     setPromoCode('')
@@ -500,58 +503,86 @@ export default function RegisterEventClientPage() {
     setDiscountAmount(0)
     setAvailablePromocodes([])
 
-    // Find city in booking data
-    const cityData = bookingCities.find(c => c.city_name === city);
-    console.log('[handleCityChange] Found cityData:', cityData);
-    
-    if (!cityData) {
-      console.error('[handleCityChange] No city data found for:', city);
-      setEventError("No events found for this city");
-      return;
-    }
+    try {
+      // If bookingCities is empty, fetch it first
+      if (bookingCities.length === 0) {
+        console.log('[handleCityChange] bookingCities is empty, fetching data...');
+        await fetchCitiesData();
+        // After fetching, the state will be updated and we need to re-check
+        // Note: This creates a recursive issue, so we'll handle it differently
+        setIsLoadingEvents(false);
+        setEventError("Please select the city again after data loads");
+        return;
+      }
 
-    const cityId = cityData.id;
-    setSelectedCityId(cityId);
-    console.log('[handleCityChange] City ID:', cityId);
-    console.log('[handleCityChange] Events in city:', cityData.events?.length || 0);
-
-    // Use events from booking info directly instead of making another API call
-    if (cityData.events && cityData.events.length > 0) {
-      console.log('[handleCityChange] Processing events:', cityData.events);
+      // Find city in booking data
+      const cityData = bookingCities.find(c => c.city_name === city);
+      console.log('[handleCityChange] Found cityData:', cityData);
       
-      // Convert BookingEvent to EventListItem format
-      const formattedEvents: EventListItem[] = cityData.events.map((event: BookingEvent) => ({
-        event_id: event.id,
-        event_title: event.title,
-        event_description: event.description,
-        event_date: event.event_date,
-        event_status: event.status,
-        event_created_at: event.created_at,
-        event_updated_at: event.updated_at,
-        city_id: cityData.id,
-        city_name: cityData.city_name,
-        state: cityData.state,
-        city_is_active: cityData.is_active === 1,
-        city_created_at: cityData.created_at,
-        city_updated_at: cityData.updated_at,
-        venue_id: event.venue_id,
-        venue_name: event.venue_name,
-        venue_address: event.venue_address,
-        venue_capacity: event.venue_capacity,
-        venue_is_active: true,
-        venue_created_at: '',
-        venue_updated_at: '',
-        games: [],
-        games_with_slots: event.games_with_slots || []
-      }));
+      if (!cityData) {
+        console.error('[handleCityChange] No city data found for:', city);
+        console.log('[handleCityChange] Available city names:', bookingCities.map(c => c.city_name));
+        setEventError("No events found for this city");
+        setApiEvents([]);
+        return;
+      }
 
-      console.log('[handleCityChange] Formatted events:', formattedEvents);
-      setApiEvents(formattedEvents);
-      setEventError(null);
-    } else {
-      console.log('[handleCityChange] No events found in cityData');
+      const cityId = cityData.id;
+      setSelectedCityId(cityId);
+      console.log('[handleCityChange] City ID:', cityId);
+      console.log('[handleCityChange] Events in city:', cityData.events?.length || 0);
+      console.log('[handleCityChange] Full cityData.events:', cityData.events);
+
+      // Use events from booking info directly instead of making another API call
+      if (cityData.events && Array.isArray(cityData.events) && cityData.events.length > 0) {
+        console.log('[handleCityChange] Processing events:', cityData.events);
+        
+        // Convert BookingEvent to EventListItem format
+        const formattedEvents: EventListItem[] = cityData.events.map((event: BookingEvent) => {
+          console.log('[handleCityChange] Processing event:', event.id, event.title);
+          return {
+            event_id: event.id,
+            event_title: event.title,
+            event_description: event.description,
+            event_date: event.event_date,
+            event_status: event.status,
+            event_created_at: event.created_at,
+            event_updated_at: event.updated_at,
+            city_id: cityData.id,
+            city_name: cityData.city_name,
+            state: cityData.state,
+            city_is_active: cityData.is_active === 1,
+            city_created_at: cityData.created_at,
+            city_updated_at: cityData.updated_at,
+            venue_id: event.venue_id,
+            venue_name: event.venue_name,
+            venue_address: event.venue_address,
+            venue_capacity: event.venue_capacity,
+            venue_is_active: true,
+            venue_created_at: '',
+            venue_updated_at: '',
+            games: [],
+            games_with_slots: event.games_with_slots || []
+          };
+        });
+
+        console.log('[handleCityChange] Formatted events count:', formattedEvents.length);
+        console.log('[handleCityChange] Formatted events:', formattedEvents);
+        setApiEvents(formattedEvents);
+        setEventError(null);
+      } else {
+        console.log('[handleCityChange] No events found in cityData');
+        console.log('[handleCityChange] cityData.events type:', typeof cityData.events);
+        console.log('[handleCityChange] cityData.events is array?', Array.isArray(cityData.events));
+        setApiEvents([]);
+        setEventError("No events available for this city");
+      }
+    } catch (error: any) {
+      console.error('[handleCityChange] Error processing city change:', error);
+      setEventError("Failed to load events. Please try again.");
       setApiEvents([]);
-      setEventError("No events available for this city");
+    } finally {
+      setIsLoadingEvents(false);
     }
   }
 
@@ -1852,26 +1883,8 @@ export default function RegisterEventClientPage() {
                           <span className="text-muted-foreground">Loading events...</span>
                         </div>
                       ) : eventError ? (
-                        <div className="flex flex-col gap-2">
-                          <div className="flex h-10 items-center rounded-md border border-destructive px-3 py-2 text-sm text-destructive">
-                            {eventError}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (selectedCityId) {
-                                fetchEventsForCity(selectedCityId, selectedCity);
-                              }
-                            }}
-                            className="w-full sm:w-auto"
-                          >
-                            <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Retry Loading Events
-                          </Button>
+                        <div className="flex h-10 items-center rounded-md border border-destructive px-3 py-2 text-sm text-destructive">
+                          {eventError}
                         </div>
                       ) : getUniqueEventTypes().length > 0 ? (
                         <Select
