@@ -283,17 +283,21 @@ export const getCitiesWithBookingInfo = async (): Promise<BookingCity[]> => {
   try {
     console.log('[cityService] Fetching cities with booking info from /api/city/booking-info/list');
     
-    // Add timestamp to bust any caching
+    // Add multiple cache-busting strategies
     const timestamp = new Date().getTime();
-    const response = await fetch(`/api/city/booking-info/list?_t=${timestamp}`, {
+    const random = Math.random().toString(36).substring(7);
+    const response = await fetch(`/api/city/booking-info/list?_t=${timestamp}&_r=${random}&nocache=1`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         "Pragma": "no-cache",
-        "Expires": "0"
+        "Expires": "0",
+        "X-Requested-With": "XMLHttpRequest"
       },
-      cache: 'no-store'
+      cache: 'no-store',
+      // Add credentials to prevent caching
+      credentials: 'same-origin'
     });
 
     console.log('[cityService] Response status:', response.status);

@@ -348,16 +348,20 @@ export default function RegisterEventClientPage() {
       const detailedEventsPromises = eventsData.map(async (evt: any) => {
         try {
           // Attempt to fetch full event details with games using the details API endpoint
-          // Add timestamp to bust any caching
+          // Add multiple cache-busting strategies
           const timestamp = new Date().getTime();
-          const response = await fetch(`/api/events/${evt.id}/details?_t=${timestamp}`, {
+          const random = Math.random().toString(36).substring(7);
+          const response = await fetch(`/api/events/${evt.id}/details?_t=${timestamp}&_r=${random}&nocache=1`, {
             method: 'GET',
             headers: {
-              "Cache-Control": "no-cache, no-store, must-revalidate",
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
               "Pragma": "no-cache",
-              "Expires": "0"
+              "Expires": "0",
+              "X-Requested-With": "XMLHttpRequest"
             },
-            cache: 'no-store'
+            cache: 'no-store',
+            credentials: 'same-origin'
           });
           
           if (!response.ok) {
@@ -1448,13 +1452,26 @@ export default function RegisterEventClientPage() {
       setSelectedEventType("")
       setSelectedEvent("")
       
-      // Clear session storage cache
+      // Clear ALL storage caches
       sessionStorage.removeItem('registrationData')
       sessionStorage.removeItem('selectedAddOns')
       sessionStorage.removeItem('eligibleGames')
       sessionStorage.removeItem('nibog_restored_city')
       sessionStorage.removeItem('nibog_restored_eventType')
       sessionStorage.removeItem('nibog_restored_childAgeMonths')
+      localStorage.removeItem('nibog_booking_data')
+      
+      // Clear any other NIBOG-related items from localStorage/sessionStorage
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('nibog_') || key.startsWith('registration_')) {
+          localStorage.removeItem(key);
+        }
+      });
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('nibog_') || key.startsWith('registration_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
 
       const bookingData = await getCitiesWithBookingInfo()
       console.log('[fetchCitiesData] Received booking data:', bookingData);
@@ -1502,6 +1519,7 @@ export default function RegisterEventClientPage() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && !isLoadingCities) {
         console.log('[Visibility] Page became visible, refreshing data...');
+        router.refresh(); // Force Next.js to revalidate
         fetchCitiesData();
       }
     };
@@ -1511,7 +1529,7 @@ export default function RegisterEventClientPage() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchCitiesData, isLoadingCities]);
+  }, [fetchCitiesData, isLoadingCities, router]);
 
   // Log authentication state for debugging
   useEffect(() => {
@@ -1737,9 +1755,12 @@ export default function RegisterEventClientPage() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => {
+              onClick={async () => {
                 console.log('[Refresh] Manual refresh triggered');
-                fetchCitiesData();
+                // Force router refresh to clear Next.js cache
+                router.refresh();
+                // Then fetch fresh data
+                await fetchCitiesData();
               }}
               disabled={isLoadingCities}
               className="ml-auto"

@@ -42,22 +42,23 @@ export async function GET() {
           continue;
         }
 
-        // If backend returns success and at least one city with events, use it
-        const hasEvents = Array.isArray(parsed?.data) && parsed.data.some((c:any) => Array.isArray(c.events) && c.events.length > 0);
-        if (parsed.success && hasEvents) {
-          console.log('[booking-info route] Using backend data from', baseUrl);
+        // If backend returns success, use it (even if empty - that's valid!)
+        if (parsed.success && Array.isArray(parsed?.data)) {
+          console.log('[booking-info route] Using backend data from', baseUrl, 'with', parsed.data.length, 'cities');
           return new Response(text, {
             status: 200,
             headers: {
               "Content-Type": "application/json",
-              "Cache-Control": "no-cache, no-store, must-revalidate",
+              "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0",
               "Pragma": "no-cache",
-              "Expires": "0"
+              "Expires": "0",
+              "X-Content-Type-Options": "nosniff",
+              "Surrogate-Control": "no-store"
             },
           });
         }
 
-        console.warn('[booking-info route] Backend at', baseUrl, 'returned success but no events. Trying next candidate.');
+        console.warn('[booking-info route] Backend at', baseUrl, 'returned unexpected structure. Trying next candidate.');
       } catch (e) {
         console.warn('[booking-info route] Error fetching from candidate', e);
         continue; // try next candidate
@@ -77,9 +78,11 @@ export async function GET() {
           status: 200,
           headers: { 
             "Content-Type": "application/json",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0",
             "Pragma": "no-cache",
-            "Expires": "0"
+            "Expires": "0",
+            "X-Content-Type-Options": "nosniff",
+            "Surrogate-Control": "no-store"
           },
         });
       } catch (fixedErr) {

@@ -100,13 +100,13 @@ const nextConfig = {
           },
         ],
       },
-      // HTML pages - short cache with revalidation
+      // HTML pages - no cache for dynamic pages
       {
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=60, stale-while-revalidate=300',
+            value: 'no-store, no-cache, must-revalidate, max-age=0',
           },
           {
             key: 'Cross-Origin-Opener-Policy',
