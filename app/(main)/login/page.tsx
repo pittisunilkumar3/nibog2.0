@@ -127,67 +127,41 @@ function LoginContent() {
         throw new Error(data.error || 'Google sign-in failed')
       }
 
-      // Debug response structure
-      console.log('Checking response structure:')
-      console.log('- data.success:', data.success)
-      console.log('- data.token exists:', !!data.token)
-      console.log('- data.user exists:', !!data.user)
-      console.log('- data.data exists:', !!data.data)
-      
-      if (data.user) {
-        console.log('- data.user keys:', Object.keys(data.user))
-        console.log('- data.user:', data.user)
-      }
-      if (data.data) {
-        console.log('- data.data keys:', Object.keys(data.data))
-        console.log('- data.data:', data.data)
-      }
-
-      // Parse response - backend returns {success, token, user}
-      const userData = data.user || data.data || data
-      const token = data.token
-      
-      console.log('Extracted userData keys:', userData ? Object.keys(userData) : 'null')
-      console.log('Extracted userData:', userData)
-      console.log('Extracted token exists:', !!token)
-      
-      // Check for user_id in different possible formats
-      const userId = userData?.user_id || userData?.id || userData?.userId
-      
-      if (!token || !userData || !userId) {
-        console.error('Invalid response structure. Missing required fields.')
-        console.error('Token:', token ? 'exists' : 'MISSING')
-        console.error('userData:', userData ? JSON.stringify(userData) : 'MISSING')
-        console.error('user_id (any format):', userId || 'MISSING')
+      // Backend returns {success: true, token: "...", user: {...}}
+      if (!data.success || !data.token || !data.user) {
+        console.error('Invalid response structure:', data)
+        console.error('Expected: {success, token, user}')
+        console.error('Got - success:', data.success, 'token:', !!data.token, 'user:', !!data.user)
         throw new Error('Invalid response from server. Please try again.')
       }
 
-      // Normalize user data to use user_id consistently
-      if (!userData.user_id && userId) {
-        userData.user_id = userId
-      }
+      const userData = data.user
+      const token = data.token
 
-      // Store user data in localStorage
+      console.log('User data received:', userData)
+      console.log('Token received:', token.substring(0, 20) + '...')
+
+      // Store user data in localStorage - use whatever fields the backend provides
       const userDataForStorage = {
-        user_id: userData.user_id || userData.id || userData.userId,
-        full_name: userData.full_name || userData.name || userData.fullName || '',
-        email: userData.email || '',
-        email_verified: userData.email_verified ?? userData.emailVerified ?? true,
-        phone: userData.phone || userData.phoneNumber || '',
-        phone_verified: userData.phone_verified ?? userData.phoneVerified ?? false,
-        city_id: userData.city_id || userData.cityId || null,
-        accepted_terms: userData.accepted_terms ?? userData.acceptedTerms ?? true,
-        terms_accepted_at: userData.terms_accepted_at || userData.termsAcceptedAt || null,
-        is_active: userData.is_active ?? userData.isActive ?? true,
-        is_locked: userData.is_locked ?? userData.isLocked ?? false,
-        locked_until: userData.locked_until || userData.lockedUntil || null,
-        deactivated_at: userData.deactivated_at || userData.deactivatedAt || null,
-        created_at: userData.created_at || userData.createdAt || new Date().toISOString(),
-        updated_at: userData.updated_at || userData.updatedAt || new Date().toISOString(),
-        last_login_at: userData.last_login_at || userData.lastLoginAt || new Date().toISOString()
+        user_id: userData.user_id || userData.id,
+        full_name: userData.full_name || userData.name,
+        email: userData.email,
+        email_verified: userData.email_verified ?? true,
+        phone: userData.phone || '',
+        phone_verified: userData.phone_verified ?? false,
+        city_id: userData.city_id || null,
+        accepted_terms: userData.accepted_terms ?? true,
+        terms_accepted_at: userData.terms_accepted_at || null,
+        is_active: userData.is_active ?? true,
+        is_locked: userData.is_locked ?? false,
+        locked_until: userData.locked_until || null,
+        deactivated_at: userData.deactivated_at || null,
+        created_at: userData.created_at || new Date().toISOString(),
+        updated_at: userData.updated_at || new Date().toISOString(),
+        last_login_at: userData.last_login_at || new Date().toISOString()
       }
 
-      console.log('Normalized userDataForStorage:', userDataForStorage)
+      console.log('Normalized user data:', userDataForStorage)
       localStorage.setItem('user', JSON.stringify(userDataForStorage))
       localStorage.setItem('token', token)
       localStorage.setItem('authMethod', 'google')
