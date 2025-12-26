@@ -71,18 +71,22 @@ export default function CompletedEventsPage() {
 
 // Convert API data to normalized format for UI
 const normalizeEvent = (event: CompletedEvent): NormalizedEvent => {
-  const revenue = parseFloat(event.revenue.replace(/[^0-9.-]+/g, '')) || 0
-  const registrations = parseInt(event.registrations) || 0
-  const attendance = parseInt(event.attendance_count) || 0
-  const attendanceRate = parseInt(event.attendance_percentage.replace('%', '')) || 0
-  const gameTemplate = event.games ? event.games.map(g => g.name).join(", ") : "No games"
+  const revenue = parseFloat(event.revenue?.replace(/[^0-9.-]+/g, '') || '0') || 0
+  const registrations = parseInt(event.registrations || '0') || 0
+  const attendance = parseInt(event.attendance_count || '0') || 0
+  const attendanceRate = parseInt(event.attendance_percentage?.replace('%', '') || '0') || 0
+  
+  // Use the games array from API response
+  const gameTemplate = event.games && event.games.length > 0 
+    ? event.games.map(g => g.game_name).join(", ") 
+    : "No games"
 
   return {
     id: event.event_id.toString(),
     title: event.event_name,
     gameTemplate,
-    venue: event.venue_name,
-    city: event.city_name,
+    venue: event.venue_name || event.venue?.name || '',
+    city: event.city_name || event.city?.name || '',
     date: event.event_date,
     registrations,
     attendance,

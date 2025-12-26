@@ -5,7 +5,7 @@ import { CompletedEvent, fetchCompletedEventById } from "@/services/completedEve
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { format } from "date-fns"
-import { ArrowLeft, Calendar, MapPin, Users, CheckCircle, XCircle, Download, Mail, Printer, BarChart } from "lucide-react"
+import { ArrowLeft, Calendar, MapPin, Users, CheckCircle, XCircle, Download, Mail, Printer, BarChart, DollarSign, TrendingUp, PieChart, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -131,6 +131,207 @@ export default function CompletedEventDetailPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="space-y-6 md:col-span-2">
+          {/* Enhanced Statistics Section */}
+          {event.statistics && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart className="h-5 w-5" />
+                    Event Statistics
+                  </CardTitle>
+                  <CardDescription>Comprehensive analytics and metrics</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Booking Statistics */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Booking Overview
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-4">
+                      <div className="rounded-lg border p-3">
+                        <div className="text-xs text-muted-foreground">Total Bookings</div>
+                        <div className="text-2xl font-bold">{event.statistics.total_bookings}</div>
+                      </div>
+                      <div className="rounded-lg border p-3">
+                        <div className="text-xs text-muted-foreground">Parents</div>
+                        <div className="text-2xl font-bold">{event.statistics.total_parents}</div>
+                      </div>
+                      <div className="rounded-lg border p-3">
+                        <div className="text-xs text-muted-foreground">Children</div>
+                        <div className="text-2xl font-bold">{event.statistics.total_children}</div>
+                      </div>
+                      <div className="rounded-lg border p-3">
+                        <div className="text-xs text-muted-foreground">Game Bookings</div>
+                        <div className="text-2xl font-bold">{event.statistics.total_game_bookings}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Booking Status */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3">Booking Status</h3>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg border p-3 bg-green-50 dark:bg-green-950">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <div className="text-xs text-muted-foreground">Confirmed</div>
+                        </div>
+                        <div className="text-xl font-bold mt-1">{event.statistics.bookings_by_status.confirmed}</div>
+                      </div>
+                      <div className="rounded-lg border p-3 bg-yellow-50 dark:bg-yellow-950">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-yellow-600" />
+                          <div className="text-xs text-muted-foreground">Pending</div>
+                        </div>
+                        <div className="text-xl font-bold mt-1">{event.statistics.bookings_by_status.pending}</div>
+                      </div>
+                      <div className="rounded-lg border p-3 bg-red-50 dark:bg-red-950">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-red-600" />
+                          <div className="text-xs text-muted-foreground">Cancelled</div>
+                        </div>
+                        <div className="text-xl font-bold mt-1">{event.statistics.bookings_by_status.cancelled}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Revenue Statistics */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Revenue Breakdown
+                    </h3>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg border p-3 bg-blue-50 dark:bg-blue-950">
+                        <div className="text-xs text-muted-foreground">Total Revenue</div>
+                        <div className="text-xl font-bold mt-1">
+                          ₹{event.statistics.revenue.total.toLocaleString('en-IN')}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border p-3 bg-green-50 dark:bg-green-950">
+                        <div className="text-xs text-muted-foreground">Paid</div>
+                        <div className="text-xl font-bold mt-1">
+                          ₹{event.statistics.revenue.paid.toLocaleString('en-IN')}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {((event.statistics.revenue.paid / event.statistics.revenue.total) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="rounded-lg border p-3 bg-orange-50 dark:bg-orange-950">
+                        <div className="text-xs text-muted-foreground">Pending</div>
+                        <div className="text-xl font-bold mt-1">
+                          ₹{event.statistics.revenue.pending.toLocaleString('en-IN')}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {((event.statistics.revenue.pending / event.statistics.revenue.total) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Methods */}
+                  {event.statistics.payment_methods && event.statistics.payment_methods.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <PieChart className="h-4 w-4" />
+                        Payment Methods
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Method</TableHead>
+                            <TableHead className="text-right">Transactions</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-right">%</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {event.statistics.payment_methods.map((method, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell className="font-medium">{method.method}</TableCell>
+                              <TableCell className="text-right">{method.count}</TableCell>
+                              <TableCell className="text-right">
+                                ₹{method.amount.toLocaleString('en-IN')}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {((method.amount / event.statistics.revenue.total) * 100).toFixed(1)}%
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {/* Top Games */}
+                  {event.statistics.top_games && event.statistics.top_games.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <Award className="h-4 w-4" />
+                        Top Performing Games
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Game</TableHead>
+                            <TableHead className="text-right">Bookings</TableHead>
+                            <TableHead className="text-right">Revenue</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {event.statistics.top_games.map((game) => (
+                            <TableRow key={game.game_id}>
+                              <TableCell className="font-medium">{game.game_name}</TableCell>
+                              <TableCell className="text-right">{game.bookings}</TableCell>
+                              <TableCell className="text-right">
+                                ₹{game.revenue.toLocaleString('en-IN')}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {/* Age Distribution */}
+                  {event.statistics.age_distribution && event.statistics.age_distribution.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Age Distribution
+                      </h3>
+                      <div className="space-y-3">
+                        {event.statistics.age_distribution.map((age, idx) => {
+                          const percentage = (age.count / event.statistics.total_children) * 100
+                          return (
+                            <div key={idx} className="flex items-center gap-3">
+                              <div className="w-24 text-sm font-medium">{age.age_group}</div>
+                              <div className="flex-1">
+                                <div className="flex h-6 items-center gap-2">
+                                  <div className="relative h-2 w-full rounded-full bg-muted">
+                                    <div
+                                      className="absolute inset-y-0 left-0 rounded-full bg-primary"
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-medium w-16 text-right">
+                                    {age.count} ({percentage.toFixed(1)}%)
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
@@ -172,14 +373,17 @@ export default function CompletedEventDetailPage() {
               <CardTitle>Event Description</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{mockEventData.description}</p>
+              <p className="text-sm text-muted-foreground">{event.description || mockEventData.description}</p>
               <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">Games</h3>
+                <h3 className="text-sm font-medium mb-2">Games ({event.games?.length || 0})</h3>
                 <div className="flex flex-wrap gap-2">
-                  {event.games ? (
+                  {event.games && event.games.length > 0 ? (
                     event.games.map((game) => (
-                      <Badge key={game.id} variant="outline">
-                        {game.name}
+                      <Badge key={game.game_id} variant="outline" className="text-xs">
+                        {game.game_name}
+                        {game.min_age && game.max_age && (
+                          <span className="ml-1 text-muted-foreground">({game.min_age}-{game.max_age}y)</span>
+                        )}
                       </Badge>
                     ))
                   ) : (
@@ -187,6 +391,44 @@ export default function CompletedEventDetailPage() {
                   )}
                 </div>
               </div>
+              
+              {/* Show Event Games with Slots if available */}
+              {event.event_games_with_slots && event.event_games_with_slots.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium mb-3">Game Slots & Timing</h3>
+                  <div className="space-y-3">
+                    {event.event_games_with_slots.map((slot) => (
+                      <div key={slot.id} className="rounded-lg border p-3 bg-muted/30">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm">{slot.custom_title || slot.game_name}</h4>
+                            <p className="text-xs text-muted-foreground mt-1">{slot.custom_description}</p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            ₹{slot.custom_price.toLocaleString('en-IN')}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {slot.start_time.substring(0, 5)} - {slot.end_time.substring(0, 5)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            Max: {slot.max_participants}
+                          </span>
+                          {slot.min_age && slot.max_age && (
+                            <span>Ages: {slot.min_age}-{slot.max_age}</span>
+                          )}
+                        </div>
+                        {slot.note && (
+                          <p className="text-xs text-muted-foreground mt-2 italic">{slot.note}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
