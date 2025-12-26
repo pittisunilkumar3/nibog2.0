@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Eye, Edit, Check, X, AlertTriangle, Loader2, RefreshCw, CheckCircle, Mail, Phone, Filter, XCircle, Calendar, CalendarDays, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { getAllBookings, getPaginatedBookings, updateBookingStatus, deleteBooking, Booking, PaginatedBookingsResponse } from "@/services/bookingService"
+import { updateBookingStatus, deleteBooking, Booking } from "@/services/bookingService"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +29,183 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { getAllEvents } from "@/services/eventService"
 import { getAllBabyGames, type BabyGame } from "@/services/babyGameService"
+
+// Complete booking interface matching the new API structure
+interface CompleteBooking {
+  id: number
+  booking_ref: string
+  status: string
+  total_amount: string
+  payment_method: string | null
+  payment_status: string
+  booking_date: string
+  parent: {
+    id: number
+    name: string
+    email: string
+    phone: string
+    user_id: number | null
+  }
+  event: {
+    id: number
+    name: string
+    date: string
+    description: string
+    image_url: string
+    status: string
+    venue: {
+      id: number
+      name: string
+      address: string
+      contact: string
+      city: string
+      state: string
+    }
+  }
+  children: Array<{
+    child_id: number
+    full_name: string
+    date_of_birth: string
+    gender: string
+    school_name: string
+    booking_games: Array<{
+      booking_game_id: number
+      game_price: string
+      game_id: number
+      game_name: string
+      game_description: string
+      min_age: number
+      max_age: number
+      game_image_url: string
+      slot_id: number
+      slot_start_time: string
+      slot_end_time: string
+      slot_custom_title: string
+    }>
+  }>
+  payments: Array<{
+    payment_id: number
+    transaction_id: string
+    amount: string
+    payment_method: string
+    payment_status: string
+    payment_date: string
+  }>
+}
+
+// Helper function to calculate age from date of birth
+function calculateAge(dateOfBirth: string): string {
+  if (!dateOfBirth) return 'N/A'
+  
+  try {
+    const birthDate = new Date(dateOfBirth)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    
+    // For children under 1 year, show months
+    if (age === 0) {
+      const months = monthDiff + (today.getDate() >= birthDate.getDate() ? 0 : -1)
+      if (months <= 0) {
+        return '< 1 month'
+      }
+      return `${months} month${months > 1 ? 's' : ''}`
+    }
+    
+    return `${age} year${age > 1 ? 's' : ''}`
+  } catch (error) {
+    console.error('Error calculating age:', error)
+    return 'N/A'
+  }
+}
+
+// Transform complete booking to flat booking structure for the table
+function transformCompleteBooking(completeBooking: CompleteBooking): Booking[] {
+  const bookings: Booking[] = []
+  
+  // Create a booking entry for each child and their games
+  completeBooking.children?.forEach((child) => {
+    child.booking_games?.forEach((game) => {
+      const booking: Booking = {
+        booking_id: completeBooking.id,
+        booking_ref: completeBooking.booking_ref,
+        booking_status: completeBooking.status,
+        total_amount: completeBooking.total_amount,
+        payment_method: completeBooking.payment_method || '',
+        payment_status: completeBooking.payment_status,
+        terms_accepted: true,
+        booking_is_active: true,
+        booking_created_at: completeBooking.booking_date,
+        booking_updated_at: completeBooking.booking_date,
+        cancelled_at: null,
+        completed_at: null,
+        parent_id: completeBooking.parent.id,
+        parent_name: completeBooking.parent.name,
+        parent_email: completeBooking.parent.email,
+        parent_additional_phone: completeBooking.parent.phone,
+        parent_is_active: true,
+        parent_created_at: completeBooking.booking_date,
+        parent_updated_at: completeBooking.booking_date,
+        child_id: child.child_id,
+        child_full_name: child.full_name,
+        child_date_of_birth: child.date_of_birth,
+        child_school_name: child.school_name,
+        child_gender: child.gender,
+        child_age: calculateAge(child.date_of_birth), // Calculate age from date of birth
+        child_is_active: true,
+        child_created_at: completeBooking.booking_date,
+        child_updated_at: completeBooking.booking_date,
+        game_name: game.game_name,
+        game_description: game.game_description,
+        game_min_age: game.min_age,
+        game_max_age: game.max_age,
+        game_duration_minutes: 90,
+        game_categories: [],
+        game_is_active: true,
+        game_created_at: completeBooking.booking_date,
+        game_updated_at: completeBooking.booking_date,
+        event_id: completeBooking.event.id,
+        event_title: completeBooking.event.name,
+        event_description: completeBooking.event.description,
+        event_event_date: completeBooking.event.date,
+        event_status: completeBooking.event.status,
+        event_created_at: completeBooking.booking_date,
+        event_updated_at: completeBooking.booking_date,
+        user_full_name: completeBooking.parent.name,
+        user_email: completeBooking.parent.email,
+        user_phone: completeBooking.parent.phone,
+        user_city_id: 1,
+        user_accepted_terms: true,
+        user_terms_accepted_at: completeBooking.booking_date,
+        user_is_active: true,
+        user_is_locked: false,
+        user_locked_until: null,
+        user_deactivated_at: null,
+        user_created_at: completeBooking.booking_date,
+        user_updated_at: completeBooking.booking_date,
+        user_last_login_at: null,
+        city_name: completeBooking.event.venue.city,
+        city_state: completeBooking.event.venue.state,
+        city_is_active: true,
+        city_created_at: completeBooking.booking_date,
+        city_updated_at: completeBooking.booking_date,
+        venue_name: completeBooking.event.venue.name,
+        venue_address: completeBooking.event.venue.address,
+        venue_capacity: 100,
+        venue_is_active: true,
+        venue_created_at: completeBooking.booking_date,
+        venue_updated_at: completeBooking.booking_date,
+      }
+      bookings.push(booking)
+    })
+  })
+  
+  return bookings
+}
 
 // Booking statuses for filtering
 const statusOptions = [
@@ -73,31 +250,59 @@ export default function CompleteBookingsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [isLoadingFilters, setIsLoadingFilters] = useState(false)
 
-  // Fetch complete bookings from API
+  // Fetch complete bookings from API - using new REST API endpoint
   const fetchBookings = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      // Use the new complete bookings API endpoint
-      const response = await fetch('/api/complete-bookings/get-all?page=1&limit=1000')
+      console.log('Fetching all bookings from /api/bookings/all')
+
+      // Use the new REST API endpoint: GET /api/bookings/all
+      const response = await fetch('/api/bookings/all', {
+        method: 'GET',
+        cache: 'no-store' // Always fetch fresh data
+      })
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch complete bookings: ${response.status}`)
+        throw new Error(`Failed to fetch bookings: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
-      // Filter out empty booking objects
-      const validBookings = (data.data || []).filter((booking: any) => {
-        return booking && Object.keys(booking).length > 0 &&
-          Object.values(booking).some((value: any) => value !== null && value !== undefined && value !== '')
+      
+      console.log('Bookings fetched:', {
+        success: data.success,
+        count: data.count,
+        hasData: !!data.data
       })
-      setBookings(validBookings)
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch bookings')
+      }
+
+      // The API returns complete bookings in nested structure
+      // Transform them to flat structure for the table
+      const completeBookings: CompleteBooking[] = data.data || []
+      const flatBookings: Booking[] = []
+      
+      completeBookings.forEach((completeBooking) => {
+        const transformed = transformCompleteBooking(completeBooking)
+        flatBookings.push(...transformed)
+      })
+      
+      console.log(`Transformed ${completeBookings.length} complete bookings into ${flatBookings.length} flat entries`)
+      setBookings(flatBookings)
+
+      if (flatBookings.length === 0) {
+        console.log('No bookings found')
+      }
+
     } catch (error: any) {
       console.error("Failed to fetch complete bookings:", error)
       setError(error.message || "Failed to load complete bookings. Please try again.")
       toast({
         title: "Error",
-        description: "Failed to load complete bookings. Please try again.",
+        description: error.message || "Failed to load complete bookings. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -517,9 +722,9 @@ export default function CompleteBookingsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Complete Bookings</h1>
+          <h1 className="text-2xl font-bold tracking-tight">All Bookings (Complete History)</h1>
           <p className="text-muted-foreground">
-            Manage all event registrations and bookings
+            View all bookings including past and upcoming events with complete details
           </p>
         </div>
         <div className="flex items-center gap-2">
