@@ -128,11 +128,9 @@ export default function NewBookingPage() {
 
   // Calculate child age in months when DOB or selected event changes
   useEffect(() => {
-    console.log('[DEBUG] Age calculation effect triggered', { childDateOfBirth, selectedEventType })
-    
+    // [DEBUG] Age calculation effect triggered (log removed)
     // Reset age if no DOB
     if (!childDateOfBirth) {
-      console.log('[DEBUG] No DOB, resetting age to null')
       setChildAgeMonths(null)
       return
     }
@@ -145,7 +143,6 @@ export default function NewBookingPage() {
       const today = new Date()
       const dob = new Date(childDateOfBirth)
       const ageMonths = differenceInMonths(today, dob)
-      console.log('[DEBUG] No event selected, calculating age as of today:', ageMonths, 'months')
       setChildAgeMonths(ageMonths)
       return
     }
@@ -154,22 +151,13 @@ export default function NewBookingPage() {
     const eventDate = new Date(selectedEvent.event_date)
     const dob = new Date(childDateOfBirth)
     const ageMonths = differenceInMonths(eventDate, dob)
-    
-    console.log('[DEBUG] Age calculated on event date:', {
-      dob: childDateOfBirth,
-      eventDate: selectedEvent.event_date,
-      ageMonths
-    })
-    
     setChildAgeMonths(ageMonths)
 
     // If event is already selected and we now have age, fetch games via API (fallback to local filtering)
     if (selectedEventType && ageMonths !== null) {
-      console.log('[DEBUG] Event selected and age calculated, attempting to fetch games via API')
       if (selectedEvent && selectedEvent.event_id) {
         fetchGamesByEventAndAge(selectedEvent.event_id, ageMonths)
       } else {
-        console.log('[DEBUG] Selected event not found in apiEvents, falling back to local load')
         loadGamesForEvent(selectedEvent, ageMonths)
       }
     }
@@ -184,15 +172,10 @@ export default function NewBookingPage() {
       setCityError(null)
       try {
         const bookingData = await getCitiesWithBookingInfo()
-        console.log('[DEBUG] /api/city/booking-info/list response:', bookingData)
         setBookingCities(bookingData)
         const formattedCities = bookingData.map(city => ({ id: city.id, name: city.city_name }))
         setCities(formattedCities)
-        if (bookingData.length === 0) {
-          console.warn('[DEBUG] No cities returned from booking info API')
-        }
       } catch (error) {
-        console.error('[DEBUG] Failed to load cities:', error)
         setCityError("Failed to load cities. Please try again.")
       } finally {
         setIsLoadingCities(false)
@@ -205,7 +188,6 @@ export default function NewBookingPage() {
 
   // Handle city change and fetch events for the selected city (matching user panel logic)
   const handleCityChange = async (cityId: string) => {
-    console.log('[DEBUG] City changed to:', cityId)
     setSelectedCityId(cityId)
     setSelectedEventType("") // Reset event type when city changes
     setSelectedGames([]) // Reset selected games
@@ -216,12 +198,9 @@ export default function NewBookingPage() {
     // Use events from booking cities data (already includes games_with_slots)
     const cityData = bookingCities.find(c => c.id.toString() === cityId.toString())
     if (!cityData) {
-      console.error('[DEBUG] City not found in booking cities data', bookingCities)
       setEventError("No events found for this city")
       return
     }
-    console.log('[DEBUG] Found city data:', cityData)
-    console.log('[DEBUG] City has', cityData.events?.length || 0, 'events')
 
     if (cityData.events && cityData.events.length > 0) {
       // Convert booking events to EventListItem format
@@ -250,25 +229,19 @@ export default function NewBookingPage() {
         games_with_slots: event.games_with_slots // Include games_with_slots!
       }))
       setApiEvents(convertedEvents)
-      console.log('[DEBUG] Set events:', convertedEvents)
     } else {
       setApiEvents([])
       setEventError("No events available for this city")
-      console.warn('[DEBUG] No events available for this city:', cityData)
     }
   }
 
   // Load games for event by filtering games_with_slots by age (align with register-event behavior)
   const loadGamesForEvent = (event: EventListItem, childAgeMonths: number) => {
-    console.log('[DEBUG] Loading games for event:', event)
-    console.log('[DEBUG] Child age (months):', childAgeMonths)
     if (!event.games_with_slots || event.games_with_slots.length === 0) {
-      console.log('[DEBUG] No games_with_slots in event data:', event)
       setEligibleGames([])
       setGameError("No games available for this event")
       return
     }
-    console.log('[DEBUG] Event has', event.games_with_slots.length, 'game slots:', event.games_with_slots)
 
     // Filter games based on child's age - handle both months and years units
     const eligibleSlots = event.games_with_slots.filter((slot: any) => {
@@ -286,11 +259,8 @@ export default function NewBookingPage() {
 
       const isAgeEligible = isEligibleIfRawMonths || isEligibleIfYears
 
-      console.log(`[DEBUG] Slot:`, slot, 'rawMin:', rawMin, 'rawMax:', rawMax, 'eligibleMonths:', isEligibleIfRawMonths, 'eligibleYears:', isEligibleIfYears, '=> final:', isAgeEligible);
       return isAgeEligible;
     });
-
-    console.log('[DEBUG] Found', eligibleSlots.length, 'age-eligible game slots:', eligibleSlots);
 
     if (eligibleSlots.length === 0) {
       setEligibleGames([]);
@@ -334,12 +304,10 @@ export default function NewBookingPage() {
 
     setEligibleGames(formattedGames as any);
     setGameError(null);
-    console.log('[DEBUG] Set eligible games (age-filtered):', formattedGames);
   }
 
   // Handle event type selection (matching user panel logic)
   const handleEventTypeChange = (eventType: string) => {
-    console.log('🎪 Event type changed to:', eventType)
     setSelectedEventType(eventType)
     setSelectedGames([]) // Reset selected games
     setEligibleGames([]) // Reset eligible games
@@ -348,8 +316,6 @@ export default function NewBookingPage() {
     const selectedApiEvent = apiEvents.find(event => event.event_title === eventType);
 
     if (selectedApiEvent) {
-      console.log('✅ Event found:', selectedApiEvent)
-
       // If DOB is set, immediately load local age-filtered games for fast UX
       if (childDateOfBirth && childAgeMonths !== null) {
         // Load local age-filtered slots first
@@ -357,27 +323,20 @@ export default function NewBookingPage() {
 
         // Then attempt to fetch improved data from API; do not clear local results if API fails or returns empty
         fetchGamesByEventAndAge(selectedApiEvent.event_id, childAgeMonths);
-      } else {
-        console.log('⚠️ Child DOB not set yet - cannot load games')
       }
     } else {
       // If no matching event found, clear eligible games
-      console.error(`❌ Selected event "${eventType}" not found in API events:`, apiEvents);
       setEligibleGames([]);
     }
   }
 
   // Fetch games based on event ID and child age (matching user panel logic)
   const fetchGamesByEventAndAge = async (eventId: number, childAge: number) => {
-    console.log('🎮 fetchGamesByEventAndAge called with:', { eventId, childAge })
-    
     if (!eventId || childAge === null || childAge === undefined) {
-      console.log('⚠️ Skipping games fetch - missing data:', { eventId, childAge })
       return;
     }
 
     if (childAge < 0 || childAge > 120) {
-      console.error(`❌ Invalid child age: ${childAge} months`);
       setGameError(`Invalid child age: ${childAge} months. Please check the date of birth.`);
       return;
     }
@@ -459,7 +418,6 @@ export default function NewBookingPage() {
               setGameError(null);
             } else {
               // Fallback to local filtering if API returned empty
-              console.log('[DEBUG] games API returned no formatted slots, falling back to local filtering');
               const selectedApiEvent = apiEvents.find(ev => ev.event_id === eventId || ev.event_title === selectedEventType);
               if (selectedApiEvent) loadGamesForEvent(selectedApiEvent, childAge);
               // Do not clear the existing eligibleGames here; keep UX stable
@@ -507,12 +465,10 @@ export default function NewBookingPage() {
         }
       } else {
         // No games returned by API - fallback to local filtering
-        console.log('[DEBUG] getGamesByAgeAndEvent returned empty; falling back to local filtering');
         const selectedApiEvent = apiEvents.find(ev => ev.event_id === eventId);
         if (selectedApiEvent) loadGamesForEvent(selectedApiEvent, childAge);
       }
     } catch (error) {
-      console.error('Error fetching games by event and age:', error);
       // On error, fallback to local filtering
       const selectedApiEvent = apiEvents.find(ev => ev.event_id === eventId);
       if (selectedApiEvent) loadGamesForEvent(selectedApiEvent, childAge);
@@ -526,7 +482,6 @@ export default function NewBookingPage() {
     // Find the game associated with this slot
     const selectedSlot = eligibleGames.find((g) => g.id === slotId);
     if (!selectedSlot) {
-      console.error(`❌ Slot with ID ${slotId} not found in eligible games`);
       return;
     }
 
@@ -626,19 +581,12 @@ export default function NewBookingPage() {
       const selectedGamesObj = selectedGames
         .map(selection => {
           const game = eligibleGames.find(game => game.id === selection.slotId)
-          if (!game) {
-            console.error(`❌ Game slot with ID ${selection.slotId} not found in eligible games!`)
-          }
           return game
         })
         .filter(game => game !== undefined);
 
       if (selectedGamesObj.length === 0) {
         throw new Error("No valid games selected. Please select at least one game.")
-      }
-
-      if (selectedGamesObj.length !== selectedGames.length) {
-        console.warn(`⚠️ Warning: ${selectedGames.length} games selected but only ${selectedGamesObj.length} found in eligible games`)
       }
 
       // Calculate total amount using frontend logic
@@ -695,9 +643,6 @@ export default function NewBookingPage() {
         payment
       };
 
-      console.log("=== Booking Request Data ===");
-      console.log(JSON.stringify(bookingData, null, 2));
-
       // Creating booking with data (debug log removed)
 
       // Call the booking creation API via local server API route to avoid CORS
@@ -711,7 +656,6 @@ export default function NewBookingPage() {
       })
 
       const responseText = await response.text()
-      console.log("Raw response text:", responseText)
 
       if (!response.ok) {
         let errorMessage = `Failed to create booking: ${response.status} ${response.statusText}`
@@ -726,7 +670,6 @@ export default function NewBookingPage() {
             errorMessage += `: ${responseText}`
           }
         }
-        console.error("Booking creation failed:", errorMessage)
         throw new Error(errorMessage)
       }
 
@@ -734,13 +677,8 @@ export default function NewBookingPage() {
       try {
         result = JSON.parse(responseText)
       } catch (e) {
-        console.error("Failed to parse response as JSON:", responseText)
         throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}`)
       }
-      console.log("=== Booking API Response ===", result)
-      console.log("Response type:", typeof result)
-      console.log("Is array:", Array.isArray(result))
-      console.log("Response keys:", Object.keys(result || {}))
 
       // Extract booking ID from the response
       // Handle multiple response formats:
@@ -756,11 +694,8 @@ export default function NewBookingPage() {
       }
       
       if (!bookingId) {
-        console.error("Could not extract booking ID from response:", result)
         throw new Error(`Booking created but no booking ID returned. Response: ${JSON.stringify(result)}`)
       }
-      
-      console.log("Extracted booking ID:", bookingId)
 
       // Store booking details for confirmation
       setCreatedBookingId(bookingId)
@@ -780,7 +715,6 @@ export default function NewBookingPage() {
       })
 
     } catch (error: any) {
-      console.error("Error creating booking:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to create booking. Please try again.",

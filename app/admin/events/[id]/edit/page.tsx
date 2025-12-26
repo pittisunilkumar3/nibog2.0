@@ -17,7 +17,6 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
 import { getEventWithDetails, updateEvent, formatEventDataForUpdate, uploadEventImage } from "@/services/eventService"
@@ -149,9 +148,7 @@ export default function EditEventPage({ params }: Props) {
         setIsLoading(true)
         setError(null)
 
-        console.log(`[EditEventPage] Fetching event data for ID: ${eventId}`)
         const event = await getEventWithDetails(Number(eventId))
-        console.log(`[EditEventPage] ✅ Event data received:`, event)
         setEventData(event)
 
         // Set initial form values
@@ -165,15 +162,10 @@ export default function EditEventPage({ params }: Props) {
 
         // Set image from event data if available  
         if (event.image_url) {
-          console.log(`[EditEventPage] Found image_url in event data:`, event.image_url)
-          // Build the served image URL
           const { buildServeImageUrl } = await import('@/lib/imageUtils')
           const servedUrl = buildServeImageUrl(event.image_url, 'upload/eventimages/')
-          console.log(`[EditEventPage] Built served URL:`, servedUrl)
           setEventImage(servedUrl)
           setImagePriority((event.priority || 1).toString())
-          
-          // Also populate existingImages immediately for UI display
           const syntheticImage = {
             id: event.id,
             event_id: event.id,
@@ -183,32 +175,24 @@ export default function EditEventPage({ params }: Props) {
             created_at: event.created_at,
             updated_at: event.updated_at
           }
-          console.log(`[EditEventPage] Setting synthetic image in existingImages:`, syntheticImage)
           setExistingImages([syntheticImage])
         }
 
         // Format games data for the form
         // The API returns event_games_with_slots array
         const gameSlots = event.event_games_with_slots || []
-        console.log(`[EditEventPage] Raw game slots from API (${gameSlots.length} slots):`, gameSlots)
-        
         // Group slots by game_id
         const gamesByGameId = new Map<string, any[]>()
         gameSlots.forEach((slot: any) => {
           const gameId = slot.game_id.toString()
-          console.log(`[EditEventPage] Processing slot ID ${slot.id} for game ${gameId}:`, slot)
           if (!gamesByGameId.has(gameId)) {
             gamesByGameId.set(gameId, [])
-            console.log(`[EditEventPage] Created new game group for game_id: ${gameId}`)
           }
           gamesByGameId.get(gameId)!.push(slot)
         })
-        console.log(`[EditEventPage] Grouped slots by game_id:`, Array.from(gamesByGameId.entries()))
-
         // Format games with their slots
         const formattedGames = Array.from(gamesByGameId.entries()).map(([gameId, slots]) => {
           const firstSlot = slots[0]
-          console.log(`[EditEventPage] Formatting game ${gameId} with ${slots.length} slot(s)`)
           const formattedGame = {
             templateId: gameId,
             customTitle: firstSlot.custom_title || firstSlot.game_title || "",
@@ -227,15 +211,11 @@ export default function EditEventPage({ params }: Props) {
                 maxAge: slot.max_age || undefined,
                 isActive: slot.is_active === 1 || slot.is_active === true
               }
-              console.log(`[EditEventPage] Formatted slot ${slot.id}:`, formattedSlot)
               return formattedSlot
             })
           }
-          console.log(`[EditEventPage] Formatted game ${gameId}:`, formattedGame)
           return formattedGame
         })
-        
-        console.log(`[EditEventPage] ✅ Final formatted games (${formattedGames.length} games):`, formattedGames)
         setSelectedGames(formattedGames)
         if (formattedGames.length > 0) {
           setActiveGameIndex(0)
@@ -243,14 +223,11 @@ export default function EditEventPage({ params }: Props) {
 
         // Fetch cities, venues, games, and images
         // Fetch additional data
-        console.log(`[EditEventPage] Starting to fetch additional data (cities, games, images)...`)
         fetchCities()
         fetchBabyGames()
         // Fetch existing images
-        console.log(`[EditEventPage] Calling fetchExistingImages for event ${eventId}...`)
         fetchExistingImages()
       } catch (error: any) {
-        console.error(`Error fetching event with ID ${eventId}:`, error)
         setError(error.message || "Failed to load event")
         toast({
           title: "Error",
@@ -281,7 +258,6 @@ export default function EditEventPage({ params }: Props) {
 
       setCities(formattedCities)
     } catch (error: any) {
-      console.error("Failed to fetch cities:", error)
       setCityError("Failed to load cities. Please try again.")
     } finally {
       setIsLoadingCities(false)
@@ -300,22 +276,17 @@ export default function EditEventPage({ params }: Props) {
         // Find the city ID from the selected city name
         const cityObj = cities.find(c => c.name === selectedCity)
         if (!cityObj) {
-          console.error(`City object not found for name: ${selectedCity}`)
           setVenueError("Selected city not found")
           return
         }
 
         // Make sure we have a valid city ID
         const cityId = Number(cityObj.id)
-        
 
         if (isNaN(cityId) || cityId <= 0) {
-          console.error(`Invalid city ID: ${cityObj.id}`)
           setVenueError("Invalid city ID")
           return
         }
-
-        // Fetching venues for selected city (debug logs removed)
 
         try {
           // Fetch venues for the selected city
@@ -331,12 +302,9 @@ export default function EditEventPage({ params }: Props) {
 
           // If no venues are found, show a message
           if (formattedVenues.length === 0) {
-            console.warn(`No venues found for city ${selectedCity} (ID: ${cityId})`)
             setVenueError(`No venues found for ${selectedCity}`)
           }
         } catch (venueError: any) {
-          console.error(`Error fetching venues for city ${selectedCity} (ID: ${cityId}):`, venueError)
-
           // Try to provide a more helpful error message
           let errorMessage = "Failed to load venues. Please try again."
           if (venueError.message.includes("404")) {
@@ -350,7 +318,6 @@ export default function EditEventPage({ params }: Props) {
           setVenueError(errorMessage)
         }
       } catch (error: any) {
-        console.error(`Failed to fetch venues for city ${selectedCity}:`, error)
         setVenueError("Failed to load venues. Please try again.")
       } finally {
         setIsLoadingVenues(false)
@@ -380,7 +347,6 @@ export default function EditEventPage({ params }: Props) {
         setBabyGames(gamesData as ImportedBabyGame[])
       }
     } catch (error: any) {
-      console.error("Failed to fetch baby games:", error)
       setGamesError("Failed to load games. Please try again.")
     } finally {
       setIsLoadingGames(false)
@@ -390,7 +356,6 @@ export default function EditEventPage({ params }: Props) {
   // No separate image fetching needed - image is already in event data
   // This function is kept for compatibility but doesn't do anything
   const fetchExistingImages = async () => {
-    console.log(`[EditEventPage.fetchExistingImages] Image already loaded from event data, no additional fetch needed`)
     setIsLoadingImages(false)
   }
 
@@ -570,7 +535,6 @@ export default function EditEventPage({ params }: Props) {
 
     setEventImageFile(file)
     setEventImage(file.name) // Store filename for display
-    // Event image selected (debug log removed)
 
     toast({
       title: "Success",
@@ -614,22 +578,16 @@ export default function EditEventPage({ params }: Props) {
       let imageFilename = null
       let oldImageUrl = null
       if (eventImageFile) {
-        console.log(`[EditEventPage.handleSubmit] Uploading new image...`)
-        
         // Store the old image URL before uploading new one
         if (eventData && eventData.image_url) {
           oldImageUrl = eventData.image_url
-          console.log(`[EditEventPage.handleSubmit] Old image to be deleted: ${oldImageUrl}`)
         }
-        
         const uploadResult = await uploadEventImage(eventImageFile)
         imageFilename = uploadResult.filename || uploadResult.path.split('/').pop()
-        console.log(`[EditEventPage.handleSubmit] New image uploaded: ${imageFilename}`)
       } else {
         // No new image uploaded, preserve existing image
         if (eventData && eventData.image_url) {
           imageFilename = eventData.image_url
-          console.log(`[EditEventPage.handleSubmit] Preserving existing image: ${imageFilename}`)
         }
       }
 
@@ -647,35 +605,22 @@ export default function EditEventPage({ params }: Props) {
         imagePriority: imagePriority
       }
 
-      console.log(`[EditEventPage.handleSubmit] Formatted form data:`, formData)
-
       // Format the data for the API
       const apiData = formatEventDataForUpdate(Number(eventId), formData)
       apiData.id = Number(eventId)
 
-      console.log(`[EditEventPage.handleSubmit] API payload:`, apiData)
-
       // Call the API to update the event (single API call)
       const updatedEvent = await updateEvent(apiData)
-      console.log(`[EditEventPage.handleSubmit] ✅ Event updated successfully:`, updatedEvent)
 
       // Delete old image file if a new one was uploaded
       if (imageFilename && oldImageUrl) {
         try {
-          console.log(`[EditEventPage.handleSubmit] Deleting old image: ${oldImageUrl}`)
           const deleteResponse = await fetch('/api/files/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ filePath: oldImageUrl })
           })
-          
-          if (deleteResponse.ok) {
-            console.log(`[EditEventPage.handleSubmit] ✅ Old image deleted successfully`)
-          } else {
-            console.warn(`[EditEventPage.handleSubmit] ⚠️ Failed to delete old image: ${deleteResponse.status}`)
-          }
         } catch (deleteError) {
-          console.warn(`[EditEventPage.handleSubmit] ⚠️ Error deleting old image:`, deleteError)
           // Don't fail the whole update if image deletion fails
         }
       }
@@ -690,7 +635,6 @@ export default function EditEventPage({ params }: Props) {
         router.push('/admin/events')
       }, 2000)
     } catch (error: any) {
-      console.error("[EditEventPage.handleSubmit] ❌ Error updating event:", error)
       toast({
         title: "Error",
         description: `Failed to update event: ${error.message || "Unknown error"}`,
@@ -1264,7 +1208,6 @@ export default function EditEventPage({ params }: Props) {
                             id="gameNote"
                             value={game.note || ""}
                             onChange={(e) => {
-                              // Note field change (debug logs removed)
                               updateGame(activeGameIndex, "note", e.target.value);
                             }}
                             placeholder="Add any special notes or instructions for this game..."
