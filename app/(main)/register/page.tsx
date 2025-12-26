@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { NibogLogo } from "@/components/nibog-logo"
-import { GoogleLogin } from "@react-oauth/google"
+import { GoogleLogin } from '@react-oauth/google'
+import { Separator } from "@/components/ui/separator"
+import { useAuth } from "@/contexts/auth-context"
 
 // Image slideshow component
 function ImageSlideshow() {
@@ -82,6 +84,7 @@ function ImageSlideshow() {
 export default function RegisterPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { login } = useAuth()
 
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
@@ -92,110 +95,82 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  // Google Sign-In handlers
+  // Handle Google login/register success
   const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true)
+    setError("")
+
     try {
-      setIsLoading(true)
-      setError("")
-
-      console.log('Google credential received:', credentialResponse.credential?.substring(0, 20) + '...')
-
-      // Send the Google credential to our backend via our API route
       const response = await fetch('/api/auth/google/callback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          credential: credentialResponse.credential,
+          credential: credentialResponse.credential
         }),
       })
 
-      console.log('API response status:', response.status)
       const data = await response.json()
-      console.log('API response data:', JSON.stringify(data, null, 2))
 
       if (!response.ok) {
-        console.error('API error:', data)
-        throw new Error(data.error || 'Google sign-in failed')
+        throw new Error(data.error || 'Google authentication failed')
       }
 
-      // Backend returns {success: true, token: "...", user: {...}}
-      if (!data.success || !data.token || !data.user) {
-        console.error('Invalid response structure:', data)
-        console.error('Expected: {success, token, user}')
-        console.error('Got - success:', data.success, 'token:', !!data.token, 'user:', !!data.user)
-        throw new Error('Invalid response from server. Please try again.')
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Google authentication failed')
       }
 
-      const userData = data.user
+      const userData = data.data
       const token = data.token
 
-      console.log('User data received:', userData)
-      console.log('Token received:', token.substring(0, 20) + '...')
-
-      // Store user data in localStorage - use whatever fields the backend provides
+      // Store user data in localStorage
       const userDataForStorage = {
-        user_id: userData.user_id || userData.id,
-        full_name: userData.full_name || userData.name,
+        user_id: userData.user_id,
+        full_name: userData.full_name,
         email: userData.email,
-        email_verified: userData.email_verified ?? true,
-        phone: userData.phone || '',
-        phone_verified: userData.phone_verified ?? false,
-        city_id: userData.city_id || null,
-        accepted_terms: userData.accepted_terms ?? true,
-        terms_accepted_at: userData.terms_accepted_at || null,
-        is_active: userData.is_active ?? true,
-        is_locked: userData.is_locked ?? false,
-        locked_until: userData.locked_until || null,
-        deactivated_at: userData.deactivated_at || null,
-        created_at: userData.created_at || new Date().toISOString(),
-        updated_at: userData.updated_at || new Date().toISOString(),
-        last_login_at: userData.last_login_at || new Date().toISOString()
+        email_verified: userData.email_verified,
+        phone: userData.phone,
+        phone_verified: userData.phone_verified,
+        city_id: userData.city_id,
+        accepted_terms: userData.accepted_terms,
+        terms_accepted_at: userData.terms_accepted_at,
+        is_active: userData.is_active,
+        is_locked: userData.is_locked,
+        locked_until: userData.locked_until,
+        deactivated_at: userData.deactivated_at,
+        created_at: userData.created_at,
+        updated_at: userData.updated_at,
+        last_login_at: userData.last_login_at
       }
+      localStorage.setItem('nibog-user', JSON.stringify(userDataForStorage))
 
-      console.log('Normalized user data:', userDataForStorage)
-
-      localStorage.setItem('user', JSON.stringify(userDataForStorage))
-      localStorage.setItem('token', token)
-      localStorage.setItem('authMethod', 'google')
-
-      // Update auth context (if using AuthContext)
-      // login(userDataForStorage, token)
-
-      // Success notification
       toast({
-        title: "✨ Welcome to NIBOG!",
-        description: `Account created/signed in successfully as ${userData.full_name || userData.name}`,
+        title: "Registration successful",
+        description: "Welcome to NIBOG, " + userData.full_name,
       })
 
-      // Redirect to home or dashboard
-      setTimeout(() => {
-        router.push('/')
-      }, 500)
+      login(userDataForStorage, token)
+      await new Promise(resolve => setTimeout(resolve, 300))
+      window.location.href = '/'
 
     } catch (error: any) {
-      console.error('Google Sign-In Error:', error)
-      setError(error.message || 'Failed to sign in with Google')
-      toast({
-        title: "Sign-in failed",
-        description: error.message || 'Failed to sign in with Google',
-        variant: "destructive",
-      })
+      setError(error.message || 'Google authentication failed')
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Handle Google login error
   const handleGoogleError = () => {
-    console.error('Google Sign-In Error')
-    setError('Failed to sign in with Google')
+    setError('Google Sign-In was unsuccessful. Please try again.')
     toast({
-      title: "Sign-in failed",
-      description: 'Failed to sign in with Google. Please try again.',
-      variant: "destructive",
+      title: "Google Sign-In Failed",
+      description: "Unable to sign in with Google. Please try again.",
+      variant: "destructive"
     })
   }
+
 
   // Email validation function
   const isValidEmail = (email: string) => {
@@ -405,48 +380,24 @@ export default function RegisterPage() {
           </form>
 
           {/* Divider */}
-          <div className="relative my-6">
+          <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-purple-200 dark:border-purple-800" />
+              <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white dark:bg-gray-900 px-2 text-purple-600 dark:text-purple-400">
-                Or continue with
-              </span>
+              <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">Or continue with</span>
             </div>
           </div>
 
-          {/* Google Sign-In */}
+          {/* Google Sign-In Button */}
           <div className="flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
               useOneTap={false}
-              theme="outline"
-              size="large"
-              text="signup_with"
-              shape="rectangular"
-              logo_alignment="left"
+              width="350"
             />
           </div>
-          {/* Commented out Google and Phone OTP login options
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="w-full">
-              Google
-            </Button>
-            <Button variant="outline" className="w-full">
-              Phone OTP
-            </Button>
-          </div>
-          */}
         </CardContent>
         <CardFooter className="flex flex-col space-y-2 pt-4 border-t border-gray-200 dark:border-gray-800">
           <div className="text-center text-sm text-blue-700 dark:text-blue-300">

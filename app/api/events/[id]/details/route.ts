@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
+// Force dynamic rendering - disable static generation and caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-// Force dynamic rendering - disable all caching
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
 
 /**
  * GET /api/events/[id]/details
@@ -55,7 +55,7 @@ export async function GET(
     return NextResponse.json(event, {
       status: 200,
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
         'Pragma': 'no-cache',
         'Expires': '0',
       }

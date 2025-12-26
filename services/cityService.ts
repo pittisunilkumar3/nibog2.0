@@ -281,19 +281,17 @@ export interface BookingGameSlot {
  */
 export const getCitiesWithBookingInfo = async (): Promise<BookingCity[]> => {
   try {
-    // Add timestamp to bust all levels of caching
+    console.log('[cityService] Fetching cities with booking info from /api/city/booking-info/list');
+    
+    // Add timestamp to bust any caching
     const timestamp = new Date().getTime();
-    const url = `/api/city/booking-info/list?_t=${timestamp}`;
-    
-    console.log('[cityService] Fetching cities with booking info from:', url);
-    
-    const response = await fetch(url, {
+    const response = await fetch(`/api/city/booking-info/list?_t=${timestamp}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
-        "Expires": "0",
+        "Expires": "0"
       },
       cache: 'no-store'
     });

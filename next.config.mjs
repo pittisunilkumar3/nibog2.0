@@ -90,6 +90,14 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'no-store, no-cache, must-revalidate',
           },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'unsafe-none',
+          },
         ],
       },
       // HTML pages - short cache with revalidation
@@ -99,6 +107,10 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=60, stale-while-revalidate=300',
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
           },
         ],
       },

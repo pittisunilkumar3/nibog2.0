@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import RegisterEventClientPage from "./client-page"
 
-// Force dynamic rendering - disable all caching
+// Force dynamic rendering - always fetch fresh data
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
