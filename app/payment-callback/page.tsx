@@ -351,18 +351,17 @@ function PaymentCallbackContent() {
                 
                 // Make one final API check to verify the booking exists
                 try {
-                  fetch('https://ai.nibog.in/webhook/v1/nibog/tickect/booking_ref/details', {
-                    method: 'POST',
+                  // Use the backend API endpoint to check booking
+                  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:3004';
+                  fetch(`${backendUrl}/api/bookings/check?booking_ref=${bookingRefForRedirect}`, {
+                    method: 'GET',
                     headers: {
                       'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      booking_ref_id: bookingRefForRedirect
-                    })
+                    }
                   }).then(response => {
                     if (response.ok) {
                       return response.json().then(data => {
-                        if (data && data.length > 0) {
+                        if (data && data.booking_id) {
                           // removed debug log
                           // Store complete booking data for the confirmation page
                           try {

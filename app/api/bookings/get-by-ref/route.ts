@@ -13,15 +13,13 @@ export async function POST(request: Request) {
     }
 
 
-    // Call the external API to get booking details by reference
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/tickect/booking_ref/details', {
-      method: 'POST',
+    // Call the backend API to get booking details by reference
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
+    const response = await fetch(`${backendUrl}/api/bookings/check?booking_ref=${booking_ref_id}`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        booking_ref_id: booking_ref_id
-      })
+      }
     });
 
     if (!response.ok) {
@@ -36,8 +34,8 @@ export async function POST(request: Request) {
 
     const data = await response.json();
     
-    // The API returns an array, get the first item
-    const bookingData = Array.isArray(data) && data.length > 0 ? data[0] : data;
+    // The backend now returns a single booking object
+    const bookingData = data;
 
     if (!bookingData) {
       return NextResponse.json(

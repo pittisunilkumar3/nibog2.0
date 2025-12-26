@@ -691,14 +691,13 @@ export async function getTicketDetails(bookingRef: string): Promise<TicketDetail
       formattedRef = formattedRef.slice(1, -1);
     }
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/tickect/booking_ref/details', {
-      method: 'POST',
+    // Use backend URL from environment variable
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:3004';
+    const response = await fetch(`${backendUrl}/api/bookings/check?booking_ref=${formattedRef}`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        booking_ref_id: formattedRef  // Using exact parameter name expected by the API
-      })
+      }
     });
 
     if (!response.ok) {
@@ -709,7 +708,8 @@ export async function getTicketDetails(bookingRef: string): Promise<TicketDetail
     }
 
     const data = await response.json();
-    return data;
+    // Convert single booking object to array format for compatibility
+    return Array.isArray(data) ? data : [data];
   } catch (error) {
     console.error('Error fetching ticket details:', error);
     throw error;

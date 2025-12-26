@@ -4,13 +4,9 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Calendar, MapPin, User, Phone, Mail, ArrowRight, Download, Ticket, Check, Home, File } from "lucide-react"
-import { useEffect, useState, useRef, Suspense } from "react"
-import { QRCodeCanvas } from "qrcode.react"
-import html2canvas from "html2canvas"
-import { saveAs } from "file-saver"
-import { jsPDF } from "jspdf"
-import { TicketDetails, getTicketDetails, convertBookingRefFormat } from "@/services/bookingService"
+import { CheckCircle, Calendar, MapPin, User, Phone, Mail, ArrowRight } from "lucide-react"
+import { useEffect, useState, Suspense } from "react"
+import { TicketDetails, getTicketDetails } from "@/services/bookingService"
 import { checkPhonePePaymentStatus } from "@/services/paymentService"
 
 
@@ -22,46 +18,6 @@ function BookingConfirmationContent() {
   const [ticketDetails, setTicketDetails] = useState<TicketDetails[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showTicket, setShowTicket] = useState(false)
-  const [ticketEmailSent, setTicketEmailSent] = useState(false)
-  const [ticketEmailSending, setTicketEmailSending] = useState(true)
-  const ticketRef = useRef<HTMLDivElement>(null)
-
-  // Handler for downloading ticket as image
-  const handleDownloadImage = () => {
-    if (ticketRef.current) {
-      html2canvas(ticketRef.current).then((canvas) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            saveAs(blob, `NIBOG-Ticket-${ticketDetails?.[0]?.booking_ref || bookingDetails?.booking_ref || "ticket"}.png`);
-          }
-        });
-      });
-    }
-  };
-
-  // Handler for downloading ticket as PDF
-  const handleDownloadPDF = () => {
-    if (ticketRef.current) {
-      html2canvas(ticketRef.current).then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
-        
-        // Calculate dimensions to fit the ticket on the PDF
-        const imgWidth = 190; // mm
-        const imgHeight = canvas.height * imgWidth / canvas.width;
-        const pageHeight = 297; // A4 height
-        const marginTop = (pageHeight - imgHeight) / 2;
-        
-        pdf.addImage(imgData, 'PNG', 10, marginTop, imgWidth, imgHeight);
-        pdf.save(`NIBOG-Ticket-${ticketDetails?.[0]?.booking_ref || bookingDetails?.booking_ref || "ticket"}.pdf`);
-      });
-    }
-  }
 
   // Fetch booking details when component mounts
 
@@ -146,7 +102,6 @@ function BookingConfirmationContent() {
 
             // Ticket email is sent automatically from the payment callback
             // No need to send it again from the confirmation page
-            setTicketEmailSent(true); // Mark as sent since it was sent during payment processing
 
             return
           }
@@ -184,7 +139,6 @@ function BookingConfirmationContent() {
 
                   // Ticket email is sent automatically from the payment callback
                   // No need to send it again from the confirmation page
-                  setTicketEmailSent(true); // Mark as sent since it was sent during payment processing
 
                   return;
                 }
@@ -304,230 +258,66 @@ function BookingConfirmationContent() {
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Booking Confirmed!</CardTitle>
+                  <CardTitle className="text-2xl bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Registration Completed!</CardTitle>
                   <CardDescription>
-                    Thank you for registering with NIBOG
+                    Your event registration has been successfully completed
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Booking Details Panel */}
-            <div className="p-4 rounded-lg border border-dashed border-green-500/20 bg-green-50/50 space-y-4">
-              <h3 className="text-lg font-medium text-green-800 flex items-center gap-2">
-                <div className="bg-green-100 p-1 rounded-full">
-                  <Calendar className="h-4 w-4 text-green-600" />
-                </div>
-                Booking Details
-              </h3>
-
-              <div className="grid gap-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Booking Reference:</span>
-                  <span className="font-medium">{ticketDetails?.[0]?.booking_ref || bookingDetails?.booking_ref || "N/A"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Booking Date:</span>
-                  <span>{ticketDetails?.[0]?.booking_created_at ? new Date(ticketDetails[0].booking_created_at).toLocaleDateString() : bookingDetails?.booking_created_at ? new Date(bookingDetails.booking_created_at).toLocaleDateString() : "N/A"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="text-green-600 font-medium">{ticketDetails?.[0]?.booking_status || bookingDetails?.booking_status || "N/A"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Event:</span>
-                  <span className="font-medium">{ticketDetails?.[0]?.event_title || bookingDetails?.event_title || "N/A"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Game:</span>
-                  <span>{ticketDetails?.[0]?.slot_title || ticketDetails?.[0]?.custom_title || ticketDetails?.[0]?.game_name || bookingDetails?.slot_title || bookingDetails?.custom_title || bookingDetails?.game_name || "N/A"}</span>
-                </div>
+            {/* Success Message */}
+            <div className="text-center py-8 px-4">
+              <div className="bg-green-100 p-4 rounded-full inline-block mb-6">
+                <CheckCircle className="h-16 w-16 text-green-600" />
               </div>
-            </div>
-
-            <div className="text-center p-6 bg-green-50/50 rounded-lg">
-              <p className="text-lg text-gray-700">
-                We've sent a booking confirmation email with all the details to your registered email address.
-              </p>
-              <p className="mt-2 text-gray-600">
-                🎫 <strong>Your tickets have been sent!</strong> - Check your email for the ticket details with QR codes!
-              </p>
-              <p className="mt-2 text-gray-600">
-                Please save your booking reference: <span className="font-bold text-green-700">{ticketDetails?.[0]?.booking_ref || bookingDetails?.booking_ref || "N/A"}</span>
-              </p>
-              <Button
-                onClick={() => setShowTicket(!showTicket)}
-                className="mt-4 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
-              >
-                <Ticket className="mr-2 h-4 w-4" />
-                {showTicket ? "Hide Ticket" : "View Ticket"}
-              </Button>
-            </div>
-            
-            {showTicket && (
-              <div className="mt-6 p-6 bg-white rounded-lg border-2 border-green-500/20">
-                <h3 className="text-xl font-semibold text-green-800 mb-4 text-center">Your Event Ticket</h3>
               
-              <div ref={ticketRef} className="max-w-2xl mx-auto bg-white border border-gray-200 rounded-md overflow-hidden">
-                {/* Event Header */}
-                <div className="bg-gray-800 text-white p-4">
-                  <h3 className="text-xl font-bold">
-                    {ticketDetails?.[0]?.event_title || bookingDetails?.event_title || "Event"}
-                  </h3>
-                  <p className="text-sm">
-                    {ticketDetails?.[0]?.event_date ? 
-                      `${new Date(ticketDetails[0].event_date).toLocaleDateString()}` : 
-                      bookingDetails?.event_date ? 
-                      `${new Date(bookingDetails.event_date).toLocaleDateString()}` : 
-                      "Date not available"}
-                  </p>
-                </div>
+              <h2 className="text-3xl font-bold text-green-800 mb-4">
+                Thank You for Registering!
+              </h2>
+              
+              <p className="text-lg text-gray-700 mb-6">
+                Your registration has been successfully completed and confirmed.
+              </p>
+
+              <div className="bg-green-50 p-6 rounded-lg border-2 border-green-200 mb-6">
+                <p className="text-gray-700 mb-2">
+                  <strong>Booking Reference:</strong>
+                </p>
+                <p className="text-2xl font-bold text-green-700 mb-4">
+                  {ticketDetails?.[0]?.booking_ref || bookingDetails?.booking_ref || "N/A"}
+                </p>
                 
-                {/* Ticket Content */}
-                <div className="flex">
-                  {/* QR Code Section - Left */}
-                  <div className="w-1/3 p-4 flex flex-col items-center justify-center border-r border-gray-200">
-                    <QRCodeCanvas
-                      value={JSON.stringify({
-                        ref: ticketDetails?.[0]?.booking_ref || bookingDetails?.booking_ref || "",
-                        id: ticketDetails?.[0]?.booking_id || bookingDetails?.booking_id || 0,
-                        name: ticketDetails?.[0]?.child_name || bookingDetails?.child_name || "",
-                        game: ticketDetails?.[0]?.custom_title || ticketDetails?.[0]?.game_name || bookingDetails?.custom_title || bookingDetails?.game_name || "",
-                        slot_id: ticketDetails?.[0]?.event_game_slot_id || ticketDetails?.[0]?.booking_game_id || 0
-                      })}
-                      size={120}
-                      level="H"
-                      includeMargin={true}
-                    />
-                    <p className="text-xs text-center mt-2">Check in for this event</p>
+                {(ticketDetails?.[0]?.event_title || bookingDetails?.event_title) && (
+                  <div className="mt-4 pt-4 border-t border-green-200">
+                    <p className="text-gray-700 mb-1">
+                      <strong>Event:</strong> {ticketDetails?.[0]?.event_title || bookingDetails?.event_title}
+                    </p>
+                    {(ticketDetails?.[0]?.event_date || bookingDetails?.event_date) && (
+                      <p className="text-gray-700">
+                        <strong>Date:</strong> {ticketDetails?.[0]?.event_date ? new Date(ticketDetails[0].event_date).toLocaleDateString() : new Date(bookingDetails!.event_date).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
-                  
-                  {/* Details Section - Right */}
-                  <div className="w-2/3 p-4">
-                    <div className="grid grid-cols-2 gap-y-3 text-sm">
-                      <div>
-                        <div className="text-gray-500 uppercase text-xs">TICKET #</div>
-                        <div className="font-medium">{ticketDetails?.[0]?.booking_ref || bookingDetails?.booking_ref || "N/A"}</div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-gray-500 uppercase text-xs">GAMES</div>
-                        <div className="font-medium">
-                          {ticketDetails ? (
-                            <div className="flex flex-col gap-1">
-                              {/* Show only one slot per booking_game_id to display actual booked slots */}
-                              {Array.from(new Map(ticketDetails.map(ticket => [
-                                ticket.booking_game_id,
-                                ticket
-                              ])).values()).map((ticket, index) => (
-                                <div key={ticket.booking_game_id || index} className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-1">
-                                    <span>{ticket.slot_title || ticket.custom_title || ticket.game_name || "Game"}</span>
-                                    <span className="text-xs text-gray-500">(₹{ticket.game_price})</span>
-                                  </div>
-                                  {/* Add slot timing information */}
-                                  {(ticket.start_time && ticket.end_time) && (
-                                    <div className="text-xs text-green-600 font-medium">
-                                      ⏰ {ticket.start_time} - {ticket.end_time}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col gap-1">
-                              <span>{bookingDetails?.slot_title || bookingDetails?.custom_title || bookingDetails?.game_name || "N/A"}</span>
-                              {/* Add slot timing for single booking details */}
-                              {(bookingDetails?.start_time && bookingDetails?.end_time) && (
-                                <div className="text-xs text-green-600 font-medium">
-                                  ⏰ {bookingDetails.start_time} - {bookingDetails.end_time}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-gray-500 uppercase text-xs">PARTICIPANT</div>
-                        <div className="font-medium">{ticketDetails?.[0]?.child_name || bookingDetails?.child_name || "N/A"}</div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-gray-500 uppercase text-xs">PRICE</div>
-                        <div className="font-medium">₹{ticketDetails?.[0]?.game_price || bookingDetails?.total_amount || "0"}</div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-gray-500 uppercase text-xs">VENUE</div>
-                        <div className="font-medium">
-                          {ticketDetails?.[0]?.venue_name || bookingDetails?.venue_name || "Event Venue"}
-                        </div>
-                        {(ticketDetails?.[0]?.venue_address || bookingDetails?.venue_address) && (
-                          <div className="text-xs text-gray-400 mt-1">
-                            {ticketDetails?.[0]?.venue_address || bookingDetails?.venue_address}
-                          </div>
-                        )}
-                        {(ticketDetails?.[0]?.city_name || bookingDetails?.city_name) && (
-                          <div className="text-xs text-gray-400">
-                            {ticketDetails?.[0]?.city_name || bookingDetails?.city_name}
-                            {(ticketDetails?.[0]?.state || bookingDetails?.state) &&
-                              `, ${ticketDetails?.[0]?.state || bookingDetails?.state}`
-                            }
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <div className="text-gray-500 uppercase text-xs">SECURITY CODE</div>
-                        <div className="font-medium">{ticketDetails?.[0]?.booking_id || bookingDetails?.booking_id || "0"}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-dashed border-gray-200 text-xs text-gray-500">
-                      <a href="https://nibog.com" className="text-blue-600 hover:underline">https://nibog.com</a>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
-              
-              {!isLoading && (
-                <div className="flex flex-wrap justify-center gap-4 mt-6">
-                  <Button 
-                    onClick={handleDownloadImage} 
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Download className="w-4 h-4 mr-2" /> Save Ticket
-                  </Button>
-                  <Button 
-                    onClick={handleDownloadPDF} 
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <File className="w-4 h-4 mr-2" /> Save as PDF
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push('/')}
-                    className="flex items-center gap-2"
-                  >
-                    <Home className="h-4 w-4 mr-2" />
-                    Home
-                  </Button>
-                </div>
-              )}
+
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                <p className="text-blue-800 text-sm">
+                  📧 A confirmation email has been sent to your registered email address with all the event details.
+                </p>
+              </div>
+
+              <p className="text-gray-600 text-sm">
+                Please save your booking reference for future reference.
+              </p>
             </div>
-          )}
           </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Button variant="outline" className="flex-1" asChild>
-              <Link href="/dashboard/bookings">
-                View My Bookings
-              </Link>
-            </Button>
-            <Button className="flex-1 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700" asChild>
+          <div className="flex justify-center w-full">
+            <Button className="px-8 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700" asChild>
               <Link href="/">
                 Return to Home <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
