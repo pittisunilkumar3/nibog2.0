@@ -120,11 +120,11 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Google sign-in failed')
       }
 
-      // Check if user data is available - handle both direct data and nested data structures
-      const userData = data.data || data
-      const token = data.token || userData.token
+      // Parse response - backend returns {success, token, user}
+      const userData = data.user || data.data || data
+      const token = data.token
       
-      if (!userData || !userData.user_id) {
+      if (!token || !userData || !userData.user_id) {
         console.error('Invalid response structure:', data)
         throw new Error('Invalid response from server. Please try again.')
       }
