@@ -132,44 +132,6 @@ export default function RegisterEventClientPage() {
   // Get authentication state from auth context
   const { isAuthenticated, user } = useAuth()
   
-  // Fetch cities with booking info on component mount
-  useEffect(() => {
-    async function loadCitiesWithBookingInfo() {
-      setIsLoadingCities(true);
-      setCityError(null);
-      try {
-        const bookingData = await getCitiesWithBookingInfo();
-        setBookingCities(bookingData);
-        
-        // Extract city list for dropdown
-        const cityList = bookingData.map(city => ({
-          id: city.id,
-          name: city.city_name
-        }));
-        setCities(cityList);
-      } catch (error) {
-        console.error('Failed to load cities with booking info:', error);
-        setCityError('Failed to load cities. Please try again.');
-        
-        // Fallback to basic city list if booking info fails
-        try {
-          const basicCities = await getAllCities();
-          const cityList = basicCities.map(city => ({
-            id: city.id || 0,
-            name: city.city_name
-          }));
-          setCities(cityList);
-        } catch (fallbackError) {
-          console.error('Failed to load basic cities:', fallbackError);
-        }
-      } finally {
-        setIsLoadingCities(false);
-      }
-    }
-    
-    loadCitiesWithBookingInfo();
-  }, []);
-  
   // Fetch add-ons from external API
   useEffect(() => {
     async function loadAddOns() {
@@ -522,6 +484,9 @@ export default function RegisterEventClientPage() {
 
   // Handle city change and load events from booking info
   const handleCityChange = async (city: string) => {
+    console.log('[handleCityChange] Selected city:', city);
+    console.log('[handleCityChange] Available bookingCities:', bookingCities);
+    
     setSelectedCity(city)
     setSelectedEventType("") // Reset event type when city changes
     setSelectedEvent("") // Reset selected event when city changes
@@ -537,20 +502,63 @@ export default function RegisterEventClientPage() {
 
     // Find city in booking data
     const cityData = bookingCities.find(c => c.city_name === city);
+    console.log('[handleCityChange] Found cityData:', cityData);
+    
     if (!cityData) {
+      console.error('[handleCityChange] No city data found for:', city);
       setEventError("No events found for this city");
       return;
     }
 
     const cityId = cityData.id;
     setSelectedCityId(cityId);
+    console.log('[handleCityChange] City ID:', cityId);
+    console.log('[handleCityChange] Events in city:', cityData.events?.length || 0);
 
-    // Automatically fetch fresh events from API when city is selected
-    await fetchEventsForCity(cityId, city);
+    // Use events from booking info directly instead of making another API call
+    if (cityData.events && cityData.events.length > 0) {
+      console.log('[handleCityChange] Processing events:', cityData.events);
+      
+      // Convert BookingEvent to EventListItem format
+      const formattedEvents: EventListItem[] = cityData.events.map((event: BookingEvent) => ({
+        event_id: event.id,
+        event_title: event.title,
+        event_description: event.description,
+        event_date: event.event_date,
+        event_status: event.status,
+        event_created_at: event.created_at,
+        event_updated_at: event.updated_at,
+        city_id: cityData.id,
+        city_name: cityData.city_name,
+        state: cityData.state,
+        city_is_active: cityData.is_active === 1,
+        city_created_at: cityData.created_at,
+        city_updated_at: cityData.updated_at,
+        venue_id: event.venue_id,
+        venue_name: event.venue_name,
+        venue_address: event.venue_address,
+        venue_capacity: event.venue_capacity,
+        venue_is_active: true,
+        venue_created_at: '',
+        venue_updated_at: '',
+        games: [],
+        games_with_slots: event.games_with_slots || []
+      }));
+
+      console.log('[handleCityChange] Formatted events:', formattedEvents);
+      setApiEvents(formattedEvents);
+      setEventError(null);
+    } else {
+      console.log('[handleCityChange] No events found in cityData');
+      setApiEvents([]);
+      setEventError("No events available for this city");
+    }
   }
 
   // Handle event type change
   const handleEventTypeChange = async (eventType: string) => {
+    console.log('[handleEventTypeChange] Selected event type:', eventType);
+    
     setSelectedEventType(eventType)
     setSelectedEvent("") // Reset selected event when event type changes
     setEligibleGames([]) // Reset games when event type changes
@@ -564,6 +572,8 @@ export default function RegisterEventClientPage() {
 
     // Find the selected event from API events
     const selectedApiEvent = apiEvents.find(event => event.event_title === eventType);
+    console.log('[handleEventTypeChange] Found selectedApiEvent:', selectedApiEvent);
+    console.log('[handleEventTypeChange] games_with_slots in event:', selectedApiEvent?.games_with_slots);
 
     if (selectedApiEvent) {
       const mockEvent = {
@@ -595,17 +605,25 @@ export default function RegisterEventClientPage() {
           const ageInMonths = calculateAge(dob, eventDateObj);
           setChildAgeMonths(ageInMonths);
           
-          // Load games with age filtering
+          console.log('[handleEventTypeChange] Calling loadGamesForEvent with age:', ageInMonths);
+          // Load games with age filtering using games_with_slots from booking info
           loadGamesForEvent(selectedApiEvent, ageInMonths);
+        } else {
+          console.log('[handleEventTypeChange] DOB not set yet, skipping game load');
         }
       }
     } else {
+      console.log('[handleEventTypeChange] No matching event found for:', eventType);
       setEligibleEvents([]);
     }
   }
   
   // Load games for event with age filtering
   const loadGamesForEvent = (event: EventListItem, childAgeMonths: number) => {
+    console.log('[loadGamesForEvent] event id:', event.event_id, 'title:', event.event_title);
+    console.log('[loadGamesForEvent] incoming games_with_slots:', event.games_with_slots);
+    console.log('[loadGamesForEvent] child age in months:', childAgeMonths);
+
     if (!event.games_with_slots || event.games_with_slots.length === 0) {
       setEligibleGames([]);
       setGameError("No games available for this event");
@@ -613,11 +631,41 @@ export default function RegisterEventClientPage() {
     }
 
     // Filter games based on child's age in months
-    const ageFilteredSlots = event.games_with_slots.filter((slot: BookingGameSlot) => {
-      const minAgeMonths = slot.min_age;
-      const maxAgeMonths = slot.max_age;
-      return childAgeMonths >= minAgeMonths && childAgeMonths <= maxAgeMonths;
+    // IMPORTANT: null min_age or max_age means "no age restriction" for that boundary
+    const ageFilteredSlots = event.games_with_slots.filter((slot: any) => {
+      const rawMin = slot.min_age;
+      const rawMax = slot.max_age;
+
+      // If both min and max are null, slot is available for all ages
+      if (rawMin === null && rawMax === null) {
+        console.log(`[loadGamesForEvent] Slot ${slot.slot_id}: No age restrictions - ELIGIBLE`);
+        return true;
+      }
+
+      // Convert to numbers, treating null as no restriction
+      const minValue = rawMin !== null ? Number(rawMin) : 0;
+      const maxValue = rawMax !== null ? Number(rawMax) : Infinity;
+
+      // Two possible interpretations: values are months, or values are years (so convert to months)
+      const minMonthsCandidate = minValue;
+      const maxMonthsCandidate = maxValue;
+      const minMonthsFromYears = minValue * 12;
+      const maxMonthsFromYears = maxValue === Infinity ? Infinity : maxValue * 12;
+
+      // Check if age falls within range (treating null as no restriction)
+      const isEligibleIfRawMonths = childAgeMonths >= minMonthsCandidate && childAgeMonths <= maxMonthsCandidate;
+      const isEligibleIfYears = childAgeMonths >= minMonthsFromYears && childAgeMonths <= maxMonthsFromYears;
+
+      const isAgeEligible = isEligibleIfRawMonths || isEligibleIfYears;
+      
+      console.log(`[loadGamesForEvent] Slot ${slot.slot_id}: min=${rawMin}, max=${rawMax}, childAge=${childAgeMonths}, eligible=${isAgeEligible}`);
+      
+      return isAgeEligible;
     });
+
+    console.log('[loadGamesForEvent] raw slots count:', event.games_with_slots.length);
+    console.log('[loadGamesForEvent] ageFilteredSlots count:', ageFilteredSlots.length);
+    console.log('[loadGamesForEvent] ageFilteredSlots data:', ageFilteredSlots);
 
     if (ageFilteredSlots.length === 0) {
       setEligibleGames([]);
@@ -625,27 +673,51 @@ export default function RegisterEventClientPage() {
       return;
     }
 
-    // Convert to Game format
-    const formattedGames: Game[] = ageFilteredSlots.map((slot: BookingGameSlot) => ({
-      id: slot.slot_id,
-      game_id: slot.game_id,
-      game_title: slot.game_name,
-      game_description: slot.game_description,
-      min_age: slot.min_age,
-      max_age: slot.max_age,
-      game_duration_minutes: slot.duration_minutes,
-      categories: [],
-      custom_price: parseFloat(slot.price),
-      slot_price: parseFloat(slot.price),
-      start_time: slot.start_time,
-      end_time: slot.end_time,
-      custom_title: slot.custom_title || slot.game_name,
-      custom_description: slot.custom_description || slot.game_description,
-      max_participants: slot.max_participants,
-      slot_id: slot.slot_id,
-      ...(slot.note && { note: slot.note })
-    }));
+    // Convert to Game format - mapping from API response
+    // FIXED: Properly map all fields from booking info API structure
+    const formattedGames: Game[] = ageFilteredSlots.map((slot: any) => {
+      // API returns 'price' field in booking info (not 'slot_price')
+      const slotPrice = parseFloat(slot.price || slot.slot_price || slot.custom_price || 0);
+      
+      // Use slot_id as the primary ID (this is the unique identifier for each slot)
+      const slotId = slot.slot_id || slot.id;
+      
+      console.log(`[loadGamesForEvent] Formatting slot ${slotId}:`, {
+        slot_id: slotId,
+        game_id: slot.game_id,
+        game_name: slot.game_name,
+        custom_title: slot.custom_title,
+        price: slotPrice,
+        start_time: slot.start_time,
+        end_time: slot.end_time
+      });
+      
+      return {
+        id: slotId, // Use slot_id as the unique identifier
+        game_id: slot.game_id,
+        game_title: slot.custom_title || slot.game_title || slot.game_name,
+        game_description: slot.custom_description || slot.game_description,
+        min_age: slot.min_age,
+        max_age: slot.max_age,
+        game_duration_minutes: slot.duration_minutes || slot.game_duration_minutes || 0,
+        categories: [],
+        custom_price: slotPrice,
+        slot_price: slotPrice,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        custom_title: slot.custom_title || slot.game_title || slot.game_name,
+        custom_description: slot.custom_description || slot.game_description,
+        max_participants: slot.max_participants,
+        slot_id: slotId,
+        booked_count: slot.booked_count || 0,
+        available_slots: slot.available_slots ?? slot.max_participants,
+        is_available: slot.is_available !== false,
+        ...(slot.note && { note: slot.note })
+      };
+    });
 
+    console.log('[loadGamesForEvent] formattedGames count:', formattedGames.length);
+    console.log('[loadGamesForEvent] formattedGames details:', formattedGames);
     setEligibleGames(formattedGames);
     setGameError(null);
   }
@@ -773,7 +845,7 @@ export default function RegisterEventClientPage() {
     }
   }
 
-  // Handle game selection with slot selection - SINGLE SELECTION ONLY
+  // Handle game selection with slot selection - ONE SLOT PER GAME, MULTIPLE GAMES ALLOWED
   const handleGameSelection = (slotId: number) => {
     // Find the game associated with this slot
     const selectedSlot = eligibleGames.find((g) => g.id === slotId);
@@ -781,20 +853,25 @@ export default function RegisterEventClientPage() {
 
     const gameId = selectedSlot.game_id;
 
-    // SINGLE SELECTION LOGIC: Only allow one game/slot selection at a time
+    // SELECTION LOGIC: Allow multiple games, but only ONE slot per game
     setSelectedGames((prev) => {
       // Check if this exact slot is already selected
-      const isCurrentlySelected = prev.length === 1 && prev[0].slotId === slotId;
+      const isCurrentlySelected = prev.some((selection) => selection.slotId === slotId);
 
       let newSelectedGames: Array<{ gameId: number; slotId: number }>;
 
       if (isCurrentlySelected) {
-        // If clicking the same slot that's already selected, deselect it
-        newSelectedGames = [];
+        // If clicking a slot that's already selected, deselect it
+        newSelectedGames = prev.filter((selection) => selection.slotId !== slotId);
       } else {
-        // Replace any existing selection with this new selection (SINGLE SELECTION)
-        newSelectedGames = [{ gameId, slotId }];
+        // Remove any existing selection for this game (only one slot per game)
+        const withoutThisGame = prev.filter((selection) => selection.gameId !== gameId);
+        // Add the new selection for this game
+        newSelectedGames = [...withoutThisGame, { gameId, slotId }];
       }
+
+      // Debug: log selection changes
+      console.debug('[handleGameSelection] Updated selected games:', newSelectedGames);
 
       // Reset promocode when games change
       setPromoCode('');
@@ -805,7 +882,7 @@ export default function RegisterEventClientPage() {
       if (newSelectedGames.length > 0 && selectedEventType) {
         const selectedApiEvent = apiEvents.find((event) => event.event_title === selectedEventType);
         if (selectedApiEvent) {
-          // Get unique game IDs for promo code API (should only be one now)
+          // Get unique game IDs for promo code API
           const gameIdsForPromo = [...new Set(newSelectedGames.map((selection) => selection.gameId))];
 
           if (gameIdsForPromo.length > 0) {
@@ -1071,9 +1148,9 @@ export default function RegisterEventClientPage() {
         }
       }
 
-      // SINGLE GAME VALIDATION: Ensure exactly one game is selected
-      if (selectedGames.length !== 1) {
-        throw new Error(`Invalid game selection. Expected exactly 1 game, but found ${selectedGames.length}. Please select exactly one game.`)
+      // MULTIPLE GAMES VALIDATION: Ensure at least one game is selected
+      if (selectedGames.length === 0) {
+        throw new Error('Please select at least one game to continue.')
       }
 
       // Pre-validation checks with user-friendly error messages
@@ -1133,12 +1210,7 @@ export default function RegisterEventClientPage() {
 
 
       if (selectedGamesObj.length === 0) {
-        throw new Error("No valid games selected. Please select exactly one game.")
-      }
-
-      // SINGLE GAME VALIDATION: Ensure only one game is selected
-      if (selectedGamesObj.length > 1) {
-        throw new Error("Multiple games selected. Please select only one game per registration.")
+        throw new Error("No valid games selected. Please select at least one game.")
       }
 
       if (selectedGamesObj.length !== selectedGames.length) {
@@ -1167,7 +1239,7 @@ export default function RegisterEventClientPage() {
 
       // Use validation utility to ensure game data is correct
       const totalAmount = calculateTotalPrice()
-      const validationResult = validateGameData(gameIds, gamePrices, totalAmount)
+      const validationResult = validateGameData(gameIds, gamePrices, totalAmount, slotIds)
 
       if (!validationResult.isValid || validationResult.validGames.length === 0) {
         console.error("Game validation failed:", validationResult.errors)
@@ -1324,23 +1396,28 @@ export default function RegisterEventClientPage() {
   // Fetch cities from API - extracted as a separate function for reusability
   const fetchCitiesData = useCallback(async () => {
     try {
+      console.log('[fetchCitiesData] Starting to fetch cities...');
       setIsLoadingCities(true)
       setCityError(null)
 
-      const citiesData = await getAllCities()
+      const bookingData = await getCitiesWithBookingInfo()
+      console.log('[fetchCitiesData] Received booking data:', bookingData);
+      setBookingCities(bookingData)
 
       // Map the API response to the format expected by the dropdown
-      const formattedCities = citiesData.map(city => ({
-        id: city.id || 0,
+      const formattedCities = bookingData.map(city => ({
+        id: city.id,
         name: city.city_name
       }))
 
+      console.log('[fetchCitiesData] Formatted cities:', formattedCities);
       setCities(formattedCities)
     } catch (error: any) {
-      console.error("Failed to fetch cities:", error)
+      console.error("[fetchCitiesData] Failed to fetch cities:", error)
       setCityError("Failed to load cities. Please try again.")
     } finally {
       setIsLoadingCities(false)
+      console.log('[fetchCitiesData] Finished loading cities');
     }
   }, [])
 
@@ -2087,10 +2164,10 @@ export default function RegisterEventClientPage() {
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1">
                       <span>Available Games</span>
-                      <span className="text-xs text-primary/70">(Required - Select ONE game)</span>
+                      <span className="text-xs text-primary/70">(Required - Select one or more games)</span>
                     </Label>
                     <p className="text-xs text-muted-foreground mb-2">
-                      Please select exactly one game and time slot for your registration. You can only register for one game per booking.
+                      Please select one or more games and time slots for your registration. You can select multiple games.
                     </p>
                     
                     {isLoadingGames ? (
@@ -2121,27 +2198,19 @@ export default function RegisterEventClientPage() {
                           "mb-6 p-4 rounded-3xl border-2 text-base font-semibold shadow-lg",
                           selectedGames.length === 0
                             ? "bg-gradient-to-r from-skyblue-50 to-coral-50 border-skyblue-200 text-neutral-charcoal"
-                            : selectedGames.length === 1
-                            ? "bg-gradient-to-r from-mint-50 to-skyblue-50 border-mint-300 text-neutral-charcoal"
-                            : "bg-gradient-to-r from-coral-50 to-skyblue-50 border-coral-300 text-neutral-charcoal"
+                            : "bg-gradient-to-r from-mint-50 to-skyblue-50 border-mint-300 text-neutral-charcoal"
                         )}>
                           <div className="flex items-center gap-3">
                             {selectedGames.length === 0 && (
                               <>
                                 <div className="w-3 h-3 rounded-full bg-skyblue-400 animate-pulse"></div>
-                                <span>🎯 No game selected - Please select one game and time slot</span>
+                                <span>🎯 No games selected - Please select one or more games</span>
                               </>
                             )}
-                            {selectedGames.length === 1 && (
+                            {selectedGames.length > 0 && (
                               <>
                                 <div className="w-3 h-3 rounded-full bg-mint-500 animate-bounce-gentle"></div>
-                                <span>✅ One game selected - Ready to continue!</span>
-                              </>
-                            )}
-                            {selectedGames.length > 1 && (
-                              <>
-                                <div className="w-3 h-3 rounded-full bg-coral-500 animate-pulse"></div>
-                                <span>⚠️ Multiple games selected - Please select only one</span>
+                                <span>✅ {selectedGames.length} game{selectedGames.length > 1 ? 's' : ''} selected - Ready to continue!</span>
                               </>
                             )}
                           </div>
@@ -2173,7 +2242,8 @@ export default function RegisterEventClientPage() {
 
                           return Object.values(groupedGames).map((gameGroup) => {
                             const { gameInfo, slots } = gameGroup;
-                            const selectedSlotForGame = selectedGames.find(selection => selection.gameId === gameInfo.game_id);
+                            // Check if any of the selected games matches this game (support multiple selections)
+                            const selectedSlotsForGame = selectedGames.filter(selection => selection.gameId === gameInfo.game_id);
                             
                             return (
                               <div
@@ -2201,11 +2271,14 @@ export default function RegisterEventClientPage() {
                                 {/* Slot Selection */}
                                 <div className="space-y-2">
                                   <Label className="text-sm font-medium">
-                                    Select Time Slot {slots.length > 1 ? '(Choose one)' : ''}:
+                                    Select Time Slot{slots.length > 1 ? 's' : ''} {slots.length > 1 ? '(Select one)' : ''}:
                                   </Label>
                                   <div className="grid gap-2">
                                     {slots.map((slot) => {
-                                      const isSelected = selectedSlotForGame?.slotId === slot.id;
+                                      const isSelected = selectedSlotsForGame.some(selection => selection.slotId === slot.id);
+                                      const availableSlots = slot.available_slots ?? (slot.max_participants - (slot.booked_count || 0));
+                                      const isAvailable = slot.is_available !== false && availableSlots > 0;
+                                      
                                       return (
                                         <div
                                           key={slot.id}
@@ -2213,29 +2286,28 @@ export default function RegisterEventClientPage() {
                                             "flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all duration-200 touch-manipulation min-h-[60px] sm:min-h-[auto]",
                                             isSelected
                                               ? "border-primary bg-primary/10 shadow-md"
-                                              : slot.max_participants <= 0
+                                              : !isAvailable
                                                 ? "border-muted bg-gray-100 dark:bg-gray-800 opacity-70"
                                                 : "border-muted hover:border-primary/30 hover:bg-primary/5 cursor-pointer"
                                           )}
-                                          onClick={() => slot.max_participants > 0 && handleGameSelection(slot.id)}
+                                          onClick={() => isAvailable && handleGameSelection(slot.id)}
                                         >
                                           <div className="flex items-center space-x-3">
-                                            <input
-                                              type="radio"
-                                              name="game-slot-selection"
+                                            <Checkbox
                                               checked={isSelected}
-                                              onChange={() => slot.max_participants > 0 && handleGameSelection(slot.id)}
-                                              disabled={slot.max_participants <= 0}
-                                              className={`${slot.max_participants <= 0 ? 'opacity-50 cursor-not-allowed' : 'text-primary focus:ring-primary'}`}
+                                              onCheckedChange={() => isAvailable && handleGameSelection(slot.id)}
+                                              disabled={!isAvailable}
+                                              data-testid={`slot-checkbox-${slot.id}`}
+                                              className="h-5 w-5 !rounded-none border-2"
                                             />
                                             <div>
                                               <div className="font-medium text-sm">
                                                 {slot.start_time} - {slot.end_time}
                                               </div>
-                                              <div className={`text-xs ${slot.max_participants <= 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                                                {slot.max_participants <= 0 
-                                                  ? 'Max participants reached' 
-                                                  : `Max ${slot.max_participants} participants`
+                                              <div className={`text-xs ${!isAvailable ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                                                {!isAvailable
+                                                  ? 'Fully booked - No slots available' 
+                                                  : `Max ${slot.max_participants} participants (${availableSlots} available)`
                                                 }
                                               </div>
                                               {slot.note && (
@@ -2247,8 +2319,11 @@ export default function RegisterEventClientPage() {
                                             </div>
                                           </div>
                                           <div className="text-right">
-                                            <div className="font-medium text-primary">
-                                              ₹{slot.slot_price || slot.custom_price || 0}
+                                            <div className="font-bold text-lg text-primary">
+                                              {formatPrice(slot.slot_price || slot.custom_price || 0)}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                              per child
                                             </div>
                                           </div>
                                         </div>
@@ -2337,13 +2412,13 @@ export default function RegisterEventClientPage() {
                 size="lg"
                 className={cn(
                   "w-full relative overflow-hidden group transition-all duration-300 h-16 text-lg font-bold touch-manipulation rounded-3xl shadow-2xl hover:shadow-3xl transform hover:scale-105 border-2 border-white/50 animate-medal-shine",
-                  (!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length !== 1 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
+                  (!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
                  (childAgeMonths && childAgeMonths >= 36 && !schoolName) || !termsAccepted || isProcessingPayment)
                     ? "opacity-50 cursor-not-allowed bg-gray-400"
                     : "bg-gradient-to-r from-skyblue-400 via-coral-400 to-mint-400 hover:from-skyblue-500 hover:via-coral-500 hover:to-mint-500 text-white"
                 )}
                 onClick={handleRegistration}
-                disabled={!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length !== 1 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
+                disabled={!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
                          (childAgeMonths && childAgeMonths >= 36 && !schoolName) || !termsAccepted || isProcessingPayment}
               >
                 <span className="relative z-10 flex items-center justify-center">

@@ -281,6 +281,8 @@ export interface BookingGameSlot {
  */
 export const getCitiesWithBookingInfo = async (): Promise<BookingCity[]> => {
   try {
+    console.log('[cityService] Fetching cities with booking info from /api/city/booking-info/list');
+    
     const response = await fetch('/api/city/booking-info/list', {
       method: "GET",
       headers: {
@@ -289,19 +291,26 @@ export const getCitiesWithBookingInfo = async (): Promise<BookingCity[]> => {
       cache: 'no-store'
     });
 
+    console.log('[cityService] Response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`Error fetching booking info: ${response.status}`);
+      const errorText = await response.text();
+      console.error('[cityService] Error response:', errorText);
+      throw new Error(`Error fetching booking info: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('[cityService] Response data:', result);
 
     if (!result.success || !Array.isArray(result.data)) {
+      console.error('[cityService] Invalid response format:', result);
       throw new Error('Invalid response format from booking info API');
     }
 
+    console.log('[cityService] Successfully loaded', result.data.length, 'cities with booking info');
     return result.data;
   } catch (error: any) {
-    console.error(`[Booking Info API] Fetch failed:`, error.message);
+    console.error(`[cityService] Fetch failed:`, error);
     throw error;
   }
 };

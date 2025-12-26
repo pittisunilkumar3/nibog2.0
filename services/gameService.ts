@@ -21,6 +21,10 @@ export interface Game {
   slot_id?: number;
   // Note field for slot-specific instructions
   note?: string;
+  // Availability fields from booking info API
+  booked_count?: number;
+  available_slots?: number;
+  is_available?: boolean;
 }
 
 /**

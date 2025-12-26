@@ -1,7 +1,7 @@
 // Booking registration service for handling booking API calls
-import { BOOKING_API } from '@/config/api';
-import { validateGameData, formatGamesForAPI, createFallbackGame } from '@/utils/gameIdValidation';
-import { formatDateForAPI } from '@/lib/utils';
+import { BOOKING_API } from '../config/api';
+import { validateGameData, formatGamesForAPI, createFallbackGame } from '../utils/gameIdValidation';
+import { formatDateForAPI } from '../lib/utils';
 
 export interface BookingVariant {
   variant_id: number;
@@ -57,6 +57,10 @@ export interface BookingRegistrationResponse {
  * Register a booking
  * @param bookingData The booking data to register
  * @returns Promise with the booking registration response
+ *
+ * NOTE: This service supports multiple games per booking.
+ * `formatBookingDataForAPI` will format multiple `booking_games` entries
+ * when provided with arrays of `gameId`, `gamePrice` and optional `slotId`.
  */
 export async function registerBooking(bookingData: BookingRegistrationData): Promise<any> {
   try {
@@ -180,21 +184,11 @@ export function formatBookingDataForAPI(formData: {
       const gamePrices = Array.isArray(formData.gamePrice) ? formData.gamePrice : [formData.gamePrice];
       const slotIds = formData.slotId ? (Array.isArray(formData.slotId) ? formData.slotId : [formData.slotId]) : undefined;
 
-      // SINGLE GAME VALIDATION: Ensure only one game is being registered
-      if (gameIds.length > 1) {
-        console.error("Multiple games detected in booking registration:", gameIds);
-        throw new Error("Multiple games detected. Only one game can be registered per booking.");
-      }
-
-      // Use validation utility to process game data
+      // Use validation utility to process game data (support multiple games)
       const validationResult = validateGameData(gameIds, gamePrices, formData.totalAmount, slotIds);
 
       if (validationResult.isValid && validationResult.validGames.length > 0) {
-        // Additional check: ensure only one game after validation
-        if (validationResult.validGames.length > 1) {
-          console.error("Multiple games found after validation:", validationResult.validGames);
-          throw new Error("Multiple games found after validation. Only one game can be registered per booking.");
-        }
+        // Format all validated games for API consumption
         return formatGamesForAPI(validationResult.validGames);
       } else {
         console.error("Game validation failed for booking registration:", validationResult.errors);
