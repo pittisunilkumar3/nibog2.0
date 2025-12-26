@@ -77,12 +77,6 @@ export default function EditBookingPage({ params }: Props) {
 
         const data = await getBookingDetail(bookingId)
         
-        // Debug: Log the complete API response
-        console.log('=== Booking Detail API Response ===', data)
-        console.log('Parent data:', data?.parent)
-        console.log('Children data:', data?.children)
-        console.log('Payments data:', data?.payments)
-        
         // Store the complete API response
         setBookingDetail(data)
 
@@ -94,7 +88,7 @@ export default function EditBookingPage({ params }: Props) {
           const formattedCities = bookingData.map(city => ({ id: city.id, name: city.city_name }))
           setCities(formattedCities)
         } catch (err) {
-          console.error('Failed to load cities for edit:', err)
+          // Silent error handling
         } finally {
           setIsLoadingCities(false)
         }
@@ -193,11 +187,6 @@ export default function EditBookingPage({ params }: Props) {
                            data.additional_phone?.trim() || data.parent_additional_phone?.trim() || 
                            (data.data?.parent?.phone?.trim()) || (data.data?.parent_phone?.trim()) || "";
         
-        console.log('=== Extracted Parent Data ===');
-        console.log('Parent Name:', parentName || '(empty)');
-        console.log('Parent Email:', parentEmail || '(empty)');
-        console.log('Parent Phone:', parentPhone || '(empty)');
-        
         setStatus(data.status || data.booking_status || "")
         setTotalAmount(String(data.total_amount ?? data.totalAmount ?? data.total ?? ""))
         setParentName(parentName)
@@ -228,7 +217,6 @@ export default function EditBookingPage({ params }: Props) {
 
         setChildren(normalizedChildren)
       } catch (error: any) {
-        console.error("Failed to fetch booking detail:", error)
         setError(error.message || "Failed to load booking details")
         toast({
           title: "Error",
@@ -306,7 +294,6 @@ export default function EditBookingPage({ params }: Props) {
         router.push(`/admin/bookings/${bookingId}`)
       }, 1200)
     } catch (error: any) {
-      console.error('Failed to update booking:', error)
       toast({ title: 'Error', description: error.message || 'Failed to update booking', variant: 'destructive' })
     } finally {
       setIsSaving(false)
@@ -700,7 +687,6 @@ export default function EditBookingPage({ params }: Props) {
                                   copy[ci].eligible_games = gamesData || []
                                   setChildren(copy)
                                 } catch (err: any) {
-                                  console.error('Failed to load eligible games:', err)
                                   setGameError('Failed to load eligible games')
                                 } finally {
                                   setLoadingGamesForChild(prev => ({ ...prev, [ci]: false }))

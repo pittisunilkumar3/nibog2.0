@@ -246,7 +246,6 @@ export default function NewTestimonialPage() {
         is_active: 1
       }
 
-      console.log('Sending payload to backend:', payload);
 
       // Call Next.js API route which proxies to backend (avoids CORS issues)
       const response = await fetch('/api/testimonials', {
@@ -265,7 +264,6 @@ export default function NewTestimonialPage() {
       }
 
       const testimonialResponse = await response.json()
-      console.log('Testimonial created successfully:', testimonialResponse);
 
       setIsLoading(false)
 

@@ -77,14 +77,7 @@ function FooterComponent() {
   const youtubeUrl = footerData?.youtube_url;
   const decathlonUrl = "https://www.decathlon.in";
 
-  // Debug logging (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🏢 Footer Component State:', {
-      isLoading,
-      hasData: !!footerData,
-      companyName,
-    })
-  }
+
 
   // Show loading state for debugging
   if (isLoading) {

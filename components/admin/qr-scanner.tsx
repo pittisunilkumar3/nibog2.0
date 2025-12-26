@@ -76,7 +76,6 @@ export default function QrScanner({ onScan, scanType }: QrScannerProps) {
         (errorMessage) => {
           // QR code scan error (not found in frame)
           // We don't need to show this to the user
-          console.log(errorMessage)
         }
       )
 

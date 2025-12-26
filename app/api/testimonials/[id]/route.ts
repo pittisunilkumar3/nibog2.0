@@ -407,7 +407,6 @@ export async function DELETE(
         
         // Delete the file
         await unlink(fullPath);
-        console.log(`Deleted image file: ${fullPath}`);
       } catch (fileErr) {
         // Log error but don't fail the deletion if file doesn't exist
         console.warn('Could not delete image file:', fileErr);

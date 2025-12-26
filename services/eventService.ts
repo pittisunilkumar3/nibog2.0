@@ -115,7 +115,7 @@ export async function createEvent(eventData: Event): Promise<Event> {
               token = userData.token;
             }
           } catch (e) {
-            console.warn('Failed to parse superadmin-token cookie:', e);
+            // Silently handle parse error
           }
         }
       }
@@ -133,7 +133,6 @@ export async function createEvent(eventData: Event): Promise<Event> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       
       try {
         const errorJson = JSON.parse(errorText);
@@ -148,7 +147,6 @@ export async function createEvent(eventData: Event): Promise<Event> {
     // Return the data (the response should contain event_id)
     return data; 
   } catch (error) {
-    console.error("Error creating event:", error);
     throw error;
   }
 }
@@ -306,7 +304,6 @@ export async function getEventById(id: number): Promise<EventListItem> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`API returned error status: ${response.status}`);
     }
 
@@ -321,7 +318,6 @@ export async function getEventById(id: number): Promise<EventListItem> {
 
     throw new Error("Event not found");
   } catch (error) {
-    console.error(`Error fetching event with ID ${id}:`, error);
     throw error;
   }
 }
@@ -351,7 +347,6 @@ export async function getEventWithGames(id: string | number): Promise<any> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`API returned error status: ${response.status}`);
     }
 
@@ -359,7 +354,6 @@ export async function getEventWithGames(id: string | number): Promise<any> {
 
     return data;
   } catch (error) {
-    console.error("Error getting event with games:", error);
     throw error;
   }
 }
@@ -393,7 +387,6 @@ export async function createEventGameSlot(slotData: {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`API returned error status: ${response.status}`);
     }
 
@@ -401,7 +394,6 @@ export async function createEventGameSlot(slotData: {
 
     return data; 
   } catch (error) {
-    console.error("Error creating event game slot:", error);
     throw error;
   }
 }
@@ -437,7 +429,6 @@ export async function updateEventGameSlot(slotData: {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`API returned error status: ${response.status}`);
     }
 
@@ -445,7 +436,6 @@ export async function updateEventGameSlot(slotData: {
 
     return data; 
   } catch (error) {
-    console.error("Error updating event game slot:", error);
     throw error;
   }
 }
@@ -469,7 +459,6 @@ export async function deleteEventGameSlot(id: number): Promise<any> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`API returned error status: ${response.status}`);
     }
 
@@ -477,7 +466,6 @@ export async function deleteEventGameSlot(id: number): Promise<any> {
 
     return data; 
   } catch (error) {
-    console.error("Error deleting event game slot:", error);
     throw error;
   }
 }
@@ -498,14 +486,12 @@ export async function getSlotStatus(slotId: string): Promise<string> {
     });
 
     if (!response.ok) {
-      console.warn(`Failed to get slot status, defaulting to active`);
       return 'active';
     }
 
     const data = await response.json();
     return data.status || 'active';
   } catch (error) {
-    console.error("Error getting slot status:", error);
     return 'active'; // Default to active on error
   }
 }
@@ -529,7 +515,6 @@ export async function updateSlotStatus(slotId: string, status: string): Promise<
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`API returned error status: ${response.status}`);
     }
 
@@ -537,7 +522,6 @@ export async function updateSlotStatus(slotId: string, status: string): Promise<
 
     return data; 
   } catch (error) {
-    console.error("Error updating slot status:", error);
     throw error;
   }
 }
@@ -557,14 +541,12 @@ export async function getAllSlotStatuses(): Promise<Record<string, string>> {
     });
 
     if (!response.ok) {
-      console.warn("Failed to get slot statuses, returning empty object");
       return {};
     }
 
     const data = await response.json();
     return data || {};
   } catch (error) {
-    console.error("Error getting slot statuses:", error);
     return {}; // Return empty object on error
   }
 }
@@ -578,7 +560,6 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
 
   // Ensure the event has an ID
   if (!eventData.id) {
-    console.error("Cannot update event without an ID");
     throw new Error("Event ID is required for updates");
   }
 
@@ -617,7 +598,6 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
     }
 
     if (!token) {
-      console.error("No authentication token found");
       throw new Error("Authentication required. Please log in.");
     }
 
@@ -642,7 +622,6 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`API returned error status: ${response.status}`);
     }
 
@@ -654,7 +633,6 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
       event_id: data.event_id || eventId
     };
   } catch (error: any) {
-    console.error("Error updating event:", error);
     throw error;
   }
 }
@@ -797,14 +775,12 @@ export async function getUpcomingEventsByCityId(
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[Events API] Error response from upcoming events API:', errorText);
         throw new Error(`Failed to fetch events: ${response.status} ${response.statusText}`);
       }
 
       const events = await response.json();
 
       if (!Array.isArray(events)) {
-        console.error('[Events API] Unexpected API response format:', events);
         throw new Error('Invalid response format: expected an array of events');
       }
 
@@ -831,7 +807,7 @@ export async function getUpcomingEventsByCityId(
             return venueName;
           }
         } catch (error) {
-          console.error('[Events API] Error fetching venue:', error);
+          // Silent error handling
         }
         return 'Event Venue';
       };
@@ -881,7 +857,6 @@ export async function getUpcomingEventsByCityId(
       return formattedEvents;
     } catch (error: any) {
       lastError = error;
-      console.error(`[Events API] Attempt ${attempt}/${maxRetries} failed:`, error.message);
 
       if (attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -889,7 +864,6 @@ export async function getUpcomingEventsByCityId(
     }
   }
 
-  console.error("[Events API] All retry attempts failed. Last error:", lastError?.message);
   throw lastError || new Error("Failed to fetch events after multiple attempts");
 }
 
@@ -924,14 +898,12 @@ export async function getGamesByAgeAndEvent(eventId: number, childAge: number): 
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error response from games API:', errorText);
       throw new Error(`Failed to fetch games: ${response.status} ${response.statusText}`);
     }
 
     const games = await response.json();
     
     if (!Array.isArray(games)) {
-      console.error('Unexpected API response format:', games);
       throw new Error('Invalid response format: expected an array of games');
     }
 
@@ -941,7 +913,6 @@ export async function getGamesByAgeAndEvent(eventId: number, childAge: number): 
 
     return games;
   } catch (error) {
-    console.error('Error in getGamesByAgeAndEvent:', error);
     throw error;
   }
 }
@@ -1191,7 +1162,6 @@ export async function uploadEventImage(file: File): Promise<{
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`Upload failed: ${response.status}`);
     }
 
@@ -1199,7 +1169,6 @@ export async function uploadEventImage(file: File): Promise<{
 
     return data; 
   } catch (error) {
-    console.error("Error uploading event image:", error);
     throw error;
   }
 }
@@ -1210,7 +1179,6 @@ export async function deleteEvent(id: number, imageUrl?: string): Promise<{ succ
   const numericId = Number(id);
 
   if (!numericId || isNaN(numericId) || numericId <= 0) {
-    console.error(`Invalid event ID: ${id}, converted to: ${numericId}`);
     throw new Error("Invalid event ID. ID must be a positive number.");
   }
 
@@ -1249,7 +1217,6 @@ export async function deleteEvent(id: number, imageUrl?: string): Promise<{ succ
     }
 
     if (!token) {
-      console.error("No authentication token found");
       throw new Error("Authentication required. Please log in.");
     }
 
@@ -1273,7 +1240,6 @@ export async function deleteEvent(id: number, imageUrl?: string): Promise<{ succ
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
 
       try {
         // Try to parse the error response as JSON
@@ -1302,12 +1268,10 @@ export async function deleteEvent(id: number, imageUrl?: string): Promise<{ succ
       // Default to success if we got a 200 response
       return { success: true };
     } catch (parseError) {
-      console.error("Error parsing delete response:", parseError);
       // If we can't parse the response but got a 200 status, consider it a success
       return { success: true };
     }
   } catch (error) {
-    console.error(`Error deleting event with ID ${id}:`, error);
     throw error;
   }
 }
@@ -1345,13 +1309,11 @@ export async function sendEventImageToWebhook(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`Webhook failed: ${response.status}`);
     }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`Webhook failed: ${response.status}`);
     }
 
@@ -1359,7 +1321,6 @@ export async function sendEventImageToWebhook(
 
     return data;
   } catch (error) {
-    console.error("Error sending event image to webhook:", error);
     throw error;
   }
 }
@@ -1372,37 +1333,26 @@ export async function sendEventImageToWebhook(
 import { buildServeImageUrl } from '@/lib/imageUtils'
 
 export async function fetchEventImages(eventId: number): Promise<any[]> {
-  console.log(`[eventService.fetchEventImages] Fetching images for event ${eventId}`);
-
   try {
     // Import the mapping function dynamically to avoid circular dependencies
     const { fetchEventImagesWithMapping } = await import('@/lib/eventImageMapping');
 
-    console.log(`[eventService.fetchEventImages] Calling fetchEventImagesWithMapping...`);
     const images = await fetchEventImagesWithMapping(eventId);
-
-    console.log(`[eventService.fetchEventImages] Received ${images.length} images from mapping function`);
 
     // Normalize image_url for UI previews
     const normalized = Array.isArray(images) ? images.map(img => {
       if (img && typeof img === 'object' && img.image_url) {
         // Convert image_url into a served URL usable in <img src>
         const servedUrl = buildServeImageUrl(img.image_url, 'upload/eventimages/');
-        console.log(`[eventService.fetchEventImages] Normalized image URL: ${img.image_url} -> ${servedUrl}`);
         return { ...img, image_url: servedUrl }
       }
       return img
     }) : []
 
-    console.log(`[eventService.fetchEventImages] ✅ Returning ${normalized.length} normalized images`);
     return normalized;
   } catch (error) {
-    console.error("[eventService.fetchEventImages] ❌ Error fetching event images:", error);
-
     // Fallback to direct API call if mapping fails
     try {
-      console.log(`[eventService.fetchEventImages] Attempting fallback to /api/eventimages/get...`);
-
       const response = await fetch('/api/eventimages/get', {
         method: 'POST',
         headers: {
@@ -1413,16 +1363,12 @@ export async function fetchEventImages(eventId: number): Promise<any[]> {
         }),
       });
 
-      console.log(`[eventService.fetchEventImages] Fallback API response status: ${response.status}`);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`[eventService.fetchEventImages] Fallback API failed: ${response.status} - ${errorText}`);
         throw new Error(`API failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log(`[eventService.fetchEventImages] Fallback API returned:`, data);
 
       if (Array.isArray(data)) {
         const validImages = data.filter(img =>
@@ -1432,22 +1378,17 @@ export async function fetchEventImages(eventId: number): Promise<any[]> {
           img.image_url !== undefined
         );
 
-        console.log(`[eventService.fetchEventImages] Found ${validImages.length} valid images from fallback`);
-
         // Convert to served URLs
         const normalized = validImages.map(img => ({ 
           ...img, 
           image_url: buildServeImageUrl(img.image_url, 'upload/eventimages/') 
         }));
 
-        console.log(`[eventService.fetchEventImages] ✅ Returning ${normalized.length} images from fallback`);
         return normalized;
       }
 
-      console.log(`[eventService.fetchEventImages] ⚠️ No valid images in fallback response`);
       return [];
     } catch (fallbackError) {
-      console.error("[eventService.fetchEventImages] ❌ Fallback fetch also failed:", fallbackError);
       return [];
     }
   }
@@ -1484,7 +1425,6 @@ export async function updateEventImage(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
       throw new Error(`Update failed: ${response.status}`);
     }
 
@@ -1492,7 +1432,6 @@ export async function updateEventImage(
 
     return data; 
   } catch (error) {
-    console.error("Error updating event image:", error);
     throw error;
   }
 }
@@ -1517,7 +1456,6 @@ export async function getAllEventsWithDetails(): Promise<any[]> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error fetching events:', errorText);
       throw new Error(`Failed to fetch events: ${response.status}`);
     }
 
@@ -1525,7 +1463,6 @@ export async function getAllEventsWithDetails(): Promise<any[]> {
     
     return events;
   } catch (error: any) {
-    console.error('Error in getAllEventsWithDetails:', error);
     throw error;
   }
 } 
@@ -1552,7 +1489,6 @@ export async function getEventWithDetails(eventId: number): Promise<any> {
         throw new Error('Event not found');
       }
       const errorText = await response.text();
-      console.error('Error fetching event:', errorText);
       throw new Error(`Failed to fetch event: ${response.status}`);
     }
 
@@ -1560,7 +1496,6 @@ export async function getEventWithDetails(eventId: number): Promise<any> {
     
     return event;
   } catch (error: any) {
-    console.error(`Error in getEventWithDetails(${eventId}):`, error);
     throw error;
   }
 } 
@@ -1584,7 +1519,6 @@ export async function getEventsByCityId(cityId: number): Promise<Array<{ id: num
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error fetching events for city:', errorText);
       throw new Error(`Failed to fetch events for city: ${response.status}`);
     }
 
@@ -1597,8 +1531,7 @@ export async function getEventsByCityId(cityId: number): Promise<Array<{ id: num
       title: event.title || event.event_title
     }));
   } catch (error: any) {
-    console.error(`Error in getEventsByCityId(${cityId}):`, error);
     throw error;
   }
-}    
+}
 

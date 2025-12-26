@@ -118,7 +118,6 @@ function calculateAge(dateOfBirth: string): string {
     
     return `${age} year${age > 1 ? 's' : ''}`
   } catch (error) {
-    console.error('Error calculating age:', error)
     return 'N/A'
   }
 }
@@ -256,8 +255,6 @@ export default function CompleteBookingsPage() {
       setIsLoading(true)
       setError(null)
 
-      console.log('Fetching all bookings from /api/bookings/all')
-
       // Use the new REST API endpoint: GET /api/bookings/all
       const response = await fetch('/api/bookings/all', {
         method: 'GET',
@@ -270,12 +267,6 @@ export default function CompleteBookingsPage() {
 
       const data = await response.json()
       
-      console.log('Bookings fetched:', {
-        success: data.success,
-        count: data.count,
-        hasData: !!data.data
-      })
-
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch bookings')
       }
@@ -290,15 +281,9 @@ export default function CompleteBookingsPage() {
         flatBookings.push(...transformed)
       })
       
-      console.log(`Transformed ${completeBookings.length} complete bookings into ${flatBookings.length} flat entries`)
       setBookings(flatBookings)
 
-      if (flatBookings.length === 0) {
-        console.log('No bookings found')
-      }
-
     } catch (error: any) {
-      console.error("Failed to fetch complete bookings:", error)
       setError(error.message || "Failed to load complete bookings. Please try again.")
       toast({
         title: "Error",
@@ -327,7 +312,7 @@ export default function CompleteBookingsPage() {
         setEvents(eventsData.map((e: any) => ({ id: e.event_id ?? e.id, event_title: e.event_title ?? e.title })))
         setGames(Array.isArray(gamesData) ? gamesData : [])
       } catch (err) {
-        console.error('Failed to load filter data:', err)
+        // Silent error handling
       } finally {
         setIsLoadingFilters(false)
       }
@@ -705,14 +690,8 @@ export default function CompleteBookingsPage() {
   if (error) {
     return (
       <EmptyError
-        title="Failed to load bookings"
-        description={error}
-        action={
-          <Button onClick={fetchBookings} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Try Again
-          </Button>
-        }
+        onRetry={fetchBookings}
+        error={error}
       />
     )
   }

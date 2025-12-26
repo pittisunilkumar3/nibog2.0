@@ -11,7 +11,6 @@ export async function GET(request: Request) {
     const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
     const apiUrl = `${BACKEND_URL}/api/bookings/all`;
 
-    console.log('Fetching all bookings from:', apiUrl);
 
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -35,12 +34,6 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    
-    console.log('Successfully fetched bookings:', {
-      success: data.success,
-      count: data.count,
-      hasData: !!data.data
-    });
 
     // Return the complete response from backend
     return NextResponse.json(data, { status: 200 });

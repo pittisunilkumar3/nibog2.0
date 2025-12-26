@@ -39,9 +39,7 @@ export default function GameTemplatesPage() {
   const fetchGames = async () => {
     try {
       setError(null)
-      console.log('🔄 Fetching games at:', new Date().toISOString())
       const data = await getAllBabyGames()
-      console.log('✅ Fetched games:', data.length)
       setGames(data)
     } catch (err: any) {
       const errorMsg = err.message || "Failed to fetch games"

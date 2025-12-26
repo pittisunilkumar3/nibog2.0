@@ -45,7 +45,6 @@ export async function PATCH(
     }
 
     const result = await response.json();
-    console.log(`Event ${eventId} image updated successfully`);
 
     return NextResponse.json(result, {
       status: 200,

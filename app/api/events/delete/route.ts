@@ -27,10 +27,8 @@ export async function POST(request: Request) {
         const filename = basename(data.image_url);
         const uploadDir = join(process.cwd(), 'upload', 'eventimages');
         const filePath = join(uploadDir, filename);
-        console.log(`[Event Delete] Attempting to delete:`, filePath);
         if (existsSync(filePath)) {
           await unlink(filePath);
-          console.log(`[Event Delete] Deleted image file: ${filePath}`);
         } else {
           console.warn(`[Event Delete] File does not exist: ${filePath}`);
         }
