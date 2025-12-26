@@ -1487,45 +1487,6 @@ export default function RegisterEventClientPage() {
     }
   }
 
-  // Fetch cities from API - extracted as a separate function for reusability
-  const fetchCitiesData = useCallback(async () => {
-    try {
-      console.log('[fetchCitiesData] Starting to fetch cities...');
-      setIsLoadingCities(true)
-      setCityError(null)
-
-      // Clear all cached state before fetching fresh data
-      setBookingCities([])
-      setApiEvents([])
-      setEligibleGames([])
-      
-      // Clear any cached data in sessionStorage
-      if (typeof window !== 'undefined') {
-        const keysToRemove = ['bookingCities', 'apiEvents', 'eligibleGames']
-        keysToRemove.forEach(key => sessionStorage.removeItem(key))
-      }
-
-      const bookingData = await getCitiesWithBookingInfo()
-      console.log('[fetchCitiesData] Received booking data:', bookingData);
-      setBookingCities(bookingData)
-
-      // Map the API response to the format expected by the dropdown
-      const formattedCities = bookingData.map(city => ({
-        id: city.id,
-        name: city.city_name
-      }))
-
-      console.log('[fetchCitiesData] Formatted cities:', formattedCities);
-      setCities(formattedCities)
-    } catch (error: any) {
-      console.error("[fetchCitiesData] Failed to fetch cities:", error)
-      setCityError("Failed to load cities. Please try again.")
-    } finally {
-      setIsLoadingCities(false)
-      console.log('[fetchCitiesData] Finished loading cities');
-    }
-  }, [])
-
   // Fetch cities from API when component mounts
   useEffect(() => {
     let isMounted = true; // Track if component is still mounted
