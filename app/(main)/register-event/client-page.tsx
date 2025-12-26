@@ -33,7 +33,7 @@ import { fetchAllAddOnsFromExternalApi } from "@/services/addOnService"
 import type { AddOn } from "@/types"
 import type { AddOn as AddOnType } from "@/types"
 import { getAllCities, getCitiesWithBookingInfo, BookingCity, BookingEvent, BookingGameSlot } from "@/services/cityService"
-import { getEventsByCityId, getGamesByAgeAndEvent, getEventById, EventListItem, EventGameListItem } from "@/services/eventService"
+import { getEventsByCityId, getGamesByAgeAndEvent, getEventById, getEventWithGames, EventListItem, EventGameListItem } from "@/services/eventService"
 import { getGamesByAge, Game } from "@/services/gameService"
 import { registerBooking, formatBookingDataForAPI } from "@/services/bookingRegistrationService"
 import { initiatePhonePePayment } from "@/services/paymentService"
@@ -373,11 +373,55 @@ export default function RegisterEventClientPage() {
 
       const eventsData = await getEventsByCityId(cityId);
 
-      // Fetch detailed event info for each event (fallback to minimal mapping if detailed fetch fails)
+      // Check if we got any events
+      if (!eventsData || eventsData.length === 0) {
+        setEventError("No events available for this city");
+        setEligibleEvents([]);
+        setAvailableDates([]);
+        setApiEvents([]);
+        return;
+      }
+
+      // Fetch detailed event info for each event with games_with_slots (fallback to minimal mapping if detailed fetch fails)
       const detailedEventsPromises = eventsData.map(async (evt: any) => {
         try {
-          // Attempt to fetch full event details using the event service
-          return await getEventById(Number(evt.id));
+          // Attempt to fetch full event details with games using the details API endpoint
+          const response = await fetch(`/api/events/${evt.id}/details`, {
+            method: 'GET',
+            cache: 'no-store'
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch event ${evt.id} details`);
+          }
+          
+          const eventData = await response.json();
+          
+          // Transform to EventListItem format with games_with_slots
+          return {
+            event_id: Number(eventData.id || evt.id),
+            event_title: eventData.title || evt.title || '',
+            event_description: eventData.description || evt.description || '',
+            event_date: eventData.event_date || evt.date || new Date().toISOString(),
+            event_status: eventData.status || '',
+            event_created_at: eventData.created_at || '',
+            event_updated_at: eventData.updated_at || '',
+            city_id: cityId,
+            city_name: cityName,
+            state: '',
+            city_is_active: true,
+            city_created_at: '',
+            city_updated_at: '',
+            venue_id: eventData.venue_id || 0,
+            venue_name: eventData.venue_name || evt.venue_name || evt.venue || '',
+            venue_address: eventData.venue_address || evt.address || '',
+            venue_capacity: eventData.venue_capacity || 0,
+            venue_is_active: true,
+            venue_created_at: '',
+            venue_updated_at: '',
+            games: eventData.games || [],
+            games_with_slots: eventData.event_games_with_slots || eventData.games_with_slots || []
+          } as EventListItem;
         } catch (err) {
           console.warn(`Failed to fetch detailed event for id ${evt.id}, using fallback`, err);
           // Provide a minimal EventListItem-like fallback so downstream code can safely access expected fields
@@ -455,6 +499,13 @@ export default function RegisterEventClientPage() {
         if (uniqueDates.length > 0) {
           setEventDate(uniqueDates[0]);
         }
+        
+        // Clear any previous errors on success
+        setEventError(null);
+      } else {
+        setEventError("No events available for this city");
+        setEligibleEvents([]);
+        setAvailableDates([]);
       }
     } catch (error: any) {
       console.error(`Failed to fetch events for city ID ${cityId}:`, error);
@@ -463,6 +514,7 @@ export default function RegisterEventClientPage() {
       // Clear events on error
       setEligibleEvents([]);
       setAvailableDates([]);
+      setApiEvents([]);
     } finally {
       setIsLoadingEvents(false);
     }
@@ -477,6 +529,12 @@ export default function RegisterEventClientPage() {
     setEligibleGames([]) // Reset eligible games
     setSelectedGames([]) // Reset selected games
 
+    // Reset promocode when city changes
+    setPromoCode('')
+    setAppliedPromoCode(null)
+    setDiscountAmount(0)
+    setAvailablePromocodes([])
+
     // Find city in booking data
     const cityData = bookingCities.find(c => c.city_name === city);
     if (!cityData) {
@@ -487,67 +545,8 @@ export default function RegisterEventClientPage() {
     const cityId = cityData.id;
     setSelectedCityId(cityId);
 
-    // Use events from booking info instead of fetching separately
-    if (cityData.events && cityData.events.length > 0) {
-      // Convert booking events to EventListItem format
-      const convertedEvents: EventListItem[] = cityData.events.map(event => ({
-        event_id: event.id,
-        event_title: event.title,
-        event_description: event.description,
-        event_date: event.event_date,
-        event_status: event.status,
-        event_created_at: event.created_at,
-        event_updated_at: event.updated_at,
-        city_id: event.city_id,
-        city_name: city,
-        state: cityData.state,
-        city_is_active: cityData.is_active === 1,
-        city_created_at: cityData.created_at,
-        city_updated_at: cityData.updated_at,
-        venue_id: event.venue_id,
-        venue_name: event.venue_name,
-        venue_address: event.venue_address,
-        venue_capacity: event.venue_capacity,
-        venue_is_active: true,
-        venue_created_at: '',
-        venue_updated_at: '',
-        games: [],
-        games_with_slots: event.games_with_slots
-      }));
-
-      setApiEvents(convertedEvents);
-
-      // Convert to eligible events format
-      const eligibleEventsList = convertedEvents.map(event => ({
-        id: event.event_id.toString(),
-        title: event.event_title,
-        description: event.event_description,
-        minAgeMonths: 0,
-        maxAgeMonths: 84,
-        date: event.event_date.split('T')[0],
-        time: "9:00 AM - 8:00 PM",
-        venue: event.venue_name || "Venue TBD",
-        city: event.city_name,
-        price: 1800,
-        image: "/images/baby-crawling.jpg"
-      }));
-
-      setEligibleEvents(eligibleEventsList);
-
-      // Get unique dates
-      const dates = eligibleEventsList.map(event => new Date(event.date));
-      const uniqueDates = Array.from(new Set(dates.map(date => date.toISOString())))
-        .map(dateStr => new Date(dateStr));
-      setAvailableDates(uniqueDates);
-
-      if (uniqueDates.length > 0) {
-        setEventDate(uniqueDates[0]);
-      }
-    } else {
-      setEventError("No events available for this city");
-      setEligibleEvents([]);
-      setAvailableDates([]);
-    }
+    // Automatically fetch fresh events from API when city is selected
+    await fetchEventsForCity(cityId, city);
   }
 
   // Handle event type change
@@ -644,7 +643,7 @@ export default function RegisterEventClientPage() {
       custom_description: slot.custom_description || slot.game_description,
       max_participants: slot.max_participants,
       slot_id: slot.slot_id,
-      note: slot.note || null
+      ...(slot.note && { note: slot.note })
     }));
 
     setEligibleGames(formattedGames);
