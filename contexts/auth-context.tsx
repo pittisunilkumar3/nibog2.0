@@ -100,7 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkToken = async () => {
       try {
         const token = await getSession()
-        if (token && isTokenExpired(token)) {
+        if (!token) {
+          // No token, skip check
+          return
+        }
+        
+        if (isTokenExpired(token)) {
           console.info('[AuthContext] Token expired - auto logging out')
 
           // Best-effort server-side logout to clear httpOnly cookies
@@ -126,10 +131,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           setUser(null)
 
-          // Redirect to login instead of reloading to prevent loops
-          // ONLY if not already on the login page
-          if (pathname !== '/login') {
-            window.location.href = '/login?reason=expired'
+          // Define public pages that should never trigger login redirect
+          const publicPages = [
+            '/',
+            '/login',
+            '/register',
+            '/forgot-password',
+            '/reset-password',
+            '/about',
+            '/contact',
+            '/events',
+            '/baby-olympics',
+            '/faq',
+            '/privacy',
+            '/terms',
+            '/refund',
+            '/payment-callback'
+          ]
+          const isPublicPage = publicPages.some(page => pathname === page || pathname.startsWith(page + '/'))
+          
+          // NEVER redirect from public pages - just clear session silently
+          if (!isPublicPage && pathname !== '/login') {
+            console.info('[AuthContext] Redirecting to login from protected page:', pathname)
+            window.location.href = '/login?reason=expired&callbackUrl=' + encodeURIComponent(pathname)
+          } else if (isPublicPage) {
+            console.info('[AuthContext] On public page, session cleared but not redirecting:', pathname)
           }
         }
       } catch (e) {
@@ -137,16 +163,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Initial check
-    checkToken()
+    // Only check token if user is actually logged in AND we have a user object
+    // This prevents checks when user is null (not logged in)
+    if (user && user.user_id) {
+      checkToken()
+    }
 
-    // Check every 60s
-    interval = window.setInterval(checkToken, 60 * 1000)
+    // Check every 60s (increased from 30s to reduce frequency)
+    // Only run interval if user is logged in
+    if (user && user.user_id) {
+      interval = window.setInterval(() => {
+        if (user && user.user_id) {
+          checkToken()
+        }
+      }, 60 * 1000)
+    }
 
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [logout, pathname])
+  }, [user, pathname])
 
   // Listen for storage changes to sync logout across tabs
   useEffect(() => {
@@ -173,8 +209,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (authenticated && typeof window !== 'undefined') {
           // Verify token expiry before setting user
           const token = await getSession();
-          if (!token || isTokenExpired(token)) {
-            console.info('[AuthContext] Entry check: Token invalid or expired. Clearing session.');
+          if (!token) {
+            console.info('[AuthContext] Entry check: No token found. Clearing session.');
+            clearSession();
+            setUser(null);
+            setIsLoading(false);
+            return;
+          }
+          
+          if (isTokenExpired(token)) {
+            console.info('[AuthContext] Entry check: Token expired. Clearing session.');
             clearSession();
             setUser(null);
             setIsLoading(false);

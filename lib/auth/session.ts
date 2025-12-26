@@ -89,8 +89,9 @@ export function isTokenExpired(token?: string | null): boolean {
     return false
   } catch (error) {
     console.warn('Failed to parse token for expiry check:', error)
-    // If it looks like a JWT but fails parsing, treat as expired for safety
-    return token.includes('.')
+    // If we can't parse the token, assume it's not expired to avoid false positives
+    // The server will validate it properly
+    return false
   }
 }
 

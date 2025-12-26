@@ -127,6 +127,48 @@ const fetcher = async (url: string) => {
 
   // If the status code is not in the range 200-299, throw an error
   if (!res.ok) {
+    // Handle 401 Unauthorized (expired token)
+    if (res.status === 401) {
+      // Trigger logout and redirect
+      if (typeof window !== 'undefined') {
+        // Clear session
+        try {
+          localStorage.removeItem('nibog-session')
+          localStorage.removeItem('nibog-user')
+          localStorage.removeItem('user')
+        } catch (e) {
+          console.warn('Error clearing storage during 401:', e)
+        }
+        
+        // Only redirect if NOT on a public page
+        const publicPages = [
+          '/',
+          '/login',
+          '/register',
+          '/forgot-password',
+          '/reset-password',
+          '/about',
+          '/contact',
+          '/events',
+          '/baby-olympics',
+          '/faq',
+          '/privacy',
+          '/terms',
+          '/refund',
+          '/payment-callback'
+        ]
+        const currentPath = window.location.pathname
+        const isPublicPage = publicPages.some(page => currentPath === page || currentPath.startsWith(page + '/'))
+        
+        if (!isPublicPage) {
+          console.info('[SWR Fetcher] 401 error on protected page, redirecting to login:', currentPath)
+          window.location.href = '/login?reason=expired&callbackUrl=' + encodeURIComponent(currentPath)
+        } else {
+          console.info('[SWR Fetcher] 401 error on public page, not redirecting:', currentPath)
+        }
+      }
+    }
+    
     const error = new Error('An error occurred while fetching the data.')
     throw error
   }
@@ -332,6 +374,47 @@ export function useUserBookings(userId: number | null) {
       });
 
       if (!response.ok) {
+        // Handle 401 Unauthorized (expired token)
+        if (response.status === 401) {
+          if (typeof window !== 'undefined') {
+            // Clear session
+            try {
+              localStorage.removeItem('nibog-session')
+              localStorage.removeItem('nibog-user')
+              localStorage.removeItem('user')
+            } catch (e) {
+              console.warn('Error clearing storage during 401:', e)
+            }
+            
+            // Only redirect if NOT on a public page
+            const publicPages = [
+              '/',
+              '/login',
+              '/register',
+              '/forgot-password',
+              '/reset-password',
+              '/about',
+              '/contact',
+              '/events',
+              '/baby-olympics',
+              '/faq',
+              '/privacy',
+              '/terms',
+              '/refund',
+              '/payment-callback'
+            ]
+            const currentPath = window.location.pathname
+            const isPublicPage = publicPages.some(page => currentPath === page || currentPath.startsWith(page + '/'))
+            
+            if (!isPublicPage) {
+              console.info('[useUserBookings] 401 error on protected page, redirecting to login:', currentPath)
+              window.location.href = '/login?reason=expired&callbackUrl=' + encodeURIComponent(currentPath)
+            } else {
+              console.info('[useUserBookings] 401 error on public page, not redirecting:', currentPath)
+            }
+          }
+        }
+        
         throw new Error(`Failed to fetch user bookings: ${response.status}`);
       }
 

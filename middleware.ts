@@ -71,6 +71,8 @@ function isTokenExpired(token?: string | null): boolean {
     }
     return false;
   } catch (error) {
+    // If we can't parse the token, assume it's not expired to avoid false positives
+    // The server will validate it properly
     return false;
   }
 }
@@ -260,17 +262,20 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Handle user protected routes (dashboard, checkout, register-event, etc.)
+  // Handle user protected routes (dashboard, checkout, etc.)
   if (isUserProtectedPath) {
     // Debug logs removed for production readiness
 
-    // If user is not authenticated OR EXPIRED, redirect to login
+    // If user is not authenticated OR EXPIRED, redirect to login and clear expired cookie
     if (!userSession || isTokenExpired(userSession)) {
       const loginUrl = new URL('/login', request.url);
       // Preserve the original intended URL for redirect after login
       loginUrl.searchParams.set('callbackUrl', pathname + (request.nextUrl.search || ''));
+      loginUrl.searchParams.set('reason', 'expired');
       const redirect = NextResponse.redirect(loginUrl);
       redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      // Clear expired session cookie
+      redirect.cookies.set('nibog-session', '', { maxAge: 0, path: '/' });
       return redirect;
     }
 
@@ -293,22 +298,68 @@ export async function middleware(request: NextRequest) {
       redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
       return redirect;
     }
+    // Clear expired session cookies if present
+    if (userSession && isTokenExpired(userSession)) {
+      response.cookies.set('nibog-session', '', { maxAge: 0, path: '/' });
+    }
+    if (superadminToken && isTokenExpired(superadminToken)) {
+      response.cookies.set('superadmin-token', '', { maxAge: 0, path: '/' });
+    }
     // Not logged in, allow access to login page
+    return response;
+  }
+
+  // Handle register page - redirect if already authenticated
+  if (pathname === '/register') {
+    if (userSession && !isTokenExpired(userSession)) {
+      // Regular user is logged in, redirect to home
+      const redirect = NextResponse.redirect(new URL('/', request.url));
+      redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      return redirect;
+    }
+    if (superadminToken && !isTokenExpired(superadminToken)) {
+      // Superadmin is logged in, redirect to admin
+      const redirect = NextResponse.redirect(new URL('/admin', request.url));
+      redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      return redirect;
+    }
+    // Clear expired session cookies if present
+    if (userSession && isTokenExpired(userSession)) {
+      response.cookies.set('nibog-session', '', { maxAge: 0, path: '/' });
+    }
+    if (superadminToken && isTokenExpired(superadminToken)) {
+      response.cookies.set('superadmin-token', '', { maxAge: 0, path: '/' });
+    }
+    // Not logged in, allow access to register page
     return response;
   }
 
   // Handle public paths
   if (isPublicPath) {
+    // Clear expired session cookies if present on public paths
+    if (userSession && isTokenExpired(userSession)) {
+      response.cookies.set('nibog-session', '', { maxAge: 0, path: '/' });
+    }
+    if (superadminToken && isTokenExpired(superadminToken)) {
+      response.cookies.set('superadmin-token', '', { maxAge: 0, path: '/' });
+    }
     return response;
   }
 
   // If it's a protected API route and no valid session, return 401
   if (isProtectedApiRoute && (!userSession || isTokenExpired(userSession)) && (!superadminToken || isTokenExpired(superadminToken))) {
     const errorResponse = NextResponse.json(
-      { message: 'Unauthorized' },
+      { message: 'Unauthorized', error: 'Token expired or invalid' },
       { status: 401 }
     );
     errorResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    // Clear expired session cookies
+    if (userSession && isTokenExpired(userSession)) {
+      errorResponse.cookies.set('nibog-session', '', { maxAge: 0, path: '/' });
+    }
+    if (superadminToken && isTokenExpired(superadminToken)) {
+      errorResponse.cookies.set('superadmin-token', '', { maxAge: 0, path: '/' });
+    }
     return errorResponse;
   }
 
