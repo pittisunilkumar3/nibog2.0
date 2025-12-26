@@ -118,6 +118,7 @@ interface PendingBookingData {
   eventId: number;
   gameId: number[];
   gamePrice: number[];
+  slotId?: number[]; // Optional array of slot IDs
   totalAmount: number;
   paymentMethod: string;
   termsAccepted: boolean;
@@ -561,42 +562,38 @@ async function createBookingAndPayment(
   try {
     // removed debug log
 
-    // Format booking data for API
+    // Format booking data for API - UPDATED TO MATCH NEW API STRUCTURE
     const formattedBookingData = {
-      user_id: bookingData.userId,
-      parent: {
-        parent_name: bookingData.parentName,
-        email: bookingData.email,
-        additional_phone: bookingData.phone,
-      },
-      child: {
+      parent_name: bookingData.parentName,
+      email: bookingData.email,
+      phone: bookingData.phone,
+      event_id: bookingData.eventId,
+      booking_ref: merchantTransactionId, // Use transaction ID as booking reference
+      status: paymentState === 'COMPLETED' ? 'Paid' : 'Pending',
+      total_amount: bookingData.totalAmount,
+      children: [{
         full_name: bookingData.childName,
         date_of_birth: (() => {
           const formattedDob = formatDateForAPI(bookingData.childDob);
-          // removed debug log
-          // removed debug log
-          // removed debug log
-          // removed debug log
           return formattedDob;
         })(),
-        school_name: bookingData.schoolName,
         gender: bookingData.gender,
-      },
-      booking: {
-        event_id: bookingData.eventId,
-        total_amount: bookingData.totalAmount,
+        school_name: bookingData.schoolName,
+        booking_games: bookingData.gameId.map((gameId, index) => ({
+          game_id: gameId,
+          slot_id: bookingData.slotId?.[index] || null,
+          game_price: bookingData.gamePrice[index] || 0,
+        })),
+      }],
+      payment: {
+        transaction_id: transactionId,
+        amount: bookingData.totalAmount,
         payment_method: bookingData.paymentMethod,
         payment_status: paymentState === 'COMPLETED' ? 'Paid' : 'Pending',
-        terms_accepted: bookingData.termsAccepted,
       },
-      booking_games: bookingData.gameId.map((gameId, index) => ({
-        game_id: gameId,
-        child_index: 0, // Assuming single child for now
-        game_price: bookingData.gamePrice[index] || 0,
-      })),
       // Add-ons if present
       ...(bookingData.addOns && bookingData.addOns.length > 0 && {
-        booking_addons: bookingData.addOns.map(addon => ({
+        addons: bookingData.addOns.map(addon => ({
           addon_id: addon.addOnId,
           quantity: addon.quantity,
           ...(addon.variantId && { variant_id: addon.variantId }),
