@@ -14,9 +14,25 @@ export async function GET() {
 
         const data = await response.json();
         return NextResponse.json(data, { status: response.status });
-    } catch (error) {
+    } catch (error: any) {
         console.error('API Error:', error);
-        return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+        
+        // Check if it's a connection refused error (backend not running)
+        if (error.cause?.code === 'ECONNREFUSED' || error.code === 'ECONNREFUSED') {
+            console.error(`Backend server not reachable at ${BACKEND_URL}. Please ensure the backend server is running.`);
+            return NextResponse.json({ 
+                success: false, 
+                error: 'Backend server not available',
+                message: `Cannot connect to backend server at ${BACKEND_URL}. Please ensure the backend is running.`,
+                hint: 'Start your backend server or check BACKEND_URL in .env file'
+            }, { status: 503 });
+        }
+        
+        return NextResponse.json({ 
+            success: false, 
+            error: 'Internal Server Error',
+            message: error.message || 'An unexpected error occurred' 
+        }, { status: 500 });
     }
 }
 
@@ -41,8 +57,24 @@ export async function POST(request: Request) {
 
         const data = await response.json();
         return NextResponse.json(data, { status: response.status });
-    } catch (error) {
+    } catch (error: any) {
         console.error('API Error:', error);
-        return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+        
+        // Check if it's a connection refused error (backend not running)
+        if (error.cause?.code === 'ECONNREFUSED' || error.code === 'ECONNREFUSED') {
+            console.error(`Backend server not reachable at ${BACKEND_URL}. Please ensure the backend server is running.`);
+            return NextResponse.json({ 
+                success: false, 
+                error: 'Backend server not available',
+                message: `Cannot connect to backend server at ${BACKEND_URL}. Please ensure the backend is running.`,
+                hint: 'Start your backend server or check BACKEND_URL in .env file'
+            }, { status: 503 });
+        }
+        
+        return NextResponse.json({ 
+            success: false, 
+            error: 'Internal Server Error',
+            message: error.message || 'An unexpected error occurred' 
+        }, { status: 500 });
     }
 }
