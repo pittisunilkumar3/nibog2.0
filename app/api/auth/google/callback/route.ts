@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004'
+const BACKEND_API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Sending Google token to backend...')
+    console.log('Sending Google token to backend:', BACKEND_API)
 
     // Send the Google credential to the backend API
     const response = await fetch(`${BACKEND_API}/api/user/google-signin`, {
@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     })
 
     const data = await response.json()
-    console.log('Backend response:', data)
+    console.log('Backend response status:', response.status)
+    console.log('Backend response data:', JSON.stringify(data, null, 2))
 
     if (!response.ok) {
       console.error('Backend error:', data)
@@ -37,7 +38,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Return the response from the backend
+    // Log the structure to help debug
+    console.log('Response structure check:')
+    console.log('- data.success:', data.success)
+    console.log('- data.token:', data.token?.substring(0, 20) + '...')
+    console.log('- data.user:', data.user)
+    console.log('- data.data:', data.data)
+
+    // Return the response from the backend as-is
     return NextResponse.json(data)
 
   } catch (error: any) {
