@@ -1,6 +1,10 @@
 import type { Metadata } from "next"
 import RegisterEventClientPage from "./client-page"
 
+// Force dynamic rendering - disable all caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata: Metadata = {
   title: "Register for NIBOG Event | NIBOG",
   description: "Register your child for NIBOG baby games",

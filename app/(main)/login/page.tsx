@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { NibogLogo } from "@/components/nibog-logo"
+import { GoogleLogin } from "@react-oauth/google"
 
 
 // Image slideshow component
@@ -96,6 +97,97 @@ function LoginContent() {
   // Get the callback URL from the query parameters
   const callbackUrl = searchParams.get("callbackUrl") || "/"
   const returnUrl = searchParams.get("returnUrl") || "/"
+
+  // Google Sign-In handlers
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      setIsLoading(true)
+      setLoadingMessage("Authenticating with Google...")
+      setError("")
+
+      // Send the Google credential to our backend via our API route
+      const response = await fetch('/api/auth/google/callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          credential: credentialResponse.credential,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Google sign-in failed')
+      }
+
+      // Check if user data is available
+      if (!data || !data.data) {
+        throw new Error('Invalid response from server')
+      }
+
+      const userData = data.data
+      const token = data.token
+
+      // Store user data in localStorage
+      const userDataForStorage = {
+        user_id: userData.user_id,
+        full_name: userData.full_name,
+        email: userData.email,
+        email_verified: userData.email_verified,
+        phone: userData.phone,
+        phone_verified: userData.phone_verified,
+        city_id: userData.city_id,
+        accepted_terms: userData.accepted_terms,
+        terms_accepted_at: userData.terms_accepted_at,
+        is_active: userData.is_active,
+        role: userData.role || 'user',
+        created_at: userData.created_at,
+        updated_at: userData.updated_at
+      }
+
+      localStorage.setItem('user', JSON.stringify(userDataForStorage))
+      localStorage.setItem('token', token)
+      localStorage.setItem('authMethod', 'google')
+
+      // Update auth context
+      login(token, userDataForStorage)
+
+      // Success notification
+      toast({
+        title: "✨ Welcome back!",
+        description: `Successfully signed in as ${userData.full_name}`,
+      })
+
+      // Redirect to callback URL
+      setTimeout(() => {
+        router.push(callbackUrl)
+      }, 500)
+
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error)
+      setError(error.message || 'Failed to sign in with Google')
+      toast({
+        title: "Sign-in failed",
+        description: error.message || 'Failed to sign in with Google',
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+      setLoadingMessage("")
+    }
+  }
+
+  const handleGoogleError = () => {
+    console.error('Google Sign-In Error')
+    setError('Failed to sign in with Google')
+    toast({
+      title: "Sign-in failed",
+      description: 'Failed to sign in with Google. Please try again.',
+      variant: "destructive",
+    })
+  }
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -388,7 +480,32 @@ function LoginContent() {
                   )}
                 </Button>
               </form>
-              {/* Commented out Google and Phone OTP login options */}
+
+              {/* Divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-purple-200 dark:border-purple-800" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white dark:bg-gray-900 px-2 text-purple-600 dark:text-purple-400">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              {/* Google Sign-In */}
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  useOneTap={false}
+                  theme="outline"
+                  size="large"
+                  text="signin_with"
+                  shape="rectangular"
+                  logo_alignment="left"
+                />
+              </div>
             </CardContent>
             
             <CardFooter className="flex flex-col space-y-2 pb-6 border-t border-purple-100 dark:border-purple-900 pt-4">

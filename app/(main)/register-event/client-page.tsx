@@ -119,6 +119,7 @@ export default function RegisterEventClientPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false)
   const [bookingReference, setBookingReference] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false) // For refresh button state
   
   // Promocode related states
   const [availablePromocodes, setAvailablePromocodes] = useState<any[]>([])
@@ -131,6 +132,68 @@ export default function RegisterEventClientPage() {
 
   // Get authentication state from auth context
   const { isAuthenticated, user } = useAuth()
+  
+  // Fetch cities from API - extracted as a separate function for reusability
+  const fetchCitiesData = useCallback(async () => {
+    try {
+      console.log('[fetchCitiesData] Starting to fetch cities...');
+      setIsLoadingCities(true)
+      setCityError(null)
+
+      // Clear all cached state before fetching fresh data
+      setBookingCities([])
+      setApiEvents([])
+      setEligibleGames([])
+      
+      // Clear any cached data in sessionStorage
+      if (typeof window !== 'undefined') {
+        const keysToRemove = ['bookingCities', 'apiEvents', 'eligibleGames']
+        keysToRemove.forEach(key => sessionStorage.removeItem(key))
+      }
+
+      const bookingData = await getCitiesWithBookingInfo()
+      console.log('[fetchCitiesData] Received booking data:', bookingData);
+      setBookingCities(bookingData)
+
+      // Map the API response to the format expected by the dropdown
+      const formattedCities = bookingData.map(city => ({
+        id: city.id,
+        name: city.city_name
+      }))
+
+      console.log('[fetchCitiesData] Formatted cities:', formattedCities);
+      setCities(formattedCities)
+    } catch (error: any) {
+      console.error("[fetchCitiesData] Failed to fetch cities:", error)
+      setCityError("Failed to load cities. Please try again.")
+    } finally {
+      setIsLoadingCities(false)
+      console.log('[fetchCitiesData] Finished loading cities');
+    }
+  }, [])
+  
+  // Refresh button handler
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    await fetchCitiesData()
+    setIsRefreshing(false)
+  }, [fetchCitiesData])
+  
+  // Auto-refresh when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('[RegisterEvent] Tab became visible, refreshing data...')
+        fetchCitiesData()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [fetchCitiesData])
   
   // Fetch add-ons from external API
   useEffect(() => {
@@ -1431,6 +1494,17 @@ export default function RegisterEventClientPage() {
       setIsLoadingCities(true)
       setCityError(null)
 
+      // Clear all cached state before fetching fresh data
+      setBookingCities([])
+      setApiEvents([])
+      setEligibleGames([])
+      
+      // Clear any cached data in sessionStorage
+      if (typeof window !== 'undefined') {
+        const keysToRemove = ['bookingCities', 'apiEvents', 'eligibleGames']
+        keysToRemove.forEach(key => sessionStorage.removeItem(key))
+      }
+
       const bookingData = await getCitiesWithBookingInfo()
       console.log('[fetchCitiesData] Received booking data:', bookingData);
       setBookingCities(bookingData)
@@ -1691,6 +1765,27 @@ export default function RegisterEventClientPage() {
                   : "Register your child for exciting baby games and create memorable moments"}
               </CardDescription>
             </div>
+            {/* Refresh button */}
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+              title="Refresh data"
+            >
+              <svg
+                className={`h-5 w-5 text-gray-600 dark:text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
           </div>
 
           {/* Homepage-style progress indicator */}

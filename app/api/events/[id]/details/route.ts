@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
 
+// Force dynamic rendering - disable all caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 /**
  * GET /api/events/[id]/details
  * Get an event with its games, venue name, city name, and event_games_with_slots
@@ -52,6 +56,8 @@ export async function GET(
       status: 200,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       }
     });
   } catch (error: any) {
