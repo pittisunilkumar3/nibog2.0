@@ -288,7 +288,7 @@ export async function POST(request: Request) {
               phone: bookingData.phone || "",
               event_id: bookingData.eventId || 1,
               booking_ref: bookingRef,
-              status: "Pending",
+              status: paymentState === 'COMPLETED' ? 'Paid' : 'Pending',
               total_amount: amount / 100, // Convert from paise to rupees
               children: [
                 {
@@ -316,7 +316,7 @@ export async function POST(request: Request) {
               phone: "",
               event_id: 1,
               booking_ref: bookingRef,
-              status: "Pending",
+              status: paymentState === 'COMPLETED' ? 'Paid' : 'Pending',
               total_amount: amount / 100,
               children: [
                 {
