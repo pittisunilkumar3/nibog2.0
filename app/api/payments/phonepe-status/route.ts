@@ -78,6 +78,32 @@ export async function POST(request: Request) {
 
     // Parse the request body
     const { transactionId, bookingData } = await request.json();
+    
+    // Validate transaction ID format
+    if (!transactionId || typeof transactionId !== 'string') {
+      console.error('Invalid transaction ID provided');
+      return NextResponse.json({
+        error: 'Invalid transaction ID',
+        success: false
+      }, { status: 400 });
+    }
+
+    // Prevent duplicate processing - check if already processed recently (within 1 minute)
+    const processingKey = `processing_${transactionId}`;
+    if (typeof window === 'undefined' && global) {
+      // Server-side duplicate check
+      const recentlyProcessed = (global as any)[processingKey];
+      if (recentlyProcessed && Date.now() - recentlyProcessed < 60000) {
+        console.warn(`Duplicate payment check request for ${transactionId} within 1 minute`);
+        return NextResponse.json({
+          error: 'Request is being processed',
+          success: false,
+          message: 'Please wait for the previous request to complete'
+        }, { status: 429 });
+      }
+      (global as any)[processingKey] = Date.now();
+    }
+
     // removed debug log
     // removed debug log
 
@@ -133,6 +159,8 @@ export async function POST(request: Request) {
       // removed debug log
       // removed debug log
       
+      // Only create booking if payment is truly successful
+      // This prevents booking creation for failed/pending payments
       if (isSuccess) {
         // removed debug log
 

@@ -109,12 +109,12 @@ function PaymentCallbackContent() {
                 let actualBookingRef = null;
                 if (statusData.bookingCreated && statusData.bookingData && statusData.bookingData.booking_ref) {
                   actualBookingRef = statusData.bookingData.booking_ref;
-                  // removed debug log
+                } else if (statusData.bookingCreated && statusData.bookingId) {
+                  // Format booking ID as B reference
+                  actualBookingRef = `B${String(statusData.bookingId).padStart(7, '0')}`;
                 } else {
                   // Fallback: generate consistent booking reference from transaction ID
                   actualBookingRef = generateConsistentBookingRef(txnId);
-                  // removed debug log
-                  // removed debug log
                 }
 
                 // Update state with the actual booking reference
@@ -123,9 +123,14 @@ function PaymentCallbackContent() {
 
                 // Store the reference for later use
                 localStorage.setItem('lastBookingRef', actualBookingRef);
+                
+                // Clear booking data from localStorage after successful payment
+                localStorage.removeItem('nibog_booking_data');
 
                 // Redirect to booking confirmation with the actual booking reference
-                router.push(`/booking-confirmation?ref=${encodeURIComponent(actualBookingRef)}`);
+                setTimeout(() => {
+                  router.push(`/booking-confirmation?ref=${encodeURIComponent(actualBookingRef)}`);
+                }, 1500);
                 return;
               } catch (error) {
                 console.error('Error getting actual booking reference:', error);
@@ -170,61 +175,8 @@ function PaymentCallbackContent() {
                       const bookingVerifyData = await bookingVerifyResponse.json()
                       // removed debug log
                       
-                      // Send confirmation email as backup (server should have already sent it)
-                      // removed debug log
-                      try {
-                        await sendBookingConfirmationFromClient({
-                          ...bookingData,
-                          bookingRef: emailBookingRef
-                        })
-                        // removed debug log
-                      } catch (emailError) {
-                        console.error('📧 Failed to send backup confirmation email:', emailError)
-                        // Don't fail the process if backup email fails
-                      }
-
-                      // Send WhatsApp notification as backup
-                      try {
-                        // removed debug log
-
-                        // Check if we have booking data with phone number
-                        if (bookingDataFromStorage && bookingDataFromStorage.phone) {
-                          const whatsappData = {
-                            bookingId: parseInt(emailBookingRef.replace('B', '')),
-                            bookingRef: emailBookingRef,
-                            parentName: bookingDataFromStorage.parentName || 'Valued Customer',
-                            parentPhone: bookingDataFromStorage.phone,
-                            childName: bookingDataFromStorage.childName || 'Child',
-                            eventTitle: bookingDataFromStorage.eventTitle || 'NIBOG Event',
-                            eventDate: bookingDataFromStorage.eventDate || new Date().toLocaleDateString(),
-                            eventVenue: bookingDataFromStorage.eventVenue || 'Main Stadium',
-                            totalAmount: bookingDataFromStorage.totalAmount || 0,
-                            paymentMethod: 'PhonePe',
-                            transactionId: txnId,
-                            gameDetails: bookingDataFromStorage.gameDetails || []
-                          };
-
-                          const whatsappResponse = await fetch('/api/whatsapp/send-booking-confirmation', {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(whatsappData),
-                          });
-
-                          if (whatsappResponse.ok) {
-                            // removed debug log
-                          } else {
-                            const whatsappError = await whatsappResponse.json();
-                            console.error('📱 Failed to send backup WhatsApp notification:', whatsappError);
-                          }
-                        } else {
-                          // removed debug log
-                        }
-                      } catch (whatsappError) {
-                        console.error('📱 Failed to send backup WhatsApp notification:', whatsappError);
-                        // Don't fail the process if WhatsApp notification fails
-                      }
+                      // Notifications (email/WhatsApp) are already sent by the server callback
+                      // No need to send duplicate notifications from the client
 
                       // Update the booking reference in state
                       setBookingRef(emailBookingRef)

@@ -106,11 +106,16 @@ function BookingConfirmationContent() {
             return
           }
         } catch (ticketError) {
+          console.error("Error fetching ticket details:", ticketError);
+          // If we can't fetch ticket details directly, show a user-friendly error
+          setError("Booking details are being processed. Please check your email for confirmation or contact support.");
+          setIsLoading(false);
+          return;
         }
         
         // Try to check if this is a payment transaction ID by calling payment status API
-        // Skip PhonePe API call if we already have a PPT reference
-        if (!refToUse.startsWith('PPT')) {
+        // Skip PhonePe API call if we already have a PPT, MAN, or B reference format
+        if (!refToUse.startsWith('PPT') && !refToUse.startsWith('MAN') && !refToUse.startsWith('B')) {
           try {
             const response = await fetch('/api/payments/phonepe-status', {
               method: 'POST',
@@ -125,8 +130,8 @@ function BookingConfirmationContent() {
 
             const data = await response.json();
 
-            if (data.bookingCreated && data.bookingId) {
-              const normalizedApiBookingId = normalizeBookingRef(data.bookingId);
+            if (data.bookingCreated && data.bookingData && data.bookingData.booking_ref) {
+              const normalizedApiBookingId = normalizeBookingRef(data.bookingData.booking_ref);
 
               try {
                 const ticketData = await getTicketDetails(normalizedApiBookingId);
@@ -144,59 +149,27 @@ function BookingConfirmationContent() {
                 }
               } catch (ticketError) {
                 console.error("Error fetching ticket details with payment API bookingId:", ticketError);
-                // Continue to fallback methods if this fails
+                // Show user-friendly error message
+                setError("Booking details are being processed. Please check your email for confirmation.");
+                setIsLoading(false);
+                return;
               }
-            }
-
-            // If we couldn't get booking ID from the payment API or couldn't fetch it,
-            // Try with PPT format as a fallback
-            try {
-              // Format with PPT prefix + date + ID portion
-              if (!refToUse) {
-                throw new Error("No booking reference for PPT attempt");
-              }
-
-              // Try to extract just numbers if reference has other characters
-              const numericPart = refToUse.replace(/\D/g, '');
-              if (numericPart.length > 0) {
-                // Create date variables for PPT format
-                const currentDate = new Date();
-                const year = currentDate.getFullYear().toString().slice(-2);
-                const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-                const day = currentDate.getDate().toString().padStart(2, '0');
-
-                const pptRef = `PPT${year}${month}${day}${numericPart.slice(0, 3)}`;
-
-                const ticketData = await getTicketDetails(pptRef);
-                if (ticketData && ticketData.length > 0) {
-                  setTicketDetails(ticketData);
-                  if (ticketData[0]) {
-                    setBookingDetails(ticketData[0]);
-                  }
-                  // Store this successful reference
-                  localStorage.setItem('lastBookingRef', JSON.stringify(pptRef));
-                  return;
-                }
-              }
-
-              setError("Payment was successful, but booking details could not be found. Please check your email for booking confirmation.");
-            } catch (pptError) {
-              console.error("Error with PPT format attempt:", pptError);
-              setError("Payment was successful, but booking details could not be found. Please check your email for booking confirmation.");
+            } else {
+              // Payment status API didn't return booking info
+              console.error("Payment status API didn't return booking information");
+              setError("Booking details are being processed. Please check your email for confirmation.");
+              setIsLoading(false);
+              return;
             }
           } catch (paymentError) {
             console.error("Error checking payment status:", paymentError);
-            setError("Failed to check payment status");
+            setError("Unable to load booking details at this time. Please check your email for confirmation or contact support.");
+            setIsLoading(false);
+            return;
           }
-        }
-
-        // If we still don't have ticket details, try direct booking lookup as a final attempt
-        if (!ticketDetails) {
+        } else {
+          // If we have a known booking reference format, just try to fetch it directly
           try {
-            // Try ticket details API first
-            if (!refToUse) {
-              throw new Error("No booking reference for ticket details");
-            }
             const ticketData = await getTicketDetails(refToUse);
             if (ticketData && ticketData.length > 0) {
               setTicketDetails(ticketData);
