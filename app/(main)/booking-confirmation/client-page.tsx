@@ -4,47 +4,14 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Calendar, MapPin, User, Phone, Mail, ArrowRight } from "lucide-react"
+import { CheckCircle, ArrowRight } from "lucide-react"
 import { useEffect, useState, Suspense } from "react"
-import { TicketDetails, getTicketDetails } from "@/services/bookingService"
-import { checkPhonePePaymentStatus } from "@/services/paymentService"
 
 
 function BookingConfirmationContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const bookingRef = searchParams.get('ref')
-  const [bookingDetails, setBookingDetails] = useState<TicketDetails | null>(null)
-  const [ticketDetails, setTicketDetails] = useState<TicketDetails[] | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // Fetch booking details when component mounts
-
-
-  // Helper function to normalize booking reference formats to ensure API compatibility
-  // Simply extract the booking reference without any format conversion
-  // This ensures we use the EXACT SAME reference ID throughout the entire system
-  const normalizeBookingRef = (ref: string): string => {
-    if (!ref) return '';
-    
-    // If the reference is a URL, extract the ref parameter
-    if (ref.includes('ref=')) {
-      try {
-        const url = new URL(ref, window.location.origin);
-        const bookingRef = url.searchParams.get('ref');
-        if (bookingRef) {
-          localStorage.setItem('lastBookingRef', bookingRef);
-          return bookingRef;
-        }
-      } catch (e) {
-      }
-    }
-    
-    // If not a URL, use the reference as-is
-    localStorage.setItem('lastBookingRef', ref);
-    return ref;
-  };
 
   useEffect(() => {
     // Clear all registration/session data after booking confirmation
@@ -55,141 +22,7 @@ function BookingConfirmationContent() {
     sessionStorage.removeItem('nibog_restored_eventType')
     sessionStorage.removeItem('nibog_restored_childAgeMonths')
     localStorage.removeItem('nibog_booking_data')
-
-    const fetchBookingDetails = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      // Check if we have a booking reference from URL or need to check localStorage
-      let refToUse = bookingRef;
-      
-      if (!refToUse) {
-        // Check if we have a stored booking reference from the payment callback
-        try {
-          const storedBookingRef = localStorage.getItem('lastBookingRef');
-          
-          if (storedBookingRef) {
-            refToUse = storedBookingRef;
-          }
-        } catch (e) {
-        }
-      }
-      
-      // If we still don't have a reference, show error
-      if (!refToUse) {
-        setError("No booking reference provided - please check your confirmation email")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        setIsLoading(true)
-        
-        // Normalize the booking reference
-        const normalizedRef = normalizeBookingRef(refToUse);
-        
-        // Try to get comprehensive ticket details using the API with normalized ref
-        try {
-          const ticketData = await getTicketDetails(normalizedRef)
-          
-          if (ticketData && ticketData.length > 0) {
-            
-            setTicketDetails(ticketData)
-            // Store the first ticket as the booking details for display
-            if (ticketData[0]) {
-              setBookingDetails(ticketData[0])
-            }
-
-            // Ticket email is sent automatically from the payment callback
-            // No need to send it again from the confirmation page
-
-            return
-          }
-        } catch (ticketError) {
-          console.error("Error fetching ticket details:", ticketError);
-          // If we can't fetch ticket details directly, show a user-friendly error
-          setError("Booking details are being processed. Please check your email for confirmation or contact support.");
-          setIsLoading(false);
-          return;
-        }
-        
-        // Try to check if this is a payment transaction ID by calling payment status API
-        // Skip PhonePe API call if we already have a PPT, MAN, or B reference format
-        if (!refToUse.startsWith('PPT') && !refToUse.startsWith('MAN') && !refToUse.startsWith('B')) {
-          try {
-            const response = await fetch('/api/payments/phonepe-status', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                transactionId: refToUse,
-                bookingData: null,
-              }),
-            });
-
-            const data = await response.json();
-
-            if (data.bookingCreated && data.bookingData && data.bookingData.booking_ref) {
-              const normalizedApiBookingId = normalizeBookingRef(data.bookingData.booking_ref);
-
-              try {
-                const ticketData = await getTicketDetails(normalizedApiBookingId);
-                if (ticketData && ticketData.length > 0) {
-                  setTicketDetails(ticketData);
-                  // Store the first ticket as the booking details for display
-                  if (ticketData[0]) {
-                    setBookingDetails(ticketData[0]);
-                  }
-
-                  // Ticket email is sent automatically from the payment callback
-                  // No need to send it again from the confirmation page
-
-                  return;
-                }
-              } catch (ticketError) {
-                console.error("Error fetching ticket details with payment API bookingId:", ticketError);
-                // Show user-friendly error message
-                setError("Booking details are being processed. Please check your email for confirmation.");
-                setIsLoading(false);
-                return;
-              }
-            } else {
-              // Payment status API didn't return booking info
-              console.error("Payment status API didn't return booking information");
-              setError("Booking details are being processed. Please check your email for confirmation.");
-              setIsLoading(false);
-              return;
-            }
-          } catch (paymentError) {
-            console.error("Error checking payment status:", paymentError);
-            setError("Unable to load booking details at this time. Please check your email for confirmation or contact support.");
-            setIsLoading(false);
-            return;
-          }
-        } else {
-          // If we have a known booking reference format, just try to fetch it directly
-          try {
-            const ticketData = await getTicketDetails(refToUse);
-            if (ticketData && ticketData.length > 0) {
-              setTicketDetails(ticketData);
-              return;
-            }
-          } catch (ticketError) {
-            console.error("Error fetching ticket details as final attempt:", ticketError);
-            setError("Failed to fetch booking details");
-          }
-        }
-      } catch (error: any) {
-        console.error("Error in booking confirmation flow:", error);
-        setError(error.message || "Failed to process booking confirmation");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBookingDetails();
-  }, [bookingRef]);
+  }, []);
 
   return (
     <div className="container py-8 px-4 sm:px-6 relative">
@@ -205,88 +38,57 @@ function BookingConfirmationContent() {
         {/* Decorative top pattern */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-green-500 via-teal-500 to-emerald-500"></div>
 
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="animate-spin h-12 w-12 border-4 border-green-500 border-t-transparent rounded-full mb-4"></div>
-            <p className="text-gray-600">Loading booking details...</p>
-          </div>
-        ) : error ? (
-          <div className="p-8 text-center">
-            <div className="bg-red-100 p-3 rounded-full inline-block mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="15" y1="9" x2="9" y2="15"></line>
-                <line x1="9" y1="9" x2="15" y2="15"></line>
-              </svg>
+        <CardHeader className="space-y-1 relative">
+          <div className="flex items-center gap-4">
+            <div className="bg-green-100 p-3 rounded-full">
+              <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-xl font-semibold text-red-700 mb-2">Error Loading Booking</h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <Button variant="outline" onClick={() => window.location.href = "/"}>Return to Home</Button>
+            <div>
+              <CardTitle className="text-2xl bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Registration Completed!</CardTitle>
+              <CardDescription>
+                Your event registration has been successfully completed
+              </CardDescription>
+            </div>
           </div>
-        ) : (
-          <>
-            <CardHeader className="space-y-1 relative">
-              <div className="flex items-center gap-4">
-                <div className="bg-green-100 p-3 rounded-full">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Registration Completed!</CardTitle>
-                  <CardDescription>
-                    Your event registration has been successfully completed
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
+        </CardHeader>
 
-          <CardContent className="space-y-6">
-            {/* Success Message */}
-            <div className="text-center py-8 px-4">
-              <div className="bg-green-100 p-4 rounded-full inline-block mb-6">
-                <CheckCircle className="h-16 w-16 text-green-600" />
-              </div>
-              
-              <h2 className="text-3xl font-bold text-green-800 mb-4">
-                Thank You for Registering!
-              </h2>
-              
-              <p className="text-lg text-gray-700 mb-6">
-                Your registration has been successfully completed and confirmed.
-              </p>
+        <CardContent className="space-y-6">
+          {/* Success Message */}
+          <div className="text-center py-8 px-4">
+            <div className="bg-green-100 p-4 rounded-full inline-block mb-6">
+              <CheckCircle className="h-16 w-16 text-green-600" />
+            </div>
+            
+            <h2 className="text-3xl font-bold text-green-800 mb-4">
+              Thank You for Registering!
+            </h2>
+            
+            <p className="text-lg text-gray-700 mb-6">
+              Your registration has been successfully completed and confirmed.
+            </p>
 
+            {bookingRef && (
               <div className="bg-green-50 p-6 rounded-lg border-2 border-green-200 mb-6">
                 <p className="text-gray-700 mb-2">
                   <strong>Booking Reference:</strong>
                 </p>
                 <p className="text-2xl font-bold text-green-700 mb-4">
-                  {ticketDetails?.[0]?.booking_ref || bookingDetails?.booking_ref || "N/A"}
-                </p>
-                
-                {(ticketDetails?.[0]?.event_title || bookingDetails?.event_title) && (
-                  <div className="mt-4 pt-4 border-t border-green-200">
-                    <p className="text-gray-700 mb-1">
-                      <strong>Event:</strong> {ticketDetails?.[0]?.event_title || bookingDetails?.event_title}
-                    </p>
-                    {(ticketDetails?.[0]?.event_date || bookingDetails?.event_date) && (
-                      <p className="text-gray-700">
-                        <strong>Date:</strong> {ticketDetails?.[0]?.event_date ? new Date(ticketDetails[0].event_date).toLocaleDateString() : new Date(bookingDetails!.event_date).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
-                <p className="text-blue-800 text-sm">
-                  📧 A confirmation email has been sent to your registered email address with all the event details.
+                  {bookingRef}
                 </p>
               </div>
+            )}
 
-              <p className="text-gray-600 text-sm">
-                Please save your booking reference for future reference.
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+              <p className="text-blue-800 text-sm">
+                📋 Your booking has been recorded in our system. Please save your booking reference for future use.
               </p>
             </div>
-          </CardContent>
+
+            <p className="text-gray-600 text-sm">
+              For any queries, please contact support with your booking reference.
+            </p>
+          </div>
+        </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">
           <div className="flex justify-center w-full">
@@ -304,8 +106,6 @@ function BookingConfirmationContent() {
             </Link>
           </div>
         </CardFooter>
-          </>
-        )}
       </Card>
     </div>
   )
