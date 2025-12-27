@@ -156,7 +156,28 @@ export default function EditEventPage({ params }: Props) {
         setEventDescription(event.description || event.event_description || "")
         setSelectedCity(event.city_name || "")
         setSelectedVenue(event.venue_id ? event.venue_id.toString() : "")
-        setSelectedDate(new Date((event.event_date || event.date || "").split('T')[0]))
+        
+        // Parse date correctly for Indian timezone (IST = UTC+5:30)
+        // API returns date in UTC like "2025-12-30T18:30:00.000Z"
+        // Convert to IST by adding 5 hours 30 minutes, then extract just the date part
+        const rawDateString = event.event_date || event.date || ""
+        console.log('📅 Raw date from API (UTC):', rawDateString)
+        if (rawDateString) {
+          // Parse the UTC date
+          const utcDate = new Date(rawDateString)
+          // Convert to IST (UTC + 5:30)
+          const istOffset = 5.5 * 60 * 60 * 1000 // 5 hours 30 minutes in milliseconds
+          const istDate = new Date(utcDate.getTime() + istOffset)
+          // Extract date components in IST
+          const year = istDate.getUTCFullYear()
+          const month = istDate.getUTCMonth()
+          const day = istDate.getUTCDate()
+          // Create a date object for the calendar (local timezone)
+          const parsedDate = new Date(year, month, day)
+          console.log('📅 Converted to IST date:', parsedDate.toLocaleDateString())
+          setSelectedDate(parsedDate)
+        }
+        
         setEventStatus((event.status || event.event_status || "draft").toLowerCase())
         setIsActive(event.is_active === 1 || event.is_active === true)
 
@@ -197,18 +218,18 @@ export default function EditEventPage({ params }: Props) {
             templateId: gameId,
             customTitle: firstSlot.custom_title || firstSlot.game_title || "",
             customDescription: firstSlot.custom_description || firstSlot.game_description || "",
-            customPrice: firstSlot.custom_price || 0,
+            customPrice: parseFloat(firstSlot.custom_price || "0"),
             note: firstSlot.note || "",
             slots: slots.map((slot: any) => {
               const formattedSlot = {
                 id: `game-${gameId}-slot-${slot.id}`,
                 originalId: slot.id, // Store database ID for updates
-                startTime: slot.start_time ? slot.start_time.substring(0, 5) : "09:00",
-                endTime: slot.end_time ? slot.end_time.substring(0, 5) : "10:00",
-                price: slot.slot_price || slot.custom_price || 0,
-                maxParticipants: slot.max_participants || 50,
-                minAge: slot.min_age || undefined,
-                maxAge: slot.max_age || undefined,
+                startTime: slot.start_time ? slot.start_time.substring(0, 5) : "09:00", // HH:mm:ss -> HH:mm
+                endTime: slot.end_time ? slot.end_time.substring(0, 5) : "10:00", // HH:mm:ss -> HH:mm
+                price: parseFloat(slot.slot_price || slot.custom_price || "0"),
+                maxParticipants: parseInt(slot.max_participants || "50", 10),
+                minAge: slot.min_age ? parseInt(slot.min_age, 10) : undefined,
+                maxAge: slot.max_age ? parseInt(slot.max_age, 10) : undefined,
                 isActive: slot.is_active === 1 || slot.is_active === true
               }
               return formattedSlot
@@ -592,11 +613,30 @@ export default function EditEventPage({ params }: Props) {
       }
 
       // Format the data for the API
+      // Convert selected date to IST midnight, then to UTC for API
+      let apiDate = ""
+      if (selectedDate) {
+        // Selected date is in local time (IST)
+        // Set to midnight IST
+        const year = selectedDate.getFullYear()
+        const month = selectedDate.getMonth()
+        const day = selectedDate.getDate()
+        const istMidnight = new Date(year, month, day, 0, 0, 0, 0)
+        // Convert IST to UTC by subtracting 5 hours 30 minutes
+        const istOffset = 5.5 * 60 * 60 * 1000
+        const utcDate = new Date(istMidnight.getTime() - istOffset)
+        // Format as YYYY-MM-DDTHH:mm:ss.000Z
+        apiDate = utcDate.toISOString()
+        console.log('📅 Selected Date (local):', selectedDate.toLocaleDateString())
+        console.log('📅 IST Midnight:', istMidnight.toISOString())
+        console.log('📅 Converted to UTC for API:', apiDate)
+      }
+
       const formData = {
         title: eventTitle,
         description: eventDescription,
         venueId: selectedVenue,
-        date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
+        date: apiDate,
         status: eventStatus,
         isActive: isActive,
         games: selectedGames,
@@ -608,6 +648,8 @@ export default function EditEventPage({ params }: Props) {
       // Format the data for the API
       const apiData = formatEventDataForUpdate(Number(eventId), formData)
       apiData.id = Number(eventId)
+
+      console.log('📤 API Data event_date:', apiData.event_date)
 
       // Call the API to update the event (single API call)
       const updatedEvent = await updateEvent(apiData)
@@ -630,10 +672,11 @@ export default function EditEventPage({ params }: Props) {
         description: eventImageFile ? "Event and image updated successfully!" : "Event updated successfully!",
       })
 
-      // Redirect to event details page after a short delay to show the toast
+      // Redirect to event details page and refresh the page to clear cache
       setTimeout(() => {
         router.push('/admin/events')
-      }, 2000)
+        router.refresh() // Force refresh to clear Next.js cache
+      }, 1000)
     } catch (error: any) {
       toast({
         title: "Error",

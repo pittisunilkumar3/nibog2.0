@@ -392,7 +392,19 @@ export default function NewEventPage() {
 
       // Format the data for the API
       const apiData = formatEventDataForAPI(formData)
-      // API data prepared (debug log removed)
+      // Log the games and slots being sent to API for debugging
+      console.log('🎮 Games being sent to API:')
+      console.log('Total games:', selectedGames.length)
+      selectedGames.forEach((game, idx) => {
+        console.log(`Game ${idx + 1}: ${game.customTitle}, Slots: ${game.slots.length}`)
+        game.slots.forEach((slot, slotIdx) => {
+          console.log(`  Slot ${slotIdx + 1}: ${slot.startTime} - ${slot.endTime}, Price: ${slot.price}`)
+        })
+      })
+      console.log('📤 Formatted API data - event_games_with_slots count:', apiData.event_games_with_slots?.length)
+      apiData.event_games_with_slots?.forEach((slot: any, idx: number) => {
+        console.log(`  API Slot ${idx + 1}: game_id=${slot.game_id}, ${slot.start_time} - ${slot.end_time}`)
+      })
 
       // Call the API to create the event
       const createdEvent = await createEvent(apiData)

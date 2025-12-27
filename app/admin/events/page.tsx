@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import EnhancedDataTable, { Column, TableAction } from "@/components/admin/enhanced-data-table"
 import { createEventExportColumns } from "@/lib/export-utils"
 import { Badge } from "@/components/ui/badge"
-import { Calendar as CalendarIcon, Plus, Search, Filter, Eye, Edit, Copy, Pause, Play, X, MapPin, Building, Trash2, ChevronLeft, ChevronRight, Clock, Users } from "lucide-react"
+import { Calendar as CalendarIcon, Plus, Search, Filter, Eye, Edit, Copy, Pause, Play, X, MapPin, Building, Trash2, ChevronLeft, ChevronRight, Clock, Users, RefreshCw } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths, getDay, startOfWeek, endOfWeek } from "date-fns"
@@ -82,10 +82,11 @@ export default function EventsPage() {
 
   // Function to fetch events with complete information
   const fetchEventsWithGames = async () => {
-    const response = await fetch('/api/events/list', {
+    const response = await fetch('/api/events/list?t=' + Date.now(), {
       cache: 'no-store',
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate'
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
       }
     })
     if (!response.ok) {
@@ -94,38 +95,63 @@ export default function EventsPage() {
     return response.json()
   }
 
+  // Extracted fetch events function so it can be called from anywhere
+  const fetchEvents = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      // Fetch events from the API with complete information
+      const eventsData = await fetchEventsWithGames()
+
+      if (eventsData.length === 0) {
+        toast({
+          title: "No Events Found",
+          description: "There are no events in the database. You can create a new event using the 'Create New Event' button.",
+          variant: "default",
+        })
+      }
+
+      setApiEvents(eventsData)
+    } catch (err: any) {
+      setError(err.message || "Failed to load events")
+      toast({
+        title: "Error",
+        description: err.message || "Failed to load events",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Fetch events from API when component mounts
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
+    fetchEvents()
 
-        // Fetch events from the API with complete information
-        const eventsData = await fetchEventsWithGames()
-
-        if (eventsData.length === 0) {
-          toast({
-            title: "No Events Found",
-            description: "There are no events in the database. You can create a new event using the 'Create New Event' button.",
-            variant: "default",
-          })
-        }
-
-        setApiEvents(eventsData)
-      } catch (err: any) {
-        setError(err.message || "Failed to load events")
-        toast({
-          title: "Error",
-          description: err.message || "Failed to load events",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
+    // Add event listener to refresh data when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 Page became visible, refreshing events...')
+        fetchEvents()
       }
     }
 
-    fetchEvents()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // Refresh data when window receives focus
+    const handleFocus = () => {
+      console.log('🔄 Window focused, refreshing events...')
+      fetchEvents()
+    }
+
+    window.addEventListener('focus', handleFocus)
+
+    // Cleanup event listeners
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
   }, [])
 
   // Fetch filter data (cities, venues, game templates) from APIs
@@ -201,6 +227,18 @@ export default function EventsPage() {
         const gameNames = games.map((game: any) => game.custom_title || game.game_title);
         const uniqueGameNames = [...new Set(gameNames.filter(Boolean))]; // Remove duplicates and empty values
 
+        // Parse date correctly for Indian timezone (IST = UTC+5:30)
+        // API returns date in UTC like "2025-12-30T18:30:00.000Z"
+        // Convert to IST for display
+        let displayDate = null
+        if (apiEvent.event_date) {
+          const utcDate = new Date(apiEvent.event_date)
+          const istOffset = 5.5 * 60 * 60 * 1000 // 5 hours 30 minutes in milliseconds
+          const istDate = new Date(utcDate.getTime() + istOffset)
+          // Format as YYYY-MM-DD in IST
+          displayDate = istDate.toISOString().split('T')[0]
+        }
+
         // Create the event object
         const event = {
           id: apiEvent.id.toString(),
@@ -209,14 +247,19 @@ export default function EventsPage() {
           venue: apiEvent.venue_name,
           venueId: apiEvent.venue_id?.toString(),
           city: apiEvent.city_name,
-          date: apiEvent.event_date ? apiEvent.event_date.split('T')[0] : null, // Format date to YYYY-MM-DD
-          slots: games.map((game: any, index: number) => ({
-            id: `${apiEvent.id}-${game.game_id || 'unknown'}-${index}`,
-            time: game.start_time && game.end_time ? `${game.start_time} - ${game.end_time}` : null,
-            capacity: game.max_participants || 0,
-            booked: 0, // API doesn't provide this information
-            status: game.is_active === 1 ? "active" : "inactive"
-          })).filter((slot: any) => slot.time !== null), // Only keep slots with valid times
+          date: displayDate,
+          slots: games.map((game: any, index: number) => {
+            // Format time from HH:mm:ss to HH:mm for display
+            const startTime = game.start_time ? game.start_time.substring(0, 5) : null
+            const endTime = game.end_time ? game.end_time.substring(0, 5) : null
+            return {
+              id: `${apiEvent.id}-${game.game_id || 'unknown'}-${index}`,
+              time: startTime && endTime ? `${startTime} - ${endTime}` : null,
+              capacity: parseInt(game.max_participants || "0", 10),
+              booked: 0, // API doesn't provide this information
+              status: game.is_active === 1 ? "active" : "inactive"
+            }
+          }).filter((slot: any) => slot.time !== null), // Only keep slots with valid times
           status: apiEvent.status ? apiEvent.status.toLowerCase() : "draft",
           isActive: apiEvent.is_active === 1,
           imageUrl: apiEvent.image_url,
@@ -621,6 +664,22 @@ export default function EventsPage() {
           <p className="text-sm sm:text-base text-muted-foreground">Manage NIBOG baby games events across 21 cities</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          <Button 
+            variant="outline" 
+            className="touch-manipulation" 
+            onClick={() => {
+              toast({
+                title: "Refreshing...",
+                description: "Fetching latest events data",
+              })
+              fetchEvents()
+            }}
+            disabled={isLoading}
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
+            <span className="hidden sm:inline">Refresh</span>
+            <span className="sm:hidden">Refresh</span>
+          </Button>
           <Button variant="outline" asChild className="touch-manipulation">
             <Link href="/admin/events/cities">
               <MapPin className="mr-2 h-4 w-4" />

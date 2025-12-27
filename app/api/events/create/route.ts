@@ -5,7 +5,13 @@ export async function POST(request: Request) {
     // Parse the request body
     const eventData = await request.json();
 
-    // removed debug logs
+    // Log what we received for debugging
+    console.log('📥 API Route received event data:')
+    console.log('  Title:', eventData.title)
+    console.log('  event_games_with_slots count:', eventData.event_games_with_slots?.length)
+    eventData.event_games_with_slots?.forEach((slot: any, idx: number) => {
+      console.log(`    Slot ${idx + 1}: game_id=${slot.game_id}, ${slot.start_time} - ${slot.end_time}`)
+    })
 
     // Validate required fields
     if (!eventData.title) {

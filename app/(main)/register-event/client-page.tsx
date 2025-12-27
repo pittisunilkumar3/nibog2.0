@@ -444,13 +444,23 @@ export default function RegisterEventClientPage() {
                            eventAny.event_venue ||
                            "Venue TBD";
 
+          // Convert UTC date to IST for display
+          let displayDate = "";
+          if (event.event_date) {
+            const utcDate = new Date(event.event_date);
+            const istOffset = 5.5 * 60 * 60 * 1000; // IST = UTC + 5:30
+            const istDate = new Date(utcDate.getTime() + istOffset);
+            // Format as YYYY-MM-DD in IST
+            displayDate = istDate.toISOString().split('T')[0];
+          }
+
           return {
             id: event.event_id.toString(),
             title: event.event_title,
             description: event.event_description,
             minAgeMonths: 5, // Default min age if not specified in API data
             maxAgeMonths: 84, // Default max age if not specified in API data
-            date: event.event_date.split('T')[0], // Format the date
+            date: displayDate,
             time: "9:00 AM - 8:00 PM", // Default time
             venue: venueValue,
             city: event.city_name || cityName,
@@ -463,8 +473,13 @@ export default function RegisterEventClientPage() {
         setEligibleEvents(apiEventsMapped);
 
         // Get unique dates for this city from API events
-        const dates = apiEventsMapped.map((event: { date: string }) => new Date(event.date));
-        const uniqueDates = Array.from(new Set(dates.map((date: Date) => date.toISOString())))
+        // Parse dates as IST to avoid timezone issues
+        const dates = apiEventsMapped.map((event: { date: string }) => {
+          // Parse YYYY-MM-DD as local date (IST)
+          const [year, month, day] = event.date.split('-').map(Number);
+          return new Date(year, month - 1, day);
+        });
+        const uniqueDates = Array.from(new Set(dates.map((date: Date) => date.toDateString())))
           .map((dateStr: string) => new Date(dateStr));
         setAvailableDates(uniqueDates);
 
@@ -624,7 +639,16 @@ export default function RegisterEventClientPage() {
         description: selectedApiEvent.event_description,
         minAgeMonths: 0,
         maxAgeMonths: 84,
-        date: selectedApiEvent.event_date.split('T')[0],
+        date: (() => {
+          // Convert UTC date to IST for display
+          if (selectedApiEvent.event_date) {
+            const utcDate = new Date(selectedApiEvent.event_date);
+            const istOffset = 5.5 * 60 * 60 * 1000;
+            const istDate = new Date(utcDate.getTime() + istOffset);
+            return istDate.toISOString().split('T')[0];
+          }
+          return "";
+        })(),
         time: "9:00 AM - 8:00 PM",
         venue: selectedApiEvent.venue_name || "Venue TBD",
         city: selectedApiEvent.city_name,
@@ -636,15 +660,22 @@ export default function RegisterEventClientPage() {
       setEligibleEvents([mockEvent]);
       setSelectedEvent(mockEvent.id);
 
-      // Set event date
+      // Set event date - convert UTC to IST Date object
       if (selectedApiEvent.event_date) {
-        const eventDateObj = new Date(selectedApiEvent.event_date);
-        setEventDate(eventDateObj);
-        setAvailableDates([eventDateObj]);
+        const utcDate = new Date(selectedApiEvent.event_date);
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istDate = new Date(utcDate.getTime() + istOffset);
+        // Create a local date object from IST date
+        const year = istDate.getUTCFullYear();
+        const month = istDate.getUTCMonth();
+        const day = istDate.getUTCDate();
+        const localDate = new Date(year, month, day);
+        setEventDate(localDate);
+        setAvailableDates([localDate]);
 
         // If DOB is set, recalculate age based on the selected event date
         if (dob) {
-          const ageInMonths = calculateAge(dob, eventDateObj);
+          const ageInMonths = calculateAge(dob, localDate);
           setChildAgeMonths(ageInMonths);
           
           console.log('[handleEventTypeChange] Calling loadGamesForEvent with age:', ageInMonths);
