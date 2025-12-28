@@ -386,25 +386,12 @@ export default function NewEventPage() {
       // Get the city ID from the selected city
       const cityId = selectedCityId || 0
 
-      // Format the date correctly - convert IST to UTC
+      // Format the date correctly - API expects YYYY-MM-DD format
       let apiDate = "";
       if (selectedDate) {
-        // Selected date is in local time (IST)
-        // Set to midnight IST
-        const year = selectedDate.getFullYear();
-        const month = selectedDate.getMonth();
-        const day = selectedDate.getDate();
-        const istMidnight = new Date(year, month, day, 0, 0, 0, 0);
-        // Convert IST to UTC by subtracting 5 hours 30 minutes
-        const istOffset = 5.5 * 60 * 60 * 1000;
-        const utcDate = new Date(istMidnight.getTime() - istOffset);
-        // Format as ISO string for API
-        apiDate = utcDate.toISOString();
-        console.log('📅 Date conversion:', {
-          selected: selectedDate.toLocaleDateString(),
-          istMidnight: istMidnight.toISOString(),
-          utcForApi: apiDate
-        });
+        // Format as YYYY-MM-DD to match database DATE column and API specification
+        apiDate = format(selectedDate, "yyyy-MM-dd");
+        console.log('📅 Date formatted for API (YYYY-MM-DD):', apiDate);
       }
 
       // Format the data for the API
