@@ -511,16 +511,21 @@ export default function EventsPage() {
   const handleDeleteEvent = async (eventId: string) => {
     if (!eventId) return;
 
+    console.log('🗑️ Starting event deletion for ID:', eventId);
+
     // Find the event object to get the imageUrl
     const eventObj = apiEvents.find(event => (event.id || event.event_id)?.toString() === eventId);
     const imageUrl = eventObj?.image_url || eventObj?.imageUrl;
+    console.log('📸 Event image URL:', imageUrl);
 
     try {
       setIsDeletingEvent(true);
       setEventToDelete(eventId);
 
       // Call the API to delete the event, passing imageUrl
+      console.log('📤 Calling deleteEvent service...');
       const result = await deleteEvent(Number(eventId), imageUrl);
+      console.log('📥 Delete result:', result);
 
       // Check if the result indicates success (either directly or as an array with success property)
       const isSuccess = (result && typeof result === 'object' && 'success' in result && result.success) ||
@@ -547,6 +552,8 @@ export default function EventsPage() {
         throw new Error("Failed to delete event. Please try again.");
       }
     } catch (error: any) {
+      console.error('❌ Error deleting event:', error);
+      console.error('Error message:', error.message);
       toast({
         title: "Error",
         description: error.message || "Failed to delete event",
@@ -554,6 +561,7 @@ export default function EventsPage() {
       });
     } finally {
       setIsDeletingEvent(false);
+      console.log('✅ Delete operation completed');
     }
   };
 

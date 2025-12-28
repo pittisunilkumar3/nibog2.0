@@ -140,6 +140,7 @@ export default function EditEventPage({ params }: Props) {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [isLoadingImages, setIsLoadingImages] = useState(false)
   const [imagePriority, setImagePriority] = useState("1")
+  const [deletedSlotIds, setDeletedSlotIds] = useState<number[]>([]) // Track slots to delete
 
   // Fetch event data when component mounts
   useEffect(() => {
@@ -501,6 +502,17 @@ export default function EditEventPage({ params }: Props) {
 
   // Remove a time slot from a game
   const removeSlot = (gameIndex: number, slotId: string) => {
+    // Track the original database ID for deletion if this is an existing slot
+    const game = selectedGames[gameIndex]
+    if (game) {
+      const slotToRemove = game.slots.find(slot => slot.id === slotId)
+      if (slotToRemove && slotToRemove.originalId) {
+        // This is an existing slot from the database, track it for deletion
+        setDeletedSlotIds(prev => [...prev, slotToRemove.originalId!])
+        console.log(`🗑️ Marked slot ${slotToRemove.originalId} for deletion`)
+      }
+    }
+
     setSelectedGames(selectedGames.map((game, i) => {
       if (i === gameIndex) {
         return { ...game, slots: game.slots.filter(slot => slot.id !== slotId) }
@@ -613,23 +625,26 @@ export default function EditEventPage({ params }: Props) {
       }
 
       // Format the data for the API
-      // Convert selected date to IST midnight, then to UTC for API
+      // API expects date in YYYY-MM-DD format (not ISO timestamp)
       let apiDate = ""
       if (selectedDate) {
-        // Selected date is in local time (IST)
-        // Set to midnight IST
-        const year = selectedDate.getFullYear()
-        const month = selectedDate.getMonth()
-        const day = selectedDate.getDate()
-        const istMidnight = new Date(year, month, day, 0, 0, 0, 0)
-        // Convert IST to UTC by subtracting 5 hours 30 minutes
-        const istOffset = 5.5 * 60 * 60 * 1000
-        const utcDate = new Date(istMidnight.getTime() - istOffset)
-        // Format as YYYY-MM-DDTHH:mm:ss.000Z
-        apiDate = utcDate.toISOString()
+        // Format as YYYY-MM-DD to match API specification
+        apiDate = format(selectedDate, "yyyy-MM-dd")
         console.log('📅 Selected Date (local):', selectedDate.toLocaleDateString())
-        console.log('📅 IST Midnight:', istMidnight.toISOString())
-        console.log('📅 Converted to UTC for API:', apiDate)
+        console.log('📅 Formatted for API (YYYY-MM-DD):', apiDate)
+      } else if (eventData && (eventData.event_date || eventData.date)) {
+        // Fallback: preserve existing date if selectedDate is not set
+        const existingDate = eventData.event_date || eventData.date
+        // Ensure existing date is in YYYY-MM-DD format
+        if (existingDate.includes('T')) {
+          // If it's an ISO timestamp, extract just the date part
+          apiDate = existingDate.split('T')[0]
+        } else {
+          apiDate = existingDate
+        }
+        console.log('📅 No date selected, preserving existing date:', apiDate)
+      } else {
+        console.warn('⚠️ No date available - neither selectedDate nor existing event_date!')
       }
 
       const formData = {
@@ -642,14 +657,22 @@ export default function EditEventPage({ params }: Props) {
         games: selectedGames,
         cityId: cityId,
         imagePath: imageFilename, // Set the uploaded image filename or existing image
-        imagePriority: imagePriority
+        imagePriority: imagePriority,
+        slotsToDelete: deletedSlotIds // Pass deleted slot IDs
       }
+
+      console.log('📤 Update request - Slots to delete:', deletedSlotIds)
+      console.log('📤 Update request - Total games:', selectedGames.length)
+      console.log('📤 Update request - Total slots:', selectedGames.reduce((sum, game) => sum + game.slots.length, 0))
+      console.log('📅 Date before formatting - selectedDate:', selectedDate)
+      console.log('📅 Date before formatting - apiDate:', apiDate)
 
       // Format the data for the API
       const apiData = formatEventDataForUpdate(Number(eventId), formData)
       apiData.id = Number(eventId)
 
-      console.log('📤 API Data event_date:', apiData.event_date)
+      console.log('📤 Formatted API Data - event_date:', apiData.event_date)
+      console.log('📤 Full API Data:', JSON.stringify(apiData, null, 2))
 
       // Call the API to update the event (single API call)
       const updatedEvent = await updateEvent(apiData)

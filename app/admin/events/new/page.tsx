@@ -102,6 +102,7 @@ export default function NewEventPage() {
   const [cityError, setCityError] = useState<string | null>(null)
   const [venueError, setVenueError] = useState<string | null>(null)
   const [gamesError, setGamesError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Fetch cities with venues from API when component mounts
   useEffect(() => {
@@ -342,12 +343,20 @@ export default function NewEventPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log('⏸️ Already submitting, ignoring duplicate submission');
+      return;
+    }
+
+    console.log('🚀 Starting form submission...');
+
     // Validate form
     if (!selectedCityId || !selectedVenue || !selectedDate || selectedGames.length === 0) {
-      console.error("Validation failed:", {
+      console.error("❌ Validation failed:", {
         selectedCityId,
         selectedVenue,
-        selectedDate,
+        selectedDate: selectedDate?.toISOString(),
         selectedGamesCount: selectedGames.length
       });
       toast({
@@ -361,7 +370,7 @@ export default function NewEventPage() {
     // Check if all games have at least one slot
     const gamesWithoutSlots = selectedGames.filter(game => game.slots.length === 0)
     if (gamesWithoutSlots.length > 0) {
-      console.error("Games without slots:", gamesWithoutSlots);
+      console.error("❌ Games without slots:", gamesWithoutSlots);
       toast({
         title: "Validation Error",
         description: `Please add at least one time slot to each game. Games without slots: ${gamesWithoutSlots.map(g => g.customTitle).join(", ")}`,
@@ -370,16 +379,40 @@ export default function NewEventPage() {
       return
     }
 
+    setIsSubmitting(true);
+    console.log('✅ Validation passed, proceeding with event creation...');
+
     try {
       // Get the city ID from the selected city
       const cityId = selectedCityId || 0
+
+      // Format the date correctly - convert IST to UTC
+      let apiDate = "";
+      if (selectedDate) {
+        // Selected date is in local time (IST)
+        // Set to midnight IST
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+        const day = selectedDate.getDate();
+        const istMidnight = new Date(year, month, day, 0, 0, 0, 0);
+        // Convert IST to UTC by subtracting 5 hours 30 minutes
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const utcDate = new Date(istMidnight.getTime() - istOffset);
+        // Format as ISO string for API
+        apiDate = utcDate.toISOString();
+        console.log('📅 Date conversion:', {
+          selected: selectedDate.toLocaleDateString(),
+          istMidnight: istMidnight.toISOString(),
+          utcForApi: apiDate
+        });
+      }
 
       // Format the data for the API
       const formData = {
         title: eventTitle,
         description: eventDescription,
         venueId: selectedVenue,
-        date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
+        date: apiDate,
         status: eventStatus,
         isActive: isActive,
         games: selectedGames,
@@ -419,22 +452,24 @@ export default function NewEventPage() {
 
       // Event created with ID (debug log removed)
 
-      // If there's an image file, upload it and update the event
+      // If there's an image file, upload it and update the event with image ONLY
+      // IMPORTANT: DO NOT include games in the update to avoid slot duplication!
       if (eventImageFile) {
         try {
-          // Uploading event image after successful event creation (debug log removed)
+          console.log('📷 Uploading event image after successful event creation...');
 
           // Upload the image
           const uploadResult = await uploadEventImage(eventImageFile)
-          // Event image uploaded (debug log removed)
+          console.log('✅ Event image uploaded:', uploadResult);
 
           // Update the event with the correct image filename
           // Extract just the filename from the path (e.g., "eventimage_1766294157627_3470.jpg")
           const imageFilename = uploadResult.filename || uploadResult.path.split('/').pop()
           
-          // Updating event with image filename (debug log removed)
+          console.log('🔄 Updating event with image filename:', imageFilename);
           
-          // Update the event with the correct image filename using the edit endpoint
+          // CRITICAL FIX: Create a minimal update object with ONLY the image
+          // Do NOT include games in this update - the slots were already created!
           const updateDataWithImage = {
             title: eventTitle,
             description: eventDescription,
@@ -442,7 +477,7 @@ export default function NewEventPage() {
             date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
             status: eventStatus,
             isActive: isActive,
-            games: selectedGames,
+            games: [], // EMPTY array - do not send games to prevent slot duplication
             cityId: cityId,
             imagePath: imageFilename, // Set the correct uploaded filename
             imagePriority: imagePriority
@@ -451,16 +486,16 @@ export default function NewEventPage() {
           const apiDataWithImage = formatEventDataForUpdate(eventId, updateDataWithImage)
           apiDataWithImage.id = eventId
 
-          // Updating event with image data (debug log removed)
+          console.log('🎬 Calling updateEvent with image-only data (no games)...');
           const updatedEvent = await updateEvent(apiDataWithImage)
-          // Event updated with image filename successfully (debug log removed)
+          console.log('✅ Event updated with image filename successfully');
 
           toast({
             title: "Success",
             description: "Event created and image uploaded successfully!",
           })
         } catch (imageError: any) {
-          console.error("Error uploading image after event creation:", imageError)
+          console.error("❌ Error uploading image after event creation:", imageError)
           toast({
             title: "Warning",
             description: `Event created successfully, but image upload failed: ${imageError.message || "Unknown error"}`,
@@ -475,17 +510,22 @@ export default function NewEventPage() {
         })
       }
 
+
       // Redirect to events list after a short delay to show the toast
       setTimeout(() => {
         router.push("/admin/events")
       }, 2000)
     } catch (error: any) {
-      console.error("Error creating event:", error)
+      console.error("❌ Error creating event:", error)
+      console.error("Error stack:", error.stack);
       toast({
         title: "Error",
         description: `Failed to create event: ${error.message || "Unknown error"}`,
         variant: "destructive",
       })
+    } finally {
+      setIsSubmitting(false);
+      console.log('✅ Form submission completed');
     }
   }
 
@@ -1119,8 +1159,16 @@ export default function NewEventPage() {
                 <Button
                   type="submit"
                   className="w-full sm:w-auto touch-manipulation"
+                  disabled={isSubmitting}
                 >
-                  Create Event
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Event...
+                    </>
+                  ) : (
+                    'Create Event'
+                  )}
                 </Button>
               </CardFooter>
             </Card>

@@ -1,0 +1,121 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+// Use environment variable for API base URL or fallback to local development
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+
+    console.log(`🔄 Received PUT request to edit event ${id}`);
+
+    // Validate and parse request body
+    let body;
+    try {
+      body = await request.json();
+      console.log(`📥 Request body parsed successfully`);
+    } catch (parseError: any) {
+      console.error(`❌ Failed to parse request JSON: ${parseError.message}`);
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body', details: parseError.message },
+        { status: 400 }
+      );
+    }
+
+    // Log the event_date being received
+    console.log(`📅 Event ID ${id} - Received event_date:`, body.event_date);
+
+    // Validate event_games_with_slots array exists
+    if (!body.event_games_with_slots || !Array.isArray(body.event_games_with_slots)) {
+      console.error(`❌ event_games_with_slots array missing or invalid`);
+      return NextResponse.json(
+        { error: 'event_games_with_slots array is required and must be an array' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`✅ Validation passed, forwarding to backend`);
+
+    // Get the Authorization header from the incoming request
+    const authHeader = request.headers.get('authorization');
+
+    if (!authHeader) {
+      console.warn(`⚠️ No authorization header provided`);
+    }
+
+    // Prepare headers for the backend request
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add Authorization header if present
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    // Forward the request to the backend API
+    const backendUrl = `${BACKEND_URL}/api/events/${id}/edit`;
+
+    console.log(`📤 Forwarding to backend: ${backendUrl}`);
+
+    let response;
+    try {
+      response = await fetch(backendUrl, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(body),
+      });
+      console.log(`✅ Backend fetch completed with status: ${response.status}`);
+    } catch (fetchError: any) {
+      console.error(`❌ Backend fetch failed: ${fetchError.message}`);
+      return NextResponse.json(
+        { error: `Backend connection failed: ${fetchError.message}` },
+        { status: 503 }
+      );
+    }
+
+    // Try to read response text
+    let responseText = '';
+    try {
+      responseText = await response.text();
+      console.log(`📥 Backend response received (length: ${responseText.length})`);
+    } catch (textError: any) {
+      console.error(`❌ Failed to read response text: ${textError.message}`);
+      return NextResponse.json(
+        { error: 'Failed to read backend response' },
+        { status: 502 }
+      );
+    }
+
+    // Try to parse response as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+      console.log(`📥 Backend response parsed successfully`);
+    } catch (parseError: any) {
+      console.error(`❌ Failed to parse backend response: ${parseError.message}`);
+      return NextResponse.json(
+        { error: 'Failed to parse backend response as JSON', details: responseText.substring(0, 500) },
+        { status: 502 }
+      );
+    }
+
+    // Return the response from the backend
+    if (!response.ok) {
+      console.error(`❌ Backend returned error status: ${response.status}`, data);
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    console.log(`✅ Event ${id} updated successfully`);
+    return NextResponse.json(data, { status: 200 });
+  } catch (error: any) {
+    console.error(`❌ Error in PUT /api/events/[id]/edit:`, error.message);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error', details: error.stack?.substring(0, 200) },
+      { status: 500 }
+    );
+  }
+}

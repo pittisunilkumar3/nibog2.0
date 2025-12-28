@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { readdir, unlink } from 'fs/promises';
-import { join, isAbsolute, basename } from 'path';
+import { join, basename } from 'path';
 import { existsSync } from 'fs';
 
 // Use environment variable for API base URL or fallback to local development
@@ -9,25 +9,19 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: Request) {
-  console.log('🚀 DELETE API route called');
+/**
+ * DELETE /api/events/[id]/delete
+ * Delete an event and its slots. Requires employee Bearer token authentication.
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  console.log('🚀 DELETE API route called for event:', params.id);
 
   try {
-    // Parse the request body
-    console.log('📝 Parsing request body...');
-    let data;
-    try {
-      data = await request.json();
-      console.log('📝 Request data:', data);
-    } catch (parseErr) {
-      console.error('❌ Failed to parse request JSON:', parseErr);
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
-    }
+    const id = Number(params.id);
     
-    const id = Number(data.id);
     if (!id || isNaN(id) || id <= 0) {
       console.error("❌ Invalid event ID:", id);
       return NextResponse.json(
@@ -38,24 +32,41 @@ export async function POST(request: Request) {
     
     console.log('✅ Event ID validated:', id);
 
-    // 1. Delete event image using image_url from the event object in the API response (robust, works in dev/prod)
-    if (typeof data.image_url === 'string' && data.image_url.length > 0) {
+    // Get event details first to obtain image_url for cleanup
+    let imageUrl: string | null = null;
+    try {
+      const eventResponse = await fetch(`${BACKEND_URL}/api/events/${id}/details`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (eventResponse.ok) {
+        const eventData = await eventResponse.json();
+        imageUrl = eventData.image_url;
+      }
+    } catch (err) {
+      console.warn(`[Event Delete] Could not fetch event details for cleanup: ${err}`);
+    }
+
+    // Delete event image if it exists
+    if (typeof imageUrl === 'string' && imageUrl.length > 0) {
       try {
         // Only use the filename, ignore any path for security and cross-env compatibility
-        const filename = basename(data.image_url);
+        const filename = basename(imageUrl);
         const uploadDir = join(process.cwd(), 'upload', 'eventimages');
         const filePath = join(uploadDir, filename);
         if (existsSync(filePath)) {
           await unlink(filePath);
-        } else {
-          console.warn(`[Event Delete] File does not exist: ${filePath}`);
+          console.log(`✅ Deleted image file: ${filename}`);
         }
       } catch (err) {
-        console.warn(`[Event Delete] Failed to delete image file: ${data.image_url}`, err);
+        console.warn(`[Event Delete] Failed to delete image file: ${imageUrl}`, err);
       }
     }
 
-    // ...existing code for auth and backend event deletion...
+    // Get authorization
     console.log('🔐 Getting authorization...');
     let authHeader = request.headers.get('authorization');
     console.log('🔐 Auth header from request:', authHeader ? 'Present' : 'None');
@@ -83,40 +94,23 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Authorization': authHeader
     };
+
     const backendUrl = `${BACKEND_URL}/api/events/${id}/delete`;
     console.log('🗑️ Deleting event:', { id, backendUrl });
-    
-    let response;
-    try {
-      response = await fetch(backendUrl, {
-        method: 'DELETE',
-        headers,
-      });
-      console.log('✅ Backend fetch completed, status:', response.status);
-    } catch (fetchErr: any) {
-      console.error('❌ Backend fetch failed:', fetchErr.message);
-      return NextResponse.json(
-        { error: `Backend connection failed: ${fetchErr.message}` },
-        { status: 503 }
-      );
-    }
-    
-    let responseText;
-    try {
-      responseText = await response.text();
-      console.log('📥 Backend response status:', response.status);
-      console.log('📥 Backend response text:', responseText.substring(0, 200));
-    } catch (textErr: any) {
-      console.error('❌ Failed to read backend response:', textErr.message);
-      return NextResponse.json(
-        { error: "Failed to read backend response" },
-        { status: 502 }
-      );
-    }
+
+    const response = await fetch(backendUrl, {
+      method: 'DELETE',
+      headers,
+    });
+
+    const responseText = await response.text();
+    console.log('📥 Backend response status:', response.status);
+    console.log('📥 Backend response:', responseText.substring(0, 200));
     
     let responseData;
     try {
@@ -124,25 +118,30 @@ export async function POST(request: Request) {
     } catch (e) {
       if (response.ok) {
         console.log('✅ Event deleted successfully (no JSON response)');
-        responseData = { success: true, message: "Event deleted successfully" };
+        responseData = { 
+          message: "Event deleted successfully",
+          event_id: id 
+        };
       } else {
         console.error('❌ Failed to delete event. Status:', response.status);
-        responseData = { error: `Failed to delete event. Status: ${response.status}`, details: responseText };
+        return NextResponse.json(
+          { error: `Failed to delete event. Backend returned status ${response.status}` },
+          { status: response.status }
+        );
       }
     }
-    
+
     if (!response.ok) {
-      console.error('❌ Backend returned error:', responseData);
       return NextResponse.json(responseData, { status: response.status });
     }
-    
+
     console.log('✅ Event deleted successfully');
     return NextResponse.json(responseData, { status: 200 });
+
   } catch (error: any) {
-    console.error("❌ Error in DELETE event API route:", error);
-    console.error("Error stack:", error.stack);
+    console.error('❌ Error deleting event:', error);
     return NextResponse.json(
-      { error: error.message || "Internal server error", details: error.stack },
+      { error: error.message || "Failed to delete event" },
       { status: 500 }
     );
   }

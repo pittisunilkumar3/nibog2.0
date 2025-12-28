@@ -612,20 +612,55 @@ export async function updateEvent(eventData: any): Promise<{ success: boolean; e
     delete eventData.id; // Remove id from body as it's in the URL
 
     // Use our internal API route to update the event
-    const apiUrl = `/api/events/${eventId}/edit`; 
+    const apiUrl = `/api/events/${eventId}/edit`;
 
-    const response = await fetch(apiUrl, {
-      method: "PUT",
-      headers,
-      body: JSON.stringify(eventData),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API returned error status: ${response.status}`);
+    console.log(`🔄 Updating event ${eventId}...`);
+    let response;
+    try {
+      response = await fetch(apiUrl, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(eventData),
+      });
+      console.log(`✅ Update request completed with status: ${response.status}`);
+    } catch (fetchError: any) {
+      console.error(`❌ Failed to connect to update API: ${fetchError.message}`);
+      throw new Error(`Failed to connect to update API: ${fetchError.message}`);
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      let errorText = '';
+      try {
+        errorText = await response.text();
+      } catch (readError) {
+        console.error(`❌ Failed to read error response: ${readError}`);
+        errorText = 'Could not read error response';
+      }
+
+      console.error(`❌ Update API error response:`, errorText);
+      
+      // Try to parse JSON error
+      try {
+        const errorData = JSON.parse(errorText);
+        throw new Error(errorData.error || errorData.message || `Update failed with status ${response.status}`);
+      } catch (parseError) {
+        // If not JSON, throw raw response
+        throw new Error(`Update failed (${response.status}): ${errorText.substring(0, 200)}`);
+      }
+    }
+
+    let data;
+    try {
+      data = await response.json();
+      console.log(`✅ Event ${eventId} updated successfully`);
+    } catch (parseError: any) {
+      console.error(`⚠️ Could not parse update response as JSON: ${parseError.message}`);
+      // If response is not JSON but status is ok, treat as success
+      return {
+        success: true,
+        event_id: eventId
+      };
+    }
 
     // Return success
     return {
@@ -708,6 +743,8 @@ export function formatEventDataForUpdate(
   });
 
   // Create the formatted event data
+  console.log('🔄 formatEventDataForUpdate - Received date:', formData.date);
+  
   const formattedEvent: any = {
     title: formData.title,
     description: formData.description,
@@ -718,6 +755,12 @@ export function formatEventDataForUpdate(
     is_active: formData.isActive !== undefined ? (formData.isActive ? 1 : 0) : 1,
     event_games_with_slots: eventGamesWithSlots
   };
+
+  if (!formData.date || formData.date === '') {
+    console.warn('⚠️ Warning: event_date is empty or missing in formData!');
+  }
+  
+  console.log('✅ formatEventDataForUpdate - Set event_date to:', formattedEvent.event_date);
 
   // Add optional fields
   if (formData.imagePath) {
@@ -1232,45 +1275,67 @@ export async function deleteEvent(id: number, imageUrl?: string): Promise<{ succ
       requestBody.image_url = imageUrl;
     }
 
-    const response = await fetch('/api/events/delete', {
-      method: "POST",
-      headers,
-      body: JSON.stringify(requestBody),
-    });
+    let response;
+    try {
+      response = await fetch('/api/events/delete', {
+        method: "POST",
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+    } catch (fetchError: any) {
+      throw new Error(`Failed to connect to delete API: ${fetchError.message}`);
+    }
 
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText = '';
+      try {
+        errorText = await response.text();
+      } catch (e) {
+        errorText = 'Could not read error response';
+      }
 
       try {
         // Try to parse the error response as JSON
         const errorData = JSON.parse(errorText);
-        throw new Error(errorData.error || `API returned error status: ${response.status}`);
+        throw new Error(errorData.error || errorData.message || `API returned error status: ${response.status}`);
       } catch (parseError) {
-        // If parsing fails, throw a generic error
-        throw new Error(`Failed to delete event. API returned status: ${response.status}`);
+        // If parsing fails or error field doesn't exist, throw a more informative error
+        if (errorText && errorText.length > 0) {
+          throw new Error(`Delete failed (${response.status}): ${errorText.substring(0, 200)}`);
+        } else {
+          throw new Error(`Failed to delete event. API returned status: ${response.status}`);
+        }
       }
     }
 
     // Try to parse the response
+    let data;
     try {
-      const data = await response.json();
-
-      // If the response is an array with a success property, return it directly
-      if (Array.isArray(data) && data[0]?.success === true) {
-        return data;
+      const responseText = await response.text();
+      if (responseText && responseText.length > 0) {
+        data = JSON.parse(responseText);
+      } else {
+        // Empty response is OK, consider it success
+        data = { success: true, message: "Event deleted successfully" };
       }
-
-      // If the response has a success property, return it directly
-      if (data && data.success === true) {
-        return data;
-      }
-
-      // Default to success if we got a 200 response
-      return { success: true };
     } catch (parseError) {
       // If we can't parse the response but got a 200 status, consider it a success
-      return { success: true };
+      console.warn('Could not parse delete response:', parseError);
+      return { success: true, message: "Event deleted (no response body)" };
     }
+
+    // Check if the response indicates success
+    if (data && data.success === true) {
+      return data;
+    }
+
+    // Check for message field
+    if (data && data.message) {
+      return { success: true, message: data.message };
+    }
+
+    // Default to success if we got here without errors
+    return { success: true, message: "Event deleted successfully" };
   } catch (error) {
     throw error;
   }
