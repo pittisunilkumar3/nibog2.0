@@ -33,6 +33,7 @@ import {
   Layout,
   Trophy,
   HelpCircle,
+  Image as ImageIcon,
 
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -167,6 +168,12 @@ const adminRoutes: AdminRouteSection[] = [
     section: "Content & Communication",
     items: [
       {
+        href: "/admin/gallery",
+        label: "Gallery",
+        icon: <ImageIcon className="h-4 w-4" />,
+        description: "Manage gallery images",
+      },
+      {
         href: "/admin/home",
         label: "Home Section",
         icon: <Home className="h-4 w-4" />,
@@ -277,7 +284,7 @@ export default function AdminSidebar() {
   const [open, setOpen] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const router = useRouter()
-  
+
   const toggleSection = (label: string) => {
     setExpandedSections(prev => ({
       ...prev,
