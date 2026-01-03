@@ -15,6 +15,11 @@ const AnimatedBackground = dynamic(
   { ssr: false, loading: () => <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-mint-50 to-coral-50" /> }
 )
 
+const AboutGallerySection = dynamic(
+  () => import("@/components/about-gallery-section").then((mod) => mod.AboutGallerySection),
+  { ssr: false, loading: () => <div className="py-24 bg-gray-50/50 animate-pulse" /> }
+)
+
 const ImageSlideshow = dynamic(
   () => import("@/components/image-slideshow").then((mod) => mod.ImageSlideshow),
   { ssr: false, loading: () => <div className="w-full h-64 bg-gray-200 animate-pulse rounded-xl" /> }
@@ -212,75 +217,7 @@ export default function AboutPage() {
       </section>
 
       {/* Image Gallery */}
-      <section className="py-16 md:py-24">
-        <div className="container">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-block rounded-lg bg-pink-100 px-3 py-1 text-sm font-medium text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
-              Gallery
-            </div>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight">Moments of Joy</h2>
-            <p className="mt-4 text-muted-foreground">
-              Capturing the excitement, determination, and pure joy of our little champions
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {[
-              {
-                src: "/images/about/gallery-1.jpg",
-                alt: "Baby crawling competition",
-              },
-              {
-                src: "/images/about/gallery-2.jpg",
-                alt: "Children in a running race",
-              },
-              {
-                src: "/images/about/gallery-3.jpg",
-                alt: "Baby walker event",
-              },
-              {
-                src: "/images/about/gallery-4.jpg",
-                alt: "Child receiving medal",
-              },
-              {
-                src: "/images/about/gallery-5.jpg",
-                alt: "Parents cheering for their children",
-              },
-              {
-                src: "/images/about/gallery-6.jpg",
-                alt: "Children playing together",
-              },
-              {
-                src: "/images/about/gallery-7.jpg",
-                alt: "Baby smiling during event",
-              },
-              {
-                src: "/images/about/gallery-8.jpg",
-                alt: "Group photo of participants",
-              },
-              {
-                src: "/images/about/gallery-9.jpg",
-                alt: "Joyful moment at NIBOG event",
-              },
-              {
-                src: "/images/about/gallery-10.jpg",
-                alt: "Kids having fun at NIBOG",
-              },
-            ].map((image, i) => (
-              <div key={i} className="relative aspect-square overflow-hidden rounded-lg">
-                <Image
-                  src={image.src}
-                  alt={image.alt}
-                  fill
-                  loading="lazy"
-                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                  className="object-cover transition-transform duration-300 hover:scale-105"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <AboutGallerySection />
 
 
 
