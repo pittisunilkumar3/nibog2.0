@@ -553,7 +553,7 @@ export default function Home() {
               Join us for exciting baby games including <span className="font-semibold text-coral-600">crawling races</span>,
               <span className="font-semibold text-mint-600"> baby walker</span>,
               <span className="font-semibold text-lavender-600"> running races</span>, and more for children aged
-              <span className="font-bold text-sunshine-600">5-84 months</span>.
+              <span className="font-bold text-sunshine-600"> 6-72 months</span>.
             </p>
 
             <div className="w-full max-w-lg space-y-4 sm:space-y-6">
@@ -564,7 +564,7 @@ export default function Home() {
                   asChild
                 >
                   <Link href="/register-event">
-                    🎯 Register Now for NIBOG 2025 🎯
+                    🎯 Register Now for NIBOG 2026 🎯
                   </Link>
                 </Button>
 
