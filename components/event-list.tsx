@@ -22,7 +22,9 @@ const EventCard = memo(({ event }: { event: EventListItem }) => {
 
   // Check if event is in the past
   const isEventComplete = useMemo(() => {
-    const eventDate = new Date(event.date);
+    // Parse date as local date to avoid timezone issues
+    const parts = event.date.split('-');
+    const eventDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
     return eventDate < today;
@@ -247,8 +249,11 @@ export default function EventList() {
 
     // Sort events: upcoming events first, completed events at bottom
     return filtered.sort((a, b) => {
-      const aDate = new Date(a.date);
-      const bDate = new Date(b.date);
+      // Parse dates as local dates to avoid timezone issues
+      const aParts = a.date.split('-');
+      const aDate = new Date(parseInt(aParts[0]), parseInt(aParts[1]) - 1, parseInt(aParts[2]));
+      const bParts = b.date.split('-');
+      const bDate = new Date(parseInt(bParts[0]), parseInt(bParts[1]) - 1, parseInt(bParts[2]));
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       

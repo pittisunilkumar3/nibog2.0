@@ -108,12 +108,25 @@ export function formatDate(date: Date | string): string {
   })
 }
 
-// Format date to dd/mm/yy format (short format: "14/03/24")
+// Format date to dd/mm/yyyy format (short format: "14/03/2024")
 export function formatDateShort(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date
+  // Parse date string correctly to avoid timezone issues
+  let d: Date;
+  if (typeof date === "string") {
+    // If date is in YYYY-MM-DD format, parse it as local date
+    const parts = date.split('T')[0].split('-');
+    if (parts.length === 3) {
+      d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else {
+      d = new Date(date);
+    }
+  } else {
+    d = date;
+  }
+  
   const day = String(d.getDate()).padStart(2, '0')
   const month = String(d.getMonth() + 1).padStart(2, '0')
-  const year = String(d.getFullYear()).slice(-2)
+  const year = String(d.getFullYear())
   return `${day}/${month}/${year}`
 }
 

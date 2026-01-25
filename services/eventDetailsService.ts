@@ -51,6 +51,20 @@ export async function getEventsFromBackend(): Promise<any[]> {
 
     const data = await response.json();
 
+    console.log('[EventDetailsService] Raw backend API response:', {
+      count: Array.isArray(data) ? data.length : 0,
+      firstEvent: Array.isArray(data) && data.length > 0 ? {
+        id: data[0].id,
+        title: data[0].title,
+        event_date: data[0].event_date,
+        event_date_type: typeof data[0].event_date,
+        event_date_constructor: data[0].event_date?.constructor?.name,
+        venue_name: data[0].venue_name,
+        city_name: data[0].city_name,
+        slots_count: data[0].event_games_with_slots?.length || 0
+      } : null
+    });
+
     return Array.isArray(data) ? data : []; 
   } catch (error) {
     console.error('Error fetching events from backend:', error);
@@ -186,6 +200,8 @@ export function transformEventDetailsToListItems(eventDetails: EventDetailsWithI
  * @returns Array of EventListItem objects
  */
 export function transformBackendEventsToListItems(events: any[]): EventListItem[] {
+  console.log('[EventDetailsService] Transforming events:', events.length);
+  
   return events.map((event) => {
     // Extract time range from event_games_with_slots
     const slots = event.event_games_with_slots || [];
@@ -251,11 +267,39 @@ export function transformBackendEventsToListItems(events: any[]): EventListItem[
       imageUrl = '/images/baby-crawling.jpg';
     }
 
-    // Format date
-    const eventDate = new Date(event.event_date);
-    const formattedDate = eventDate.toISOString().split('T')[0];
+    // Format date - with dateStrings: true in MySQL config, dates come as 'YYYY-MM-DD' strings
+    const dateStr = event.event_date;
+    let formattedDate: string;
+    
+    if (!dateStr) {
+      // No date provided, use a placeholder
+      formattedDate = new Date().toISOString().split('T')[0];
+    } else if (typeof dateStr === 'string') {
+      // String date from MySQL (with dateStrings: true config)
+      if (dateStr.includes('T') || dateStr.includes(' ')) {
+        // ISO or MySQL datetime format - extract date part only
+        formattedDate = dateStr.split(/[T ]/)[0];
+      } else {
+        // Already in YYYY-MM-DD format
+        formattedDate = dateStr;
+      }
+    } else if (dateStr instanceof Date) {
+      // Date object (fallback if dateStrings config is not working)
+      // Use UTC methods to avoid timezone shift
+      const year = dateStr.getUTCFullYear();
+      const month = String(dateStr.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(dateStr.getUTCDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
+    } else {
+      // Unknown format, try converting
+      const parsed = new Date(dateStr);
+      const year = parsed.getUTCFullYear();
+      const month = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(parsed.getUTCDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
+    }
 
-    return {
+    const result = {
       id: event.id.toString(),
       title: event.title,
       description: event.description || '',
@@ -271,6 +315,17 @@ export function transformBackendEventsToListItems(events: any[]): EventListItem[
       totalSpots: 0, // Not used in display
       isOlympics: true,
     };
+
+    console.log('[EventDetailsService] Transformed event:', {
+      id: result.id,
+      title: result.title,
+      originalDate: event.event_date,
+      formattedDate: result.date,
+      venue: result.venue,
+      city: result.city
+    });
+
+    return result;
   });
 }
 

@@ -1781,33 +1781,6 @@ export default function RegisterEventClientPage() {
                   : "Register your child for exciting baby games and create memorable moments"}
               </CardDescription>
             </div>
-            {/* Refresh Button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                console.log('[Refresh] Manual refresh triggered');
-                // Force router refresh to clear Next.js cache
-                router.refresh();
-                // Then fetch fresh data
-                await fetchCitiesData();
-              }}
-              disabled={isLoadingCities}
-              className="ml-auto"
-              title="Refresh events and data"
-            >
-              <svg 
-                className={cn("h-4 w-4", isLoadingCities && "animate-spin")} 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span className="ml-2 hidden sm:inline">Refresh</span>
-            </Button>
           </div>
 
           {/* Homepage-style progress indicator */}
