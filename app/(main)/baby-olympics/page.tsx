@@ -20,25 +20,8 @@ import { getAllActiveGamesWithImages, GameWithImage } from "@/services/babyGameS
 
 // Helper function to format age range
 const formatAgeRange = (minAge: number, maxAge: number): string => {
-  // Convert months to years for better readability
-  const minYears = Math.floor(minAge / 12);
-  const maxYears = Math.floor(maxAge / 12);
-
-  // If both ages are less than 12 months, show in months
-  if (maxAge < 12) {
-    return `${minAge}-${maxAge} months`;
-  }
-
-  // If min age is less than 12 months but max is more, show mixed format
-  if (minAge < 12 && maxAge >= 12) {
-    return `${minAge} months - ${maxYears} years`;
-  }
-
-  // If both are 12+ months, show in years
-  if (minAge >= 12) {
-    return `${minYears}-${maxYears} years`;
-  }
-
+  // Always display age in months as per NIBOG standard
+  // The database stores age in months
   return `${minAge}-${maxAge} months`;
 };
 
