@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
+import { formatDateShort } from './utils'
 
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
@@ -56,37 +57,57 @@ export class ExportService {
 
   static async exportToCSV<T>(options: ExportOptions<T>): Promise<void> {
     try {
+      console.log('[ExportService] Starting CSV export with options:', {
+        dataLength: options.data.length,
+        columnsCount: options.columns.length,
+        filename: options.filename
+      });
+
       const { data, columns, filename, includeTimestamp = true } = options
 
       // Create CSV headers
       const headers = columns.map(col => col.label)
+      console.log('[ExportService] CSV Headers:', headers);
 
       // Create CSV rows
       const rows = data.map(row =>
         columns.map(col => {
           const value = ExportService.formatValue(row[col.key], col, row)
+          // Convert to string if not already
+          const stringValue = String(value || '')
           // Escape quotes and wrap in quotes if contains comma, quote, or newline
-          return value.includes(',') || value.includes('"') || value.includes('\n')
-            ? `"${value.replace(/"/g, '""')}"`
-            : value
+          return stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')
+            ? `"${stringValue.replace(/"/g, '""')}"`
+            : stringValue
         })
       )
+
+      console.log('[ExportService] Generated rows:', rows.length);
 
       // Combine headers and rows
       const csvContent = [headers, ...rows]
         .map(row => row.join(','))
         .join('\n')
 
+      console.log('[ExportService] CSV Content length:', csvContent.length);
+
       // Add BOM for proper UTF-8 encoding in Excel
       const BOM = '\uFEFF'
       const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+      
+      console.log('[ExportService] Blob created:', {
+        size: blob.size,
+        type: blob.type
+      });
 
       // Generate filename with timestamp if requested
       const finalFilename = ExportService.generateFilename(filename, 'csv', includeTimestamp)
+      console.log('[ExportService] Final filename:', finalFilename);
 
       ExportService.downloadBlob(blob, finalFilename)
+      console.log('[ExportService] CSV export completed successfully');
     } catch (error) {
-      console.error('CSV export failed:', error)
+      console.error('[ExportService] CSV export failed:', error)
       throw new Error('Failed to export CSV file. Please try again.')
     }
   }
@@ -338,18 +359,41 @@ export class ExportService {
   }
 
   private static downloadBlob(blob: Blob, filename: string): void {
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.style.display = 'none'
+    try {
+      console.log('[ExportService] Starting download:', {
+        filename,
+        blobSize: blob.size,
+        blobType: blob.type
+      });
 
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      const url = URL.createObjectURL(blob)
+      console.log('[ExportService] Blob URL created:', url);
 
-    // Clean up the URL object
-    setTimeout(() => URL.revokeObjectURL(url), 100)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.style.display = 'none'
+
+      console.log('[ExportService] Link element created, appending to body');
+      document.body.appendChild(link)
+      
+      console.log('[ExportService] Triggering click event');
+      link.click()
+      
+      console.log('[ExportService] Removing link from body');
+      document.body.removeChild(link)
+
+      // Clean up the URL object
+      setTimeout(() => {
+        console.log('[ExportService] Revoking blob URL');
+        URL.revokeObjectURL(url)
+      }, 100)
+      
+      console.log('[ExportService] Download initiated successfully');
+    } catch (error) {
+      console.error('[ExportService] Download failed:', error);
+      throw error;
+    }
   }
 
   private static generateFilename(filename: string, extension: string, includeTimestamp: boolean = true): string {
@@ -395,14 +439,14 @@ export const createBookingExportColumns = () => [
   },
   { key: 'child_gender' as const, label: 'Child Gender', width: 100 },
   { key: 'child_school_name' as const, label: 'School Name', width: 150, format: (value: any) => value || 'Not Specified' },
-  { key: 'child_date_of_birth' as const, label: 'Child DOB', width: 120, format: (value: any) => value ? new Date(value).toLocaleDateString() : 'N/A' },
+  { key: 'child_date_of_birth' as const, label: 'Child DOB', width: 120, format: (value: any) => value ? formatDateShort(value) : 'N/A' },
   { key: 'event_title' as const, label: 'Event', width: 150 },
   { key: 'city_name' as const, label: 'City', width: 100 },
   { key: 'venue_name' as const, label: 'Venue', width: 120 },
   { key: 'total_amount' as const, label: 'Amount', width: 80, format: (value: any) => `₹${value}`, align: 'right' as const },
   { key: 'booking_status' as const, label: 'Status', width: 80 },
   { key: 'payment_status' as const, label: 'Payment Status', width: 100 },
-  { key: 'booking_created_at' as const, label: 'Booking Date', width: 100, format: (value: any) => new Date(value).toLocaleDateString() },
+  { key: 'booking_created_at' as const, label: 'Booking Date', width: 100, format: (value: any) => formatDateShort(value) },
 ]
 
 export const createEventExportColumns = () => [
@@ -411,7 +455,7 @@ export const createEventExportColumns = () => [
   { key: 'gameTemplate' as const, label: 'Games', width: 150 },
   { key: 'venue' as const, label: 'Venue', width: 150 },
   { key: 'city' as const, label: 'City', width: 100 },
-  { key: 'date' as const, label: 'Date', width: 100, format: (value: any) => new Date(value).toLocaleDateString() },
+  { key: 'date' as const, label: 'Date', width: 100, format: (value: any) => formatDateShort(value) },
   { key: 'status' as const, label: 'Status', width: 100 },
   { key: 'slots' as const, label: 'Total Slots', width: 80, format: (value: any) => Array.isArray(value) ? value.length.toString() : '0', align: 'right' as const },
 ]
@@ -427,8 +471,8 @@ export const createUserExportColumns = () => [
   { key: 'is_locked' as const, label: 'Locked Status', width: 100, format: (value: any) => value ? 'Locked' : 'Unlocked' },
   { key: 'email_verified' as const, label: 'Email Verified', width: 120, format: (value: any) => value ? 'Yes' : 'No' },
   { key: 'phone_verified' as const, label: 'Phone Verified', width: 120, format: (value: any) => value ? 'Yes' : 'No' },
-  { key: 'created_at' as const, label: 'Registration Date', width: 120, format: (value: any) => new Date(value).toLocaleDateString() },
-  { key: 'last_login_at' as const, label: 'Last Login', width: 120, format: (value: any) => value ? new Date(value).toLocaleDateString() : 'Never' },
+  { key: 'created_at' as const, label: 'Registration Date', width: 120, format: (value: any) => formatDateShort(value) },
+  { key: 'last_login_at' as const, label: 'Last Login', width: 120, format: (value: any) => value ? formatDateShort(value) : 'Never' },
 ]
 
 export const createPaymentExportColumns = () => [
@@ -441,9 +485,9 @@ export const createPaymentExportColumns = () => [
   { key: 'amount' as const, label: 'Amount', width: 100, format: (value: any) => `₹${parseFloat(value.toString()).toFixed(2)}`, align: 'right' as const },
   { key: 'payment_method' as const, label: 'Payment Method', width: 120 },
   { key: 'payment_status' as const, label: 'Status', width: 100 },
-  { key: 'payment_date' as const, label: 'Payment Date', width: 120, format: (value: any) => new Date(value).toLocaleDateString() },
+  { key: 'payment_date' as const, label: 'Payment Date', width: 120, format: (value: any) => formatDateShort(value) },
   { key: 'event_title' as const, label: 'Event', width: 200 },
-  { key: 'event_date' as const, label: 'Event Date', width: 100, format: (value: any) => new Date(value).toLocaleDateString() },
+  { key: 'event_date' as const, label: 'Event Date', width: 100, format: (value: any) => formatDateShort(value) },
   { key: 'city_name' as const, label: 'City', width: 100 },
   { key: 'venue_name' as const, label: 'Venue', width: 150 },
   { key: 'child_name' as const, label: 'Child Name', width: 120 },
@@ -451,7 +495,7 @@ export const createPaymentExportColumns = () => [
   { key: 'refund_amount' as const, label: 'Refund Amount', width: 100, format: (value: any) => value ? `₹${parseFloat(value.toString()).toFixed(2)}` : '₹0.00', align: 'right' as const },
   { key: 'refund_reason' as const, label: 'Refund Reason', width: 200 },
   { key: 'admin_notes' as const, label: 'Admin Notes', width: 200 },
-  { key: 'created_at' as const, label: 'Created At', width: 120, format: (value: any) => new Date(value).toLocaleDateString() },
+  { key: 'created_at' as const, label: 'Created At', width: 120, format: (value: any) => formatDateShort(value) },
 ]
 
 export const createVenueExportColumns = (): ExportColumn<any>[] => [

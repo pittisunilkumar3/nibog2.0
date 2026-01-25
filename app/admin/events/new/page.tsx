@@ -218,8 +218,8 @@ export default function NewEventPage() {
         endTime: "11:30",
         price: template.suggestedPrice ?? 0,
         maxParticipants: 12,
-        minAge: Math.floor((template.minAgeMonths || 0) / 12),
-        maxAge: Math.floor((template.maxAgeMonths || 36) / 12),
+        minAge: template.minAgeMonths || 0,
+        maxAge: template.maxAgeMonths || 36,
         isActive: true
       }]
     }
@@ -1072,7 +1072,7 @@ export default function NewEventPage() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor={`min-age-${slot.id}`}>Min Age (years)</Label>
+                                <Label htmlFor={`min-age-${slot.id}`}>Min Age (months)</Label>
                                 <Input
                                   id={`min-age-${slot.id}`}
                                   type="text"
@@ -1089,7 +1089,7 @@ export default function NewEventPage() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor={`max-age-${slot.id}`}>Max Age (years)</Label>
+                                <Label htmlFor={`max-age-${slot.id}`}>Max Age (months)</Label>
                                 <Input
                                   id={`max-age-${slot.id}`}
                                   type="text"

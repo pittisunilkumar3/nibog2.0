@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Eye, Edit, Check, X, AlertTriangle, Loader2, RefreshCw, CheckCircle, Mail, Phone, Filter, XCircle, Calendar, CalendarDays, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getAllBookings, getPaginatedBookings, updateBookingStatus, deleteBooking, Booking, PaginatedBookingsResponse } from "@/services/bookingService"
+import { formatDateShort } from "@/lib/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -367,7 +368,7 @@ export default function BookingsPage() {
       hideOnMobile: true, // Hide on mobile
       render: (value) => (
         <div className="text-sm">
-          {new Date(value).toLocaleDateString()}
+          {formatDateShort(value)}
         </div>
       )
     },

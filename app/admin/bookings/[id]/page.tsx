@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Edit, X, Check, AlertTriangle, User, Mail, Phone, Calendar, Clock, MapPin, Users, CreditCard, Loader2, RefreshCw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getBookingById, updateBookingStatus, getAllBookings, getBookingPaymentDetails, getEventGameSlotDetails, getEventGameSlotDetailsBySlotId, findMostLikelySlotForBooking, getBookingAddons, type Booking } from "@/services/bookingService"
+import { formatDateShort } from "@/lib/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -567,7 +568,7 @@ export default function BookingDetailPage({ params }: Props) {
                     <Calendar className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="font-medium break-words">{booking.event_title}</p>
-                      <p className="text-sm text-muted-foreground">{new Date(booking.event_event_date).toLocaleDateString()}</p>
+                      <p className="text-sm text-muted-foreground">{formatDateShort(booking.event_event_date)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

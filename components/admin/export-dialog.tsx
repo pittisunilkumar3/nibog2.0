@@ -115,8 +115,16 @@ export default function ExportDialog<T>({
 
   const handleExport = async () => {
     if (selectedColumns.size === 0) {
+      alert('Please select at least one column to export');
       return
     }
+
+    console.log('[ExportDialog] Starting export:', {
+      format,
+      dataCount: data.length,
+      selectedColumnsCount: selectedColumns.size,
+      filename
+    });
 
     setIsExporting(true)
     
@@ -136,21 +144,28 @@ export default function ExportDialog<T>({
         },
       }
 
+      console.log('[ExportDialog] Export options prepared:', exportOptions);
+
       switch (format) {
         case 'csv':
+          console.log('[ExportDialog] Calling exportToCSV');
           await ExportService.exportToCSV(exportOptions)
           break
         case 'pdf':
+          console.log('[ExportDialog] Calling exportToPDF');
           await ExportService.exportToPDF(exportOptions)
           break
         case 'excel':
+          console.log('[ExportDialog] Calling exportToExcel');
           await ExportService.exportToExcel(exportOptions)
           break
       }
 
+      console.log('[ExportDialog] Export completed successfully');
       onOpenChange(false)
     } catch (error) {
-      console.error('Export failed:', error)
+      console.error('[ExportDialog] Export failed:', error)
+      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please check the console for details.`);
     } finally {
       setIsExporting(false)
     }
