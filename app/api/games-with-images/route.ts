@@ -43,7 +43,9 @@ export async function GET(request: NextRequest) {
     const transformedGames = firstFourGames.map((game: any) => {
       let imageUrl = game.image_url;
       if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-        imageUrl = `/api/serve-image/${imageUrl}`;
+        // Clean up any leading './' or '.'
+        const cleanImageUrl = imageUrl.replace(/^\.\//, '').replace(/^\./, '');
+        imageUrl = `/api/serve-image/${cleanImageUrl}`;
       }
 
       return {

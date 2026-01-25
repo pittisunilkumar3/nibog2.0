@@ -16,7 +16,9 @@ export async function GET(
       return new NextResponse('Image path required', { status: 400 });
     }
 
-    const imagePath = params.path.join(sep);
+    // Clean up path segments - remove any leading './' or '.'
+    const cleanedPath = params.path.map(segment => segment.replace(/^\.\//, '').replace(/^\./, ''));
+    const imagePath = cleanedPath.join(sep);
     const normalizedPath = normalize(imagePath);
     const basePath = process.cwd();
     

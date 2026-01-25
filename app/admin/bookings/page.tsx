@@ -100,7 +100,7 @@ export default function BookingsPage() {
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch('/api/bookings')
+      const response = await fetch('/api/bookings/all')
       if (!response.ok) {
         throw new Error('Failed to fetch bookings')
       }
@@ -549,28 +549,28 @@ export default function BookingsPage() {
   const cancelledBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'cancelled').length
   const completedBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'completed').length
   
-  // Calculate total revenue from confirmed/completed bookings OR paid bookings
+  // Calculate total revenue from ALL bookings (exclude only cancelled)
   const totalRevenue = bookings
-    .filter(b => {
-      const status = b.booking_status?.toLowerCase() || ''
-      const paymentStatus = b.payment_status?.toLowerCase() || ''
-      
-      // Include if booking is confirmed/completed OR payment is paid
-      return ['confirmed', 'completed'].includes(status) || paymentStatus === 'paid'
-    })
+    .filter(b => (b.booking_status || '').toLowerCase() !== 'cancelled')
     .reduce((sum, b) => sum + parseFloat(b.total_amount || '0'), 0)
   
-  // Debug logging
+  // Debug logging with ALL booking details
   console.log('Revenue calculation:', {
     totalBookings: bookings.length,
-    confirmedOrCompleted: bookings.filter(b => ['confirmed', 'completed'].includes(b.booking_status?.toLowerCase() || '')).length,
-    paidBookings: bookings.filter(b => b.payment_status?.toLowerCase() === 'paid').length,
-    revenueBookings: bookings.filter(b => {
-      const status = b.booking_status?.toLowerCase() || ''
-      const paymentStatus = b.payment_status?.toLowerCase() || ''
-      return ['confirmed', 'completed'].includes(status) || paymentStatus === 'paid'
-    }).length,
-    totalRevenue
+    confirmedCount: confirmedBookings,
+    pendingCount: pendingBookings,
+    cancelledCount: cancelledBookings,
+    completedCount: completedBookings,
+    revenueBookingsCount: bookings.filter(b => (b.booking_status || '').toLowerCase() !== 'cancelled').length,
+    totalRevenue,
+    allBookings: bookings.map(b => ({
+      id: b.booking_id,
+      ref: b.booking_ref,
+      status: b.booking_status,
+      payment_status: b.payment_status,
+      amount: parseFloat(b.total_amount || '0'),
+      included: (b.booking_status || '').toLowerCase() !== 'cancelled'
+    }))
   })
 
   if (error) {
