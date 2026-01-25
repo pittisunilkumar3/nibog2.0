@@ -548,9 +548,30 @@ export default function BookingsPage() {
   const pendingBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'pending').length
   const cancelledBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'cancelled').length
   const completedBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'completed').length
+  
+  // Calculate total revenue from confirmed/completed bookings OR paid bookings
   const totalRevenue = bookings
-    .filter(b => ['confirmed', 'completed'].includes(b.booking_status?.toLowerCase() || ''))
+    .filter(b => {
+      const status = b.booking_status?.toLowerCase() || ''
+      const paymentStatus = b.payment_status?.toLowerCase() || ''
+      
+      // Include if booking is confirmed/completed OR payment is paid
+      return ['confirmed', 'completed'].includes(status) || paymentStatus === 'paid'
+    })
     .reduce((sum, b) => sum + parseFloat(b.total_amount || '0'), 0)
+  
+  // Debug logging
+  console.log('Revenue calculation:', {
+    totalBookings: bookings.length,
+    confirmedOrCompleted: bookings.filter(b => ['confirmed', 'completed'].includes(b.booking_status?.toLowerCase() || '')).length,
+    paidBookings: bookings.filter(b => b.payment_status?.toLowerCase() === 'paid').length,
+    revenueBookings: bookings.filter(b => {
+      const status = b.booking_status?.toLowerCase() || ''
+      const paymentStatus = b.payment_status?.toLowerCase() || ''
+      return ['confirmed', 'completed'].includes(status) || paymentStatus === 'paid'
+    }).length,
+    totalRevenue
+  })
 
   if (error) {
     return (

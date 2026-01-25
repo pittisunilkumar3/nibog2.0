@@ -251,11 +251,14 @@ export default function BookingDetailPage({ params }: Props) {
           child_school_name: bookingData.children?.[0]?.school_name || '',
           child_date_of_birth: bookingData.children?.[0]?.date_of_birth,
           child_age: bookingData.children?.[0]?.date_of_birth ? 
-            Math.floor((new Date().getTime() - new Date(bookingData.children[0].date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 365)) : null,
+            Math.floor((new Date().getTime() - new Date(bookingData.children[0].date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : null,
           
           // Game info (first game of first child)
           game_name: bookingData.children?.[0]?.booking_games?.[0]?.game_name || '',
           game_id: bookingData.children?.[0]?.booking_games?.[0]?.game_id,
+          game_min_age: bookingData.children?.[0]?.booking_games?.[0]?.min_age || null,
+          game_max_age: bookingData.children?.[0]?.booking_games?.[0]?.max_age || null,
+          game_duration_minutes: bookingData.children?.[0]?.booking_games?.[0]?.duration_minutes || null,
           
           // Slot details from first game
           slot_details: bookingData.children?.[0]?.booking_games?.[0]?.slot_id ? {
@@ -653,7 +656,7 @@ export default function BookingDetailPage({ params }: Props) {
                           </p>
                           {child.date_of_birth && (
                             <p className="text-sm text-muted-foreground">
-                              Age: {Math.floor((new Date().getTime() - new Date(child.date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 365))} years
+                              Age: {Math.floor((new Date().getTime() - new Date(child.date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 30.44))} months
                             </p>
                           )}
                           {child.school_name && (
@@ -928,13 +931,13 @@ export default function BookingDetailPage({ params }: Props) {
             <div className="rounded-lg border p-3 sm:p-4">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm text-muted-foreground">Game Duration</span>
-                <span className="font-medium">{booking.game_duration_minutes} minutes</span>
+                <span className="font-medium">{booking.game_duration_minutes ? `${booking.game_duration_minutes} minutes` : 'N/A'}</span>
               </div>
             </div>
             <div className="rounded-lg border p-3 sm:p-4">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm text-muted-foreground">Age Range</span>
-                <span className="font-medium">{booking.game_min_age} - {booking.game_max_age} months</span>
+                <span className="font-medium">{(booking.game_min_age && booking.game_max_age) ? `${booking.game_min_age} - ${booking.game_max_age} months` : 'N/A'}</span>
               </div>
             </div>
             {booking.slot_details?.max_participants && (

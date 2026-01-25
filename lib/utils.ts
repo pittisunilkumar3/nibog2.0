@@ -99,8 +99,19 @@ export function formatPrice(price: number | string | undefined): string {
 }
 
 // Format date to Indian format (long format: "14 March 2024")
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string | null | undefined): string {
+  // Handle null or undefined
+  if (!date) {
+    return 'N/A';
+  }
+  
   const d = typeof date === "string" ? new Date(date) : date
+  
+  // Check if date is valid
+  if (!d || isNaN(d.getTime())) {
+    return 'N/A';
+  }
+  
   return d.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
@@ -109,7 +120,12 @@ export function formatDate(date: Date | string): string {
 }
 
 // Format date to dd/mm/yyyy format (short format: "14/03/2024")
-export function formatDateShort(date: Date | string): string {
+export function formatDateShort(date: Date | string | null | undefined): string {
+  // Handle null or undefined
+  if (!date) {
+    return 'N/A';
+  }
+  
   // Parse date string correctly to avoid timezone issues
   let d: Date;
   if (typeof date === "string") {
@@ -122,6 +138,11 @@ export function formatDateShort(date: Date | string): string {
     }
   } else {
     d = date;
+  }
+  
+  // Check if date is valid
+  if (!d || isNaN(d.getTime())) {
+    return 'N/A';
   }
   
   const day = String(d.getDate()).padStart(2, '0')
