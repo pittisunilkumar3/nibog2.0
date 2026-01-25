@@ -116,21 +116,8 @@ export default function GameTemplatesPage() {
         const maxAge = row.max_age;
 
         if (minAge && maxAge) {
-          // Convert to years if age is in months and > 12
-          if (minAge >= 12 && maxAge >= 12) {
-            const minYears = Math.floor(minAge / 12);
-            const maxYears = Math.floor(maxAge / 12);
-            const minMonths = minAge % 12;
-            const maxMonths = maxAge % 12;
-
-            if (minMonths === 0 && maxMonths === 0) {
-              return `${minYears}-${maxYears} years`;
-            } else {
-              return `${minAge}-${maxAge} months`;
-            }
-          } else {
-            return `${minAge}-${maxAge} months`;
-          }
+          // Always display in months as per NIBOG standard
+          return `${minAge}-${maxAge} months`;
         } else if (minAge) {
           return `${minAge}+ months`;
         } else if (maxAge) {
