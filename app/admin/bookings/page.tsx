@@ -138,8 +138,8 @@ export default function BookingsPage() {
           child_full_name: booking.children?.[0]?.full_name || '',
           child_gender: booking.children?.[0]?.gender || '',
           child_school_name: booking.children?.[0]?.school_name || '',
-          child_age: booking.children?.[0]?.date_of_birth ? 
-            Math.floor((new Date().getTime() - new Date(booking.children[0].date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 365)) : null,
+          child_age: (booking.children?.[0]?.date_of_birth && booking.event?.date) ? 
+            Math.floor((new Date(booking.event.date).getTime() - new Date(booking.children[0].date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : null,
           
           // Game info (first game of first child)
           game_name: booking.children?.[0]?.booking_games?.[0]?.game_name || '',
