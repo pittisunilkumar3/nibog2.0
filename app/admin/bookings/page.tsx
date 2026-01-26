@@ -138,6 +138,8 @@ export default function BookingsPage() {
           child_full_name: booking.children?.[0]?.full_name || '',
           child_gender: booking.children?.[0]?.gender || '',
           child_school_name: booking.children?.[0]?.school_name || '',
+          child_dob: booking.children?.[0]?.date_of_birth || '',
+          child_date_of_birth: booking.children?.[0]?.date_of_birth || '', // For export compatibility
           child_age: (booking.children?.[0]?.date_of_birth && booking.event?.date) ? 
             Math.floor((new Date(booking.event.date).getTime() - new Date(booking.children[0].date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : null,
           
@@ -307,6 +309,18 @@ export default function BookingsPage() {
       )
     },
     {
+      key: 'child_dob',
+      label: 'Child DOB',
+      sortable: true,
+      width: '120px',
+      hideOnMobile: true, // Hide on mobile to save space
+      render: (value) => (
+        <div className="min-w-0">
+          <div className="font-medium text-sm">{value ? new Date(value).toLocaleDateString('en-IN') : 'N/A'}</div>
+        </div>
+      )
+    },
+    {
       key: 'child_age',
       label: 'Child Age',
       sortable: true,
@@ -314,7 +328,7 @@ export default function BookingsPage() {
       hideOnMobile: true, // Hide on mobile to save space
       render: (value) => (
         <div className="min-w-0">
-          <div className="font-medium text-sm">{value || 'N/A'}</div>
+          <div className="font-medium text-sm">{value ? `${value} months` : 'N/A'}</div>
         </div>
       )
     },

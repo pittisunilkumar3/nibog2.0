@@ -210,11 +210,11 @@ export class ExportService {
         acc[index] = {
           cellWidth: col.width ? Math.max(col.width / 4, 20) : 'auto',
           halign: col.align || (
-            col.key.includes('amount') ||
-            col.key.includes('price') ||
-            col.key.includes('count') ||
-            col.key.includes('revenue') ||
-            col.key.includes('total')
+            String(col.key).includes('amount') ||
+            String(col.key).includes('price') ||
+            String(col.key).includes('count') ||
+            String(col.key).includes('revenue') ||
+            String(col.key).includes('total')
               ? 'right' : 'left'
           ),
           valign: 'middle'
@@ -238,8 +238,8 @@ export class ExportService {
         doc.setTextColor(51, 51, 51)
         doc.setFontSize(8)
         doc.setFont('helvetica', 'normal')
-        const pageNumber = doc.internal.getCurrentPageInfo().pageNumber
-        const totalPages = doc.internal.pages.length - 1
+        const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber
+        const totalPages = (doc as any).getNumberOfPages()
         doc.text(
           `Page ${pageNumber} of ${totalPages}`,
           pageWidth / 2,
@@ -439,7 +439,7 @@ export const createBookingExportColumns = () => [
   },
   { key: 'child_gender' as const, label: 'Child Gender', width: 100 },
   { key: 'child_school_name' as const, label: 'School Name', width: 150, format: (value: any) => value || 'Not Specified' },
-  { key: 'child_date_of_birth' as const, label: 'Child DOB', width: 120, format: (value: any) => value ? formatDateShort(value) : 'N/A' },
+  { key: 'child_dob' as const, label: 'Child DOB', width: 120, format: (value: any, row: any) => (value || row.child_date_of_birth) ? formatDateShort(value || row.child_date_of_birth) : 'N/A' },
   { key: 'event_title' as const, label: 'Event', width: 150 },
   { key: 'city_name' as const, label: 'City', width: 100 },
   { key: 'venue_name' as const, label: 'Venue', width: 120 },
