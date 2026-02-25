@@ -95,6 +95,11 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
+  // Field-specific validation errors
+  const [emailError, setEmailError] = useState("")
+  const [phoneError, setPhoneError] = useState("")
+  const [passwordError, setPasswordError] = useState("")
+
   // Handle Google login/register success
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true)
@@ -172,11 +177,61 @@ export default function RegisterPage() {
   }
 
 
-  // Email validation function
+  // Email validation function - only Gmail addresses
   const isValidEmail = (email: string) => {
-    // Basic email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Only accept @gmail.com addresses
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     return emailRegex.test(email);
+  };
+
+  // Phone validation function (Indian phone number)
+  const isValidPhone = (phone: string) => {
+    // Indian phone number: 10 digits, starting with 6,7,8, or 9
+    const phoneRegex = /^[6789]\d{9}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  // Password validation function
+  const isValidPassword = (password: string) => {
+    // At least 6 characters
+    return password.length >= 6;
+  };
+
+  // Handle email change with validation
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (value && !isValidEmail(value)) {
+      setEmailError("Please enter a valid Gmail address (@gmail.com only)");
+    } else {
+      setEmailError("");
+    }
+  };
+
+  // Handle phone change with validation
+  const handlePhoneChange = (value: string) => {
+    // Allow only numbers and limit to 10 digits
+    const numericValue = value.replace(/\D/g, '').slice(0, 10);
+    setPhone(numericValue);
+
+    if (numericValue && !isValidPhone(numericValue)) {
+      if (numericValue.length < 10) {
+        setPhoneError("Please enter a valid 10-digit mobile number");
+      } else {
+        setPhoneError("Mobile number must start with 6, 7, 8, or 9");
+      }
+    } else {
+      setPhoneError("");
+    }
+  };
+
+  // Handle password change with validation
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (value && !isValidPassword(value)) {
+      setPasswordError("Password must be at least 6 characters");
+    } else {
+      setPasswordError("");
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -191,9 +246,26 @@ export default function RegisterPage() {
       return
     }
 
-    // Validate email format
+    // Validate email format (Gmail only)
     if (!isValidEmail(email)) {
-      setError("Please enter a valid email address")
+      setEmailError("Please enter a valid Gmail address (@gmail.com only)")
+      setError("Please enter a valid Gmail address")
+      setIsLoading(false)
+      return
+    }
+
+    // Validate phone format
+    if (!isValidPhone(phone)) {
+      setPhoneError("Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9")
+      setError("Please enter a valid mobile number")
+      setIsLoading(false)
+      return
+    }
+
+    // Validate password
+    if (!isValidPassword(password)) {
+      setPasswordError("Password must be at least 6 characters")
+      setError("Password must be at least 6 characters")
       setIsLoading(false)
       return
     }
@@ -297,27 +369,41 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-purple-700 dark:text-purple-300 font-medium">Email</Label>
+              <Label htmlFor="email" className="text-purple-700 dark:text-purple-300 font-medium">Email (Gmail only)</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder="yourname@gmail.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleEmailChange(e.target.value)}
                 required
-                className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all"
+                className={`rounded-xl border-2 transition-all ${emailError ? 'border-red-400 dark:border-red-600 focus:border-red-500 dark:focus:border-red-500' : 'border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600'}`}
               />
+              {emailError && (
+                <p className="text-xs text-red-500 dark:text-red-400 mt-1">{emailError}</p>
+              )}
+              {email && !emailError && (
+                <p className="text-xs text-green-500 dark:text-green-400 mt-1">✓ Valid Gmail address</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-purple-700 dark:text-purple-300 font-medium">Mobile Number</Label>
               <Input
                 id="phone"
+                type="tel"
                 placeholder="Enter your 10-digit mobile number"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => handlePhoneChange(e.target.value)}
                 required
-                className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all"
+                maxLength={10}
+                className={`rounded-xl border-2 transition-all ${phoneError ? 'border-red-400 dark:border-red-600 focus:border-red-500 dark:focus:border-red-500' : 'border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600'}`}
               />
+              {phoneError && (
+                <p className="text-xs text-red-500 dark:text-red-400 mt-1">{phoneError}</p>
+              )}
+              {phone && !phoneError && (
+                <p className="text-xs text-green-500 dark:text-green-400 mt-1">✓ Valid mobile number</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-purple-700 dark:text-purple-300 font-medium">Password</Label>
@@ -326,10 +412,16 @@ export default function RegisterPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => handlePasswordChange(e.target.value)}
                   required
-                  className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all pr-10"
+                  className={`rounded-xl border-2 transition-all pr-10 ${passwordError ? 'border-red-400 dark:border-red-600 focus:border-red-500 dark:focus:border-red-500' : 'border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600'}`}
                 />
+                {passwordError && (
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-1">{passwordError}</p>
+                )}
+                {password && !passwordError && (
+                  <p className="text-xs text-green-500 dark:text-green-400 mt-1">✓ Password strength: Good</p>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
