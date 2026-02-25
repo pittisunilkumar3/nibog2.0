@@ -426,27 +426,56 @@ export class ExportService {
 export const createBookingExportColumns = () => [
   { key: 'booking_id' as const, label: 'Booking ID', width: 80 },
   { key: 'booking_ref' as const, label: 'Booking Ref', width: 120 },
-  { key: 'game_name' as const, label: 'Game Name', width: 120 },
-  { key: 'parent_name' as const, label: 'Parent Name', width: 120 },
-  { key: 'parent_email' as const, label: 'Email', width: 150 },
-  { key: 'parent_additional_phone' as const, label: 'Phone Number', width: 120 },
-  { key: 'child_full_name' as const, label: 'Child Name', width: 120 },
-  {
-    key: 'child_age' as const,
-    label: 'Child Age',
-    width: 120,
-    format: (value: any) => value || 'N/A'
-  },
+  { key: 'parent_name' as const, label: 'Parent Name', width: 150 },
+  { key: 'parent_email' as const, label: 'Email', width: 180 },
+  { key: 'parent_additional_phone' as const, label: 'Phone Number', width: 130 },
+  { key: 'child_full_name' as const, label: 'Children', width: 150 },
   { key: 'child_gender' as const, label: 'Child Gender', width: 100 },
   { key: 'child_school_name' as const, label: 'School Name', width: 150, format: (value: any) => value || 'Not Specified' },
+  {
+    key: 'child_age' as const,
+    label: 'Child Age (months)',
+    width: 120,
+    format: (value: any) => value ? `${value} months` : 'N/A'
+  },
   { key: 'child_dob' as const, label: 'Child DOB', width: 120, format: (value: any, row: any) => (value || row.child_date_of_birth) ? formatDateShort(value || row.child_date_of_birth) : 'N/A' },
-  { key: 'event_title' as const, label: 'Event', width: 150 },
-  { key: 'city_name' as const, label: 'City', width: 100 },
-  { key: 'venue_name' as const, label: 'Venue', width: 120 },
-  { key: 'total_amount' as const, label: 'Amount', width: 80, format: (value: any) => `₹${value}`, align: 'right' as const },
-  { key: 'booking_status' as const, label: 'Status', width: 80 },
-  { key: 'payment_status' as const, label: 'Payment Status', width: 100 },
-  { key: 'booking_created_at' as const, label: 'Booking Date', width: 100, format: (value: any) => formatDateShort(value) },
+  {
+    key: 'game_name' as const,
+    label: 'Games',
+    width: 200,
+    format: (value: any, row: any) => {
+      // Use same │ separator as frontend display
+      return row._games_list?.join('│') || value || 'No games booked'
+    }
+  },
+  {
+    key: 'game_price' as const,
+    label: 'Game Prices',
+    width: 150,
+    format: (value: any, row: any) => {
+      // Add ₹ symbol and use same │ separator as frontend
+      const prices = row._games_prices || []
+      if (prices.length === 0) return 'N/A'
+      return prices.map((p: string) => `₹${p}`).join('│')
+    }
+  },
+  {
+    key: 'slot_start_time' as const,
+    label: 'Time Slots',
+    width: 200,
+    format: (value: any, row: any) => {
+      // Use same │ separator as frontend display
+      return row._games_slots?.join('│') || value || 'N/A'
+    }
+  },
+  { key: 'event_title' as const, label: 'Event', width: 180 },
+  { key: 'event_date' as const, label: 'Event Date', width: 110, format: (value: any) => value ? formatDateShort(value) : 'N/A' },
+  { key: 'city_name' as const, label: 'City', width: 110 },
+  { key: 'venue_name' as const, label: 'Venue', width: 180 },
+  { key: 'total_amount' as const, label: 'Booking Total', width: 110, format: (value: any) => `₹${value}`, align: 'right' as const },
+  { key: 'booking_status' as const, label: 'Booking Status', width: 110 },
+  { key: 'payment_status' as const, label: 'Payment Status', width: 110 },
+  { key: 'booking_created_at' as const, label: 'Booking Date', width: 110, format: (value: any) => formatDateShort(value) },
 ]
 
 export const createEventExportColumns = () => [

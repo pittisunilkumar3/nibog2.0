@@ -106,51 +106,102 @@ export default function BookingsPage() {
       }
       
       const result = await response.json()
-      
+
       if (result.success && Array.isArray(result.data)) {
-        // Transform the new API response to match the expected format
-        const transformedBookings = result.data.map((booking: any) => ({
-          booking_id: booking.id,
-          booking_ref: booking.booking_ref,
-          booking_status: booking.status,
-          total_amount: booking.total_amount,
-          payment_method: booking.payment_method,
-          payment_status: booking.payment_status,
-          booking_date: booking.booking_date,
-          booking_created_at: booking.booking_date,
-          booking_updated_at: booking.updated_at,
-          
-          // Parent info
-          parent_name: booking.parent?.name || '',
-          parent_email: booking.parent?.email || '',
-          parent_phone: booking.parent?.phone || '',
-          parent_additional_phone: booking.parent?.phone || '',
-          parent_id: booking.parent?.id,
-          
-          // Event info
-          event_id: booking.event?.id,
-          event_title: booking.event?.name || '',
-          event_date: booking.event?.date,
-          venue_name: booking.event?.venue?.name || '',
-          city_name: booking.event?.venue?.city || '',
-          
-          // Child info (first child)
-          child_full_name: booking.children?.[0]?.full_name || '',
-          child_gender: booking.children?.[0]?.gender || '',
-          child_school_name: booking.children?.[0]?.school_name || '',
-          child_dob: booking.children?.[0]?.date_of_birth || '',
-          child_date_of_birth: booking.children?.[0]?.date_of_birth || '', // For export compatibility
-          child_age: (booking.children?.[0]?.date_of_birth && booking.event?.date) ? 
-            Math.floor((new Date(booking.event.date).getTime() - new Date(booking.children[0].date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : null,
-          
-          // Game info (first game of first child)
-          game_name: booking.children?.[0]?.booking_games?.[0]?.game_name || '',
-          game_id: booking.children?.[0]?.booking_games?.[0]?.game_id,
-          
-          // Keep the original nested structure for detail view
-          _original: booking
-        }))
-        
+        // Transform the new API response - keep one row per booking
+        // Combine all games into a vertical list for display
+        const transformedBookings = result.data.map((booking: any) => {
+          const children = booking.children || []
+
+          // Build vertical list of games, prices, and time slots (without child names)
+          const gamesList: string[] = []
+          const gamesPricesList: string[] = []
+          const gamesSlotsList: string[] = []
+
+          children.forEach((child: any) => {
+            const games = child.booking_games || []
+            if (games.length > 0) {
+              games.forEach((game: any) => {
+                const gameName = game.game_name || 'Unknown Game'
+                const price = game.game_price ? `${game.game_price}` : '0'
+
+                // For time slot: prioritize start_time-end_time, fall back to custom_title
+                // Only use custom_title if it's a time format (contains : or - or AM/PM)
+                let timeSlot = 'N/A'
+                if (game.slot_start_time && game.slot_end_time) {
+                  timeSlot = `${game.slot_start_time} - ${game.slot_end_time}`
+                } else if (game.slot_custom_title) {
+                  // Check if custom_title looks like a time (contains : or AM/PM)
+                  const hasTimePattern = /:|AM|PM/i.test(game.slot_custom_title)
+                  timeSlot = hasTimePattern ? game.slot_custom_title : 'N/A'
+                }
+
+                gamesList.push(gameName)
+                gamesPricesList.push(price)
+                gamesSlotsList.push(timeSlot)
+              })
+            }
+          })
+
+          // Build child names list (for display)
+          const childNames = children.map((c: any) => c.full_name).filter(Boolean).join(', ') || 'N/A'
+
+          // Get first child's info for columns (backward compatibility)
+          const firstChild = children[0]
+          const totalGames = children.reduce((sum: number, c: any) => sum + (c.booking_games?.length || 0), 0)
+
+          return {
+            booking_id: booking.id,
+            booking_ref: booking.booking_ref,
+            booking_status: booking.status,
+            total_amount: booking.total_amount,
+            payment_method: booking.payment_method,
+            payment_status: booking.payment_status,
+            booking_date: booking.booking_date,
+            booking_created_at: booking.booking_date,
+            booking_updated_at: booking.updated_at,
+
+            // Parent info
+            parent_name: booking.parent?.name || '',
+            parent_email: booking.parent?.email || '',
+            parent_phone: booking.parent?.phone || '',
+            parent_additional_phone: booking.parent?.phone || '',
+            parent_id: booking.parent?.id,
+
+            // Event info
+            event_id: booking.event?.id,
+            event_title: booking.event?.name || '',
+            event_date: booking.event?.date,
+            venue_name: booking.event?.venue?.name || '',
+            city_name: booking.event?.venue?.city || '',
+
+            // Child info - combined
+            child_full_name: childNames,
+            child_gender: firstChild?.gender || '',
+            child_school_name: firstChild?.school_name || '',
+            child_dob: firstChild?.date_of_birth || '',
+            child_date_of_birth: firstChild?.date_of_birth || '',
+            child_age: (firstChild?.date_of_birth && booking.event?.date) ?
+              Math.floor((new Date(booking.event.date).getTime() - new Date(firstChild.date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : null,
+
+            // Game info - vertical list
+            game_name: gamesList.length > 0 ? gamesList.join('\n│\n') : 'No games booked',
+            game_price: gamesPricesList.length > 0 ? gamesPricesList.join('\n│\n') : 'N/A',
+            slot_start_time: gamesSlotsList.length > 0 ? gamesSlotsList.join('\n│\n') : 'N/A',
+
+            // Additional info
+            total_games: totalGames,
+            total_children: children.length,
+
+            // Keep the original nested structure for detail view and export
+            _original: booking,
+            // For export - keep the games list
+            _games_list: gamesList,
+            _games_prices: gamesPricesList,
+            _games_slots: gamesSlotsList,
+          }
+        })
+
         setBookings(transformedBookings)
       } else {
         throw new Error('Invalid response format')
@@ -345,21 +396,57 @@ export default function BookingsPage() {
     },
     {
       key: 'game_name',
-      label: 'Game',
-      sortable: true,
+      label: 'Games',
+      sortable: false,
+      hideOnMobile: true, // Hide on mobile
+      render: (value, row) => (
+        <div className="min-w-0 max-w-xs">
+          <div className="font-medium text-xs whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+            {value || 'No games booked'}
+          </div>
+          {row.total_games > 0 && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {row.total_games} game{row.total_games > 1 ? 's' : ''} • {row.total_children} child{row.total_children > 1 ? 'ren' : ''}
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'game_price',
+      label: 'Game Prices',
+      sortable: false,
+      align: 'left',
+      width: '120px',
+      hideOnMobile: true, // Hide on mobile
+      render: (value, row) => (
+        <div className="min-w-0 max-w-xs">
+          <div className="font-medium text-xs whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+            {value ? value.split('\n│\n').map((p: string) => `₹${p.trim()}`).join('\n│\n') : 'N/A'}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'slot_start_time',
+      label: 'Time Slots',
+      sortable: false,
+      width: '150px',
       hideOnMobile: true, // Hide on mobile
       render: (value) => (
-        <div className="min-w-0">
-          <div className="font-medium truncate">{value}</div>
+        <div className="min-w-0 max-w-xs">
+          <div className="font-medium text-xs whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+            {value || 'N/A'}
+          </div>
         </div>
       )
     },
     {
       key: 'total_amount',
-      label: 'Amount',
+      label: 'Booking Total',
       sortable: true,
       align: 'right',
-      width: '100px',
+      width: '110px',
       hideOnMobile: true, // Hide on mobile
       render: (value) => <span className="font-medium">₹{value}</span>
     },
@@ -375,10 +462,22 @@ export default function BookingsPage() {
       )
     },
     {
-      key: 'booking_created_at',
-      label: 'Date',
+      key: 'event_date',
+      label: 'Event Date',
       sortable: true,
-      width: '100px',
+      width: '110px',
+      hideOnMobile: true, // Hide on mobile
+      render: (value) => (
+        <div className="text-sm">
+          {value ? formatDateShort(value) : 'N/A'}
+        </div>
+      )
+    },
+    {
+      key: 'booking_created_at',
+      label: 'Booking Date',
+      sortable: true,
+      width: '110px',
       hideOnMobile: true, // Hide on mobile
       render: (value) => (
         <div className="text-sm">
@@ -557,35 +656,16 @@ export default function BookingsPage() {
 
 
 
-  // Calculate summary statistics
+  // Calculate summary statistics - now we have one row per booking
   const confirmedBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'confirmed').length
   const pendingBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'pending').length
   const cancelledBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'cancelled').length
   const completedBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'completed').length
-  
-  // Calculate total revenue from ALL bookings (exclude only cancelled)
-  const totalRevenue = bookings
-    .filter(b => (b.booking_status || '').toLowerCase() !== 'cancelled')
-    .reduce((sum, b) => sum + parseFloat(b.total_amount || '0'), 0)
-  
-  // Debug logging with ALL booking details
-  console.log('Revenue calculation:', {
-    totalBookings: bookings.length,
-    confirmedCount: confirmedBookings,
-    pendingCount: pendingBookings,
-    cancelledCount: cancelledBookings,
-    completedCount: completedBookings,
-    revenueBookingsCount: bookings.filter(b => (b.booking_status || '').toLowerCase() !== 'cancelled').length,
-    totalRevenue,
-    allBookings: bookings.map(b => ({
-      id: b.booking_id,
-      ref: b.booking_ref,
-      status: b.booking_status,
-      payment_status: b.payment_status,
-      amount: parseFloat(b.total_amount || '0'),
-      included: (b.booking_status || '').toLowerCase() !== 'cancelled'
-    }))
-  })
+
+  // Calculate total revenue and total games from ALL bookings (exclude only cancelled)
+  const nonCancelledBookings = bookings.filter(b => (b.booking_status || '').toLowerCase() !== 'cancelled')
+  const totalRevenue = nonCancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_amount || '0'), 0)
+  const totalGames = bookings.reduce((sum, b) => sum + (b.total_games || 0), 0)
 
   if (error) {
     return (
@@ -838,6 +918,7 @@ export default function BookingsPage() {
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{bookings.length}</div>
             <p className="text-xs text-muted-foreground">Total Bookings</p>
+            <p className="text-xs text-primary">{totalGames} games booked</p>
           </CardContent>
         </Card>
         <Card>
