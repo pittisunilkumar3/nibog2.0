@@ -72,7 +72,8 @@ export default function RegisterEventClientPage() {
   const [eventDate, setEventDate] = useState<Date>(new Date("2025-10-26"))
   const [childAgeMonths, setChildAgeMonths] = useState<number | null>(null)
   const [selectedCity, setSelectedCity] = useState<string>("") // Empty string initially
-  const [selectedEventType, setSelectedEventType] = useState<string>("") // New state for event type dropdown
+  const [selectedEventType, setSelectedEventType] = useState<string>("") // Event title for display
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null) // Event ID for lookups - FIXED
   const [selectedEvent, setSelectedEvent] = useState<string>("")
   const [eligibleEvents, setEligibleEvents] = useState<
     Array<{
@@ -294,9 +295,9 @@ export default function RegisterEventClientPage() {
       const ageInMonths = calculateAge(date, eventDate);
       setChildAgeMonths(ageInMonths);
 
-      // If an event is already selected, filter games for this age
-      if (selectedEventType) {
-        const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
+      // If an event is already selected, filter games for this age - FIX: Use ID lookup
+      if (selectedEventId) {
+        const selectedApiEvent = apiEvents.find(event => event.event_id === selectedEventId);
         if (selectedApiEvent) {
           loadGamesForEvent(selectedApiEvent, ageInMonths);
         }
@@ -316,10 +317,10 @@ export default function RegisterEventClientPage() {
     if (dob) {
       const ageInMonths = calculateAge(dob, date);
       setChildAgeMonths(ageInMonths);
-      
-      // Reload games with the new age
-      if (selectedEventType) {
-        const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
+
+      // Reload games with the new age - FIX: Use ID lookup
+      if (selectedEventId) {
+        const selectedApiEvent = apiEvents.find(event => event.event_id === selectedEventId);
         if (selectedApiEvent) {
           loadGamesForEvent(selectedApiEvent, ageInMonths);
         }
@@ -513,9 +514,10 @@ export default function RegisterEventClientPage() {
     console.log('[handleCityChange] Selected city:', city);
     console.log('[handleCityChange] Available bookingCities:', bookingCities);
     console.log('[handleCityChange] bookingCities length:', bookingCities.length);
-    
+
     setSelectedCity(city)
     setSelectedEventType("") // Reset event type when city changes
+    setSelectedEventId(null) // FIX: Reset event ID when city changes
     setSelectedEvent("") // Reset selected event when city changes
     setEligibleEvents([]) // Reset eligible events
     setEligibleGames([]) // Reset eligible games
@@ -615,7 +617,7 @@ export default function RegisterEventClientPage() {
   // Handle event type change
   const handleEventTypeChange = async (eventType: string) => {
     console.log('[handleEventTypeChange] Selected event type:', eventType);
-    
+
     setSelectedEventType(eventType)
     setSelectedEvent("") // Reset selected event when event type changes
     setEligibleGames([]) // Reset games when event type changes
@@ -627,12 +629,13 @@ export default function RegisterEventClientPage() {
     setDiscountAmount(0)
     setAvailablePromocodes([])
 
-    // Find the selected event from API events
+    // Find the selected event from API events - FIX: Use ID lookup instead of title
     const selectedApiEvent = apiEvents.find(event => event.event_title === eventType);
     console.log('[handleEventTypeChange] Found selectedApiEvent:', selectedApiEvent);
-    console.log('[handleEventTypeChange] games_with_slots in event:', selectedApiEvent?.games_with_slots);
 
     if (selectedApiEvent) {
+      // Store the event ID for reliable lookups later
+      setSelectedEventId(selectedApiEvent.event_id);
       const mockEvent = {
         id: selectedApiEvent.event_id.toString(),
         title: selectedApiEvent.event_title,
@@ -951,9 +954,9 @@ export default function RegisterEventClientPage() {
       setAppliedPromoCode(null);
       setDiscountAmount(0);
 
-      // Fetch applicable promocodes for the new game selection
-      if (newSelectedGames.length > 0 && selectedEventType) {
-        const selectedApiEvent = apiEvents.find((event) => event.event_title === selectedEventType);
+      // Fetch applicable promocodes for the new game selection - FIX: Use ID lookup
+      if (newSelectedGames.length > 0 && selectedEventId) {
+        const selectedApiEvent = apiEvents.find((event) => event.event_id === selectedEventId);
         if (selectedApiEvent) {
           // Get unique game IDs for promo code API
           const gameIdsForPromo = [...new Set(newSelectedGames.map((selection) => selection.gameId))];
@@ -1002,6 +1005,7 @@ export default function RegisterEventClientPage() {
         eventDate: eventDate.toISOString(),
         selectedCity,
         selectedEventType,
+        selectedEventId, // FIX: Save event ID for reliable restoration
         selectedEvent,
         selectedGames,
         childAgeMonths,
@@ -1041,6 +1045,7 @@ export default function RegisterEventClientPage() {
         eventDate: eventDate.toISOString(),
         selectedCity,
         selectedEventType,
+        selectedEventId, // FIX: Save event ID for reliable restoration
         selectedEvent,
         selectedGames,
         childAgeMonths,
@@ -1138,13 +1143,13 @@ export default function RegisterEventClientPage() {
   // Handle applying a promocode
   const handleApplyPromoCode = async () => {
     if (!promoCode) return;
-    
+
     try {
       setIsApplyingPromocode(true);
       setPromocodeError(null);
-      
-      // Get the selected event ID
-      const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType);
+
+      // Get the selected event - FIX: Use ID lookup instead of title
+      const selectedApiEvent = apiEvents.find(event => event.event_id === selectedEventId);
       if (!selectedApiEvent) {
         throw new Error('Selected event not found');
       }
@@ -1290,8 +1295,8 @@ export default function RegisterEventClientPage() {
         console.warn(`⚠️ Warning: ${selectedGames.length} games selected but only ${selectedGamesObj.length} found in eligible games`)
       }
 
-      // Get the selected event details
-      const selectedApiEvent = apiEvents.find(event => event.event_title === selectedEventType)
+      // Get the selected event details - FIX: Use ID lookup instead of title
+      const selectedApiEvent = apiEvents.find(event => event.event_id === selectedEventId)
       if (!selectedApiEvent) {
         throw new Error("Selected event not found")
       }
@@ -1481,6 +1486,7 @@ export default function RegisterEventClientPage() {
       setEligibleGames([])
       setSelectedGames([])
       setSelectedEventType("")
+      setSelectedEventId(null) // FIX: Reset event ID
       setSelectedEvent("")
       
       // Clear ALL storage caches
@@ -1607,6 +1613,7 @@ export default function RegisterEventClientPage() {
         setGender(data.gender || 'female')
         setSelectedCity(data.selectedCity || cityParam || '')
         setSelectedEventType(data.selectedEventType || '')
+        setSelectedEventId(data.selectedEventId || null) // FIX: Restore event ID
         setSelectedEvent(data.selectedEvent || '')
         setSelectedGames(data.selectedGames || [])
         setChildAgeMonths(data.childAgeMonths || null)
@@ -1703,8 +1710,11 @@ export default function RegisterEventClientPage() {
       restoredChildAgeMonths &&
       apiEvents.length > 0
     ) {
+      // FIX: Also find by title for restoration from sessionStorage, but set the ID
       const selectedApiEvent = apiEvents.find(event => event.event_title === restoredEventType)
       if (selectedApiEvent) {
+        setSelectedEventType(restoredEventType) // Restore the title for display
+        setSelectedEventId(selectedApiEvent.event_id) // FIX: Set the ID for lookups
         fetchGamesByEventAndAge(selectedApiEvent.event_id, Number(restoredChildAgeMonths))
         sessionStorage.removeItem('nibog_restored_eventType')
         sessionStorage.removeItem('nibog_restored_childAgeMonths')
