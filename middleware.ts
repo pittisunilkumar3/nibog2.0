@@ -227,20 +227,36 @@ export async function middleware(request: NextRequest) {
         redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
         return redirect;
       }
+      // Clear expired token cookie if present
+      if (superadminToken && isTokenExpired(superadminToken)) {
+        response.cookies.set('superadmin-token', '', { maxAge: 0, path: '/' });
+      }
       return response;
     }
 
     // For all other admin routes, verify superadmin
     const user = await verifySuperadmin(superadminToken);
+    
+    // Check if token exists but is expired
+    const isExpired = superadminToken && isTokenExpired(superadminToken);
+    
     if (!user) {
       // Redirect to superadmin login if not authenticated
       const loginUrl = new URL('/superadmin/login', request.url);
       // Preserve the original intended URL for redirect after login
       loginUrl.searchParams.set('redirect', pathname);
+      // Add reason if token was expired
+      if (isExpired) {
+        loginUrl.searchParams.set('reason', 'expired');
+      }
       const redirect = NextResponse.redirect(loginUrl);
       redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
       redirect.headers.set('Pragma', 'no-cache');
       redirect.headers.set('Expires', '0');
+      // Clear expired token cookie
+      if (isExpired) {
+        redirect.cookies.set('superadmin-token', '', { maxAge: 0, path: '/' });
+      }
       return redirect;
     }
 

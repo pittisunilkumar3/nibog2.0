@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Baby, CreditCard, MapPin, User, Mail, Phone, Edit, Eye, Loader2, AlertTriangle } from "lucide-react"
+import { Calendar, Baby, CreditCard, MapPin, User, Mail, Phone, Edit, Eye, Loader2, AlertTriangle, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -34,13 +34,37 @@ const cities = [
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-  const { userProfile, isLoading: profileLoading, isError } = useUserProfileWithBookings(user?.user_id || null)
+  const { userProfile, isLoading: profileLoading, isValidating, isError, refresh } = useUserProfileWithBookings(user?.user_id || null)
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[Dashboard] State:', { 
+      userId: user?.user_id, 
+      authLoading, 
+      profileLoading, 
+      isValidating,
+      isError,
+      hasUserProfile: !!userProfile,
+      bookingsCount: userProfile?.bookings?.length 
+    })
+  }, [user?.user_id, authLoading, profileLoading, isValidating, isError, userProfile])
 
   const [isEditing, setIsEditing] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [defaultCity, setDefaultCity] = useState("")
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Handle manual refresh
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      refresh()
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500)
+    }
+  }, [refresh])
 
   // Update form fields when user profile is loaded
   useEffect(() => {
@@ -152,7 +176,7 @@ export default function DashboardPage() {
   }
 
   // Show loading state while checking authentication or loading profile
-  if (authLoading || profileLoading) {
+  if (authLoading || (profileLoading && !userProfile)) {
     return (
       <div className="container py-8">
         <div className="mb-6">
@@ -201,10 +225,29 @@ export default function DashboardPage() {
 
   return (
     <div className="container py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">My Dashboard</h1>
-        <p className="text-muted-foreground">Manage your profile and view your bookings</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">My Dashboard</h1>
+          <p className="text-muted-foreground">Manage your profile and view your bookings</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={isRefreshing || isValidating}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${(isRefreshing || isValidating) ? 'animate-spin' : ''}`} />
+          {isRefreshing || isValidating ? 'Refreshing...' : 'Refresh'}
+        </Button>
       </div>
+      
+      {/* Show a subtle loading indicator when validating in background */}
+      {isValidating && !profileLoading && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Updating data...</span>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-1">

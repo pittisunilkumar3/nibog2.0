@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Calendar, Search, Eye, Download, AlertTriangle, Loader2 } from "lucide-react"
+import { Calendar, Search, Eye, Download, AlertTriangle, Loader2, RefreshCw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -30,11 +30,22 @@ export const dynamic = 'force-dynamic'
 export default function BookingsPage() {
   const [activeTab, setActiveTab] = useState("upcoming")
   const [searchQuery, setSearchQuery] = useState("")
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
 
   // Fetch customer profile with bookings
-  const { userProfile, isLoading: profileLoading, isError } = useUserProfileWithBookings(user?.user_id || null)
+  const { userProfile, isLoading: profileLoading, isValidating, isError, refresh } = useUserProfileWithBookings(user?.user_id || null)
+
+  // Handle manual refresh
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      refresh()
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500)
+    }
+  }, [refresh])
 
   // Process and categorize bookings
   const { upcomingBookings, pastBookings } = useMemo(() => {
@@ -97,7 +108,7 @@ export default function BookingsPage() {
   }
 
   // Show loading state while checking authentication or loading profile
-  if (authLoading || profileLoading) {
+  if (authLoading || (profileLoading && !userProfile)) {
     return (
       <div className="container py-8">
         <div className="mb-6">
@@ -147,10 +158,29 @@ export default function BookingsPage() {
 
   return (
     <div className="container py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">My Bookings</h1>
-        <p className="text-muted-foreground">View and manage your event bookings</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">My Bookings</h1>
+          <p className="text-muted-foreground">View and manage your event bookings</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={isRefreshing || isValidating}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${(isRefreshing || isValidating) ? 'animate-spin' : ''}`} />
+          {isRefreshing || isValidating ? 'Refreshing...' : 'Refresh'}
+        </Button>
       </div>
+      
+      {/* Show a subtle loading indicator when validating in background */}
+      {isValidating && !profileLoading && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Updating bookings...</span>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

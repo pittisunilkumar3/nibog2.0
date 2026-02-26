@@ -14,7 +14,14 @@ export async function GET(
     if (!userId || isNaN(Number(userId))) {
       return NextResponse.json(
         { error: "User ID is required and must be a valid number" },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+        }
       );
     }
 
@@ -25,14 +32,25 @@ export async function GET(
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
       },
       cache: "no-store",
+      // Add a signal to prevent hanging requests
+      signal: AbortSignal.timeout(30000), // 30 second timeout
     });
 
     if (response.status === 404) {
       return NextResponse.json(
         { error: "User not found" },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+        }
       );
     }
 
@@ -41,18 +59,40 @@ export async function GET(
       console.error(`Server API route: API error response: ${errorText}`);
       return NextResponse.json(
         { error: `API returned error status: ${response.status}`, details: errorText },
-        { status: response.status }
+        { 
+          status: response.status,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+        }
       );
     }
 
     const data = await response.json();
 
-    return NextResponse.json(data);
+    // Create response with no-cache headers
+    const jsonResponse = NextResponse.json(data);
+    
+    // Set cache control headers to prevent caching
+    jsonResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    jsonResponse.headers.set('Pragma', 'no-cache');
+    jsonResponse.headers.set('Expires', '0');
+    
+    return jsonResponse;
   } catch (error) {
     console.error("Server API route: Error in user profile endpoint:", error);
     return NextResponse.json(
       { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      }
     );
   }
 }

@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { isTokenExpired } from '@/lib/auth/session'
 
 // Helper function to get cookie by name
@@ -11,7 +11,32 @@ function getCookie(name: string): string | null {
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
   return null;
-} 
+}
+
+// Clear all admin/superadmin session data
+function clearAdminSession() {
+  if (typeof window === 'undefined') return
+  
+  // Clear localStorage
+  localStorage.removeItem('superadmin')
+  localStorage.removeItem('adminToken')
+  
+  // Clear sessionStorage
+  sessionStorage.removeItem('superadmin')
+  sessionStorage.removeItem('adminToken')
+  sessionStorage.clear()
+  
+  // Clear cookies
+  const domains = ['', `.${window.location.hostname}`, window.location.hostname]
+  const paths = ['/', '']
+  
+  domains.forEach(domain => {
+    paths.forEach(path => {
+      document.cookie = `superadmin-token=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT${domain ? `; domain=${domain}` : ''}`
+      document.cookie = `superadmin-token=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${domain ? `; domain=${domain}` : ''}`
+    })
+  })
+}
 
 export default function AuthGuard({
   children,
@@ -19,7 +44,38 @@ export default function AuthGuard({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [authState, setAuthState] = useState<'loading' | 'authorized' | 'unauthorized'>('loading')
+
+  // Function to check if admin token is expired
+  const checkTokenExpiry = useCallback(() => {
+    if (typeof window === 'undefined') return false
+    
+    try {
+      const adminToken = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken')
+      
+      if (adminToken && isTokenExpired(adminToken)) {
+        console.info('[AuthGuard] SuperAdmin token expired - auto logging out')
+        
+        // Clear all session data
+        clearAdminSession()
+        
+        // Update state
+        setAuthState('unauthorized')
+        
+        // Redirect to superadmin login with reason
+        const loginUrl = `/superadmin/login?reason=expired`
+        window.location.href = loginUrl
+        
+        return true // Token was expired
+      }
+      
+      return false // Token is valid or not present
+    } catch (e) {
+      console.warn('[AuthGuard] Error checking token expiry:', e)
+      return false
+    }
+  }, [])
 
   useEffect(() => {
     // This check only runs on client-side
@@ -32,10 +88,31 @@ export default function AuthGuard({
         
         if (superadminToken) {
           try {
-            const user = JSON.parse(decodeURIComponent(superadminToken))
+            // Try to parse as JSON first (legacy format)
+            let user
+            try {
+              user = JSON.parse(decodeURIComponent(superadminToken))
+            } catch (e) {
+              // If not JSON, might be a JWT token - check cookie expiry separately
+              // The cookie itself has max-age, so if it exists and is valid, allow access
+              user = { is_superadmin: true }
+            }
+            
             if (user.is_superadmin) {
+              // Check token expiry before authorizing
+              const adminToken = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken')
+              if (adminToken && isTokenExpired(adminToken)) {
+                // Token expired - clear and redirect
+                clearAdminSession()
+                setAuthState('unauthorized')
+                window.location.href = '/superadmin/login?reason=expired'
+                return
+              }
+              
               // Also store in localStorage for backward compatibility
-              localStorage.setItem('superadmin', JSON.stringify(user))
+              if (user.email) {
+                localStorage.setItem('superadmin', JSON.stringify(user))
+              }
               setAuthState('authorized')
               return
             }
@@ -53,10 +130,9 @@ export default function AuthGuard({
           const adminToken = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken')
           if (adminToken && isTokenExpired(adminToken)) {
             // Token expired - clear stored data and redirect to login
-            localStorage.removeItem('superadmin')
-            localStorage.removeItem('adminToken')
-            sessionStorage.removeItem('adminToken')
-            window.location.href = '/superadmin/login'
+            clearAdminSession()
+            setAuthState('unauthorized')
+            window.location.href = '/superadmin/login?reason=expired'
             return
           }
 
@@ -80,6 +156,41 @@ export default function AuthGuard({
 
     checkAuth()
   }, [router])
+  
+  // Periodic token expiry check (every 60 seconds)
+  useEffect(() => {
+    // Only run if authorized
+    if (authState !== 'authorized') return
+    
+    // Don't run on login page
+    if (pathname === '/superadmin/login' || pathname === '/admin/login') return
+    
+    // Check immediately
+    checkTokenExpiry()
+    
+    // Set up interval for periodic checks
+    const interval = setInterval(() => {
+      checkTokenExpiry()
+    }, 60 * 1000) // Check every 60 seconds
+    
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [authState, pathname, checkTokenExpiry])
+  
+  // Listen for storage changes to sync logout across tabs
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if ((e.key === 'superadmin' || e.key === 'adminToken') && !e.newValue) {
+        // Session removed in another tab
+        setAuthState('unauthorized')
+        window.location.href = '/superadmin/login'
+      }
+    }
+    
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Show loading state while checking authentication
   if (authState === 'loading') {

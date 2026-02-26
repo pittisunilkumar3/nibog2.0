@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         
         if (isTokenExpired(token)) {
-          console.info('[AuthContext] Token expired - auto logging out')
+          console.info('[AuthContext] User token expired - auto logging out')
 
           // Best-effort server-side logout to clear httpOnly cookies
           try {
@@ -146,16 +146,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             '/privacy',
             '/terms',
             '/refund',
-            '/payment-callback'
+            '/payment-callback',
+            '/superadmin/login'
           ]
           const isPublicPage = publicPages.some(page => pathname === page || pathname.startsWith(page + '/'))
           
-          // NEVER redirect from public pages - just clear session silently
-          if (!isPublicPage && pathname !== '/login') {
-            console.info('[AuthContext] Redirecting to login from protected page:', pathname)
+          // Check if we're on admin pages - don't redirect to user login
+          const isAdminPage = pathname.startsWith('/admin') || pathname.startsWith('/superadmin')
+          
+          // NEVER redirect from public pages or admin pages - just clear session silently
+          if (!isPublicPage && !isAdminPage && pathname !== '/login') {
+            console.info('[AuthContext] Redirecting to user login from protected page:', pathname)
             window.location.href = '/login?reason=expired&callbackUrl=' + encodeURIComponent(pathname)
           } else if (isPublicPage) {
             console.info('[AuthContext] On public page, session cleared but not redirecting:', pathname)
+          } else if (isAdminPage) {
+            console.info('[AuthContext] On admin page, user session cleared but admin session handled separately:', pathname)
           }
         }
       } catch (e) {

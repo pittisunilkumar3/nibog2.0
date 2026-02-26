@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -94,10 +94,19 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("")
   const [error, setError] = useState("")
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState("")
 
   // Get the callback URL from the query parameters
   const callbackUrl = searchParams.get("callbackUrl") || "/"
   const returnUrl = searchParams.get("returnUrl") || "/"
+  const reason = searchParams.get("reason")
+
+  // Show message if redirected due to expired session
+  useEffect(() => {
+    if (reason === 'expired') {
+      setSessionExpiredMessage("Your session has expired. Please log in again to continue.")
+    }
+  }, [reason])
 
   // Handle Google login success
   const handleGoogleSuccess = async (credentialResponse: any) => {
@@ -383,6 +392,12 @@ function LoginContent() {
             </CardHeader>
             
             <CardContent className="space-y-4 px-6">
+              {sessionExpiredMessage && (
+                <div className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{sessionExpiredMessage}</span>
+                </div>
+              )}
               {error && (
                 <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-500 dark:bg-red-950/50 dark:text-red-400 border border-red-200 dark:border-red-800 animate-pulse">
                   <span className="mr-2">⚠️</span> {error}

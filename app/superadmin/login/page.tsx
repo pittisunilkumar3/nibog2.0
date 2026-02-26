@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,7 @@ export default function SuperAdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("") // State for error message
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState("") // State for session expired message
   const router = useRouter()
   const [redirectTo, setRedirectTo] = useState('/admin')
 
@@ -31,8 +32,15 @@ export default function SuperAdminLoginPage() {
 
     const params = new URLSearchParams(window.location.search)
     const redirect = params.get('redirect')
+    const reason = params.get('reason')
+    
     if (redirect) {
       setRedirectTo(redirect)
+    }
+    
+    // Show message if redirected due to expired session
+    if (reason === 'expired') {
+      setSessionExpiredMessage("Your session has expired. Please log in again to continue.")
     }
   }, [])
 
@@ -132,6 +140,12 @@ export default function SuperAdminLoginPage() {
           <CardDescription className="text-center">
             Enter your credentials to access the admin dashboard
           </CardDescription>
+          {sessionExpiredMessage && (
+            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-md text-sm flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>{sessionExpiredMessage}</span>
+            </div>
+          )}
           {errorMessage && (
             <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
               {errorMessage}

@@ -766,42 +766,51 @@ export interface UserProfileData {
  * @returns User profile data and loading/error states
  */
 export function useUserProfileWithBookings(userId: number | null) {
-  const { data, error, isLoading, mutate } = useSWR<{ success: boolean; data: UserProfileData }>(
+  console.log('[useUserProfileWithBookings] userId:', userId)
+  
+  const fetcher = async (url: string) => {
+    console.log('[useUserProfileWithBookings] Fetching:', url)
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('[useUserProfileWithBookings] Error:', response.status)
+      throw new Error(`Failed to fetch: ${response.status}`);
+    }
+
+    const data = response.json();
+    console.log('[useUserProfileWithBookings] Got data')
+    return data;
+  };
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ success: boolean; data: UserProfileData }>(
     userId ? `/api/bookings/user/${userId}` : null,
-    async (url: string) => {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to fetch user profile:', response.status, errorData);
-        throw new Error(`Failed to fetch user profile: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    },
+    fetcher,
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
       revalidateOnMount: true,
-      revalidateOnReconnect: true,
-      dedupingInterval: 2000,
-      refreshInterval: 0,
-      shouldRetryOnError: true,
-      errorRetryCount: 3,
-      errorRetryInterval: 1000,
+      dedupingInterval: 5000,
     }
   );
+
+  console.log('[useUserProfileWithBookings] SWR state:', { 
+    hasData: !!data, 
+    isLoading, 
+    isValidating,
+    bookingsCount: data?.data?.bookings?.length 
+  })
 
   return {
     userProfile: data?.data,
     isLoading,
+    isValidating,
     isError: !!error,
     error,
     mutate,
+    refresh: () => mutate(),
   };
 }

@@ -46,7 +46,7 @@ export default function PaymentsPage() {
           payments.push({
             payment_id: payment.payment_id,
             booking_id: booking.booking_id,
-            amount: payment.amount,
+            amount: parseFloat(String(payment.amount)) || 0, // Parse string to number
             payment_status: payment.payment_status,
             payment_method: payment.payment_method,
             transaction_id: payment.transaction_id,
