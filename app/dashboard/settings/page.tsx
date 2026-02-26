@@ -10,6 +10,7 @@ import { User, Loader2, Save } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
+import { updateUser } from "@/services/userService"
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -50,36 +51,23 @@ export default function SettingsPage() {
     setIsUpdating(true)
 
     try {
-      const response = await fetch('/api/users/edit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.user_id,
+      await updateUser({
+        user_id: user.user_id,
+        full_name: fullName,
+        email: email,
+        phone: phone,
+      })
+
+      // Update localStorage with new user data
+      if (typeof window !== 'undefined') {
+        const updatedUser = {
+          ...user,
           full_name: fullName,
           email: email,
           phone: phone,
-          accept_terms: true,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update profile')
-      }
-
-      // Update localStorage with new user data
-      if (typeof window !== 'undefined' && data && data.length > 0) {
-        const updatedUser = {
-          ...user,
-          full_name: data[0].full_name,
-          email: data[0].email,
-          phone: data[0].phone,
-          updated_at: data[0].updated_at,
+          updated_at: new Date().toISOString(),
         }
-        localStorage.setItem('user', JSON.stringify(updatedUser))
+        localStorage.setItem('nibog-user', JSON.stringify(updatedUser))
       }
 
       toast({

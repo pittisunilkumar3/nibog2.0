@@ -215,8 +215,6 @@ export async function updateUser(userData: UpdateUserData): Promise<any> {
     throw new Error("Invalid user ID. ID must be a positive number.");
   }
 
-
-
   // Only send fields that are provided (partial update)
   const { user_id, accept_terms, ...fields } = userData;
   const payload: Record<string, any> = {};
@@ -229,13 +227,11 @@ export async function updateUser(userData: UpdateUserData): Promise<any> {
     }
   }
 
-  // Don't send accept_terms for updates - it's only for registration
-
-
-  // Get token from local/session storage - try superadmin token first, then admin token
+  // Get token from local/session storage - try user session first, then admin tokens
   let token = '';
   if (typeof window !== 'undefined') {
-    token = localStorage.getItem('superadminToken') ||
+    token = localStorage.getItem('nibog-session') ||  // User session token
+      localStorage.getItem('superadminToken') ||
       sessionStorage.getItem('superadminToken') ||
       localStorage.getItem('adminToken') ||
       sessionStorage.getItem('adminToken') ||
@@ -243,31 +239,39 @@ export async function updateUser(userData: UpdateUserData): Promise<any> {
       sessionStorage.getItem('token') || '';
   }
 
-
-
   if (!token) {
+    console.error('[updateUser] No authentication token found');
     throw new Error('No authentication token found. Please log in again.');
   }
 
-  const response = await fetch(`/api/users/${user_id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(payload),
-    cache: 'no-store',
-  });
+  try {
+    const response = await fetch(`/api/users/${user_id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    });
 
+    const data = await response.json();
 
+    if (!response.ok) {
+      console.error('[updateUser] API error:', data);
+      throw new Error(data.message || data.error || `Failed to update user (${response.status})`);
+    }
+    
+    if (!data.success) {
+      console.error('[updateUser] Unsuccessful response:', data);
+      throw new Error(data.message || 'Failed to update user');
+    }
 
-  const data = await response.json();
-
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.message || 'Failed to update user');
+    return data;
+  } catch (error) {
+    console.error('[updateUser] Error:', error);
+    throw error;
   }
-  return data;
 }
 
 // Delete user

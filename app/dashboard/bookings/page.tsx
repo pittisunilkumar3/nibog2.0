@@ -23,9 +23,27 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { useUserProfileWithBookings } from "@/lib/swr-hooks"
 import { useRouter } from "next/navigation"
+import { formatDateShort } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
+
+// Helper function to format time
+const formatTime = (timeString: string) => {
+  if (!timeString) return ''
+  try {
+    const [hours, minutes] = timeString.split(':')
+    const hour = parseInt(hours, 10)
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+    return `${displayHour}:${minutes} ${ampm}`
+  } catch {
+    return timeString
+  }
+}
 
 export default function BookingsPage() {
   const [activeTab, setActiveTab] = useState("upcoming")
@@ -33,9 +51,23 @@ export default function BookingsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
 
   // Fetch customer profile with bookings
   const { userProfile, isLoading: profileLoading, isValidating, isError, refresh } = useUserProfileWithBookings(user?.user_id || null)
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[Bookings] State:', { 
+      userId: user?.user_id, 
+      authLoading, 
+      profileLoading, 
+      isValidating,
+      isError,
+      hasUserProfile: !!userProfile,
+      bookingsCount: userProfile?.bookings?.length 
+    })
+  }, [user?.user_id, authLoading, profileLoading, isValidating, isError, userProfile])
 
   // Handle manual refresh
   const handleRefresh = useCallback(async () => {
@@ -54,6 +86,7 @@ export default function BookingsPage() {
     }
 
     const now = new Date()
+    now.setHours(0, 0, 0) // Set to start of today for better comparison
     const upcoming: any[] = []
     const past: any[] = []
 
@@ -74,10 +107,11 @@ export default function BookingsPage() {
     if (!searchQuery) return true
 
     const query = searchQuery.toLowerCase()
+    const games = booking.children?.[0]?.booking_games || []
     return (
       (booking.event?.event_name || '').toLowerCase().includes(query) ||
       booking.booking_ref.toLowerCase().includes(query) ||
-      (booking.booking_games && booking.booking_games.some((game: any) => (game.game?.game_name || '').toLowerCase().includes(query)))
+      games.some((game: any) => (game.game_name || '').toLowerCase().includes(query))
     )
   })
 
@@ -85,10 +119,11 @@ export default function BookingsPage() {
     if (!searchQuery) return true
 
     const query = searchQuery.toLowerCase()
+    const games = booking.children?.[0]?.booking_games || []
     return (
       (booking.event?.event_name || '').toLowerCase().includes(query) ||
       booking.booking_ref.toLowerCase().includes(query) ||
-      (booking.booking_games && booking.booking_games.some((game: any) => (game.game?.game_name || '').toLowerCase().includes(query)))
+      games.some((game: any) => (game.game_name || '').toLowerCase().includes(query))
     )
   })
 
@@ -133,6 +168,7 @@ export default function BookingsPage() {
     return null
   }
 
+  // Show error state
   if (isError) {
     return (
       <div className="container py-8">
@@ -224,14 +260,17 @@ export default function BookingsPage() {
                   {filteredUpcomingBookings.map((booking) => (
                     <div key={booking.booking_id} className="rounded-lg border p-6">
                       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <div className="flex items-center gap-2">
                             <h3 className="text-xl font-semibold">{booking.event?.event_name || 'Unknown Event'}</h3>
-                            {booking.booking_status === "Confirmed" && (
+                            {booking.status === "Confirmed" && (
                               <Badge className="bg-green-500 hover:bg-green-600">Confirmed</Badge>
                             )}
-                            {booking.booking_status === "Pending" && (
+                            {booking.status === "Pending" && (
                               <Badge variant="outline">Pending</Badge>
+                            )}
+                            {booking.status === "Cancelled" && (
+                              <Badge className="bg-red-500 hover:bg-red-600">Cancelled</Badge>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -240,69 +279,50 @@ export default function BookingsPage() {
                           </div>
 
                           {/* Display Games */}
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium">Games:</p>
-                            {booking.booking_games && booking.booking_games.length > 0 ? (
-                              booking.booking_games.map((bookingGame: any, index: number) => (
-                                <div key={index} className="ml-4 space-y-1">
-                                  <p className="text-sm font-medium">{bookingGame.game?.game_name || 'Unknown Game'}</p>
-                                  <div className="flex gap-2">
+                          <div className="mt-3">
+                            <p className="text-sm font-medium">Games Booked:</p>
+                            {booking.children && booking.children.length > 0 && booking.children[0].booking_games && booking.children[0].booking_games.length > 0 ? (
+                              <div className="mt-2 space-y-2">
+                                {booking.children[0].booking_games.map((bookingGame: any, index: number) => (
+                                  <div key={index} className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">{bookingGame.game_name || 'Unknown Game'}</p>
+                                      {bookingGame.slot_start_time && bookingGame.slot_end_time && (
+                                        <p className="text-xs text-muted-foreground">
+                                          {formatTime(bookingGame.slot_start_time)} - {formatTime(bookingGame.slot_end_time)}
+                                        </p>
+                                      )}
+                                    </div>
                                     <Badge variant="outline" className="text-xs">
                                       ₹{bookingGame.game_price}
                                     </Badge>
-                                    <Badge variant="outline" className="text-xs">
-                                      {bookingGame.attendance_status}
-                                    </Badge>
                                   </div>
-                                </div>
-                              ))
+                                ))}
+                              </div>
                             ) : (
-                              <p className="ml-4 text-xs text-muted-foreground">No games available</p>
+                              <p className="text-xs text-muted-foreground mt-2">No games available</p>
                             )}
                           </div>
 
                           {/* Display Payments */}
                           {booking.payments && booking.payments.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-sm font-medium">Payments:</p>
-                              {booking.payments.map((payment: any, index: number) => (
-                                <div key={index} className="ml-4 space-y-1">
-                                  <p className="text-sm">
-                                    {payment.payment_method} - ₹{payment.amount}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Transaction ID: {payment.transaction_id}
-                                  </p>
-                                  <div className="flex gap-2">
-                                    <Badge variant="outline" className="text-xs">
-                                      {payment.payment_status}
-                                    </Badge>
-                                    <Badge variant="outline" className="text-xs">
-                                      {formatDate(payment.payment_date)}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              ))}
+                            <div className="mt-3">
+                              <p className="text-sm font-medium">Payment:</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant={booking.payments[0].payment_status === "Paid" || booking.payments[0].payment_status === "successful" ? "default" : "outline"} 
+                                  className={booking.payments[0].payment_status === "Paid" || booking.payments[0].payment_status === "successful" ? "bg-green-500" : ""}>
+                                  {booking.payments[0].payment_status}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  via {booking.payments[0].payment_method}
+                                </span>
+                              </div>
                             </div>
                           )}
 
-                          <p className="text-sm">
-                            <span className="font-medium">Booking Reference:</span> {booking.booking_ref}
-                          </p>
-                          <p className="text-sm">
-                            <span className="font-medium">Payment:</span>{" "}
-                            {booking.payments && booking.payments.length > 0 ? (
-                              booking.payments[0].payment_status === "Paid" || booking.payments[0].payment_status === "successful" ? (
-                                <span className="text-green-600">Paid</span>
-                              ) : booking.payments[0].payment_status === "Pending" ? (
-                                <span className="text-amber-600">Pending</span>
-                              ) : (
-                                <span className="text-gray-600">{booking.payments[0].payment_status}</span>
-                              )
-                            ) : (
-                              <span className="text-gray-600">No Payment</span>
-                            )}
-                          </p>
+                          <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>Ref: {booking.booking_ref}</span>
+                          </div>
                         </div>
                         <div className="flex flex-row gap-2 sm:flex-col">
                           <Button variant="outline" size="sm" asChild>
@@ -314,10 +334,9 @@ export default function BookingsPage() {
                           <Button variant="outline" size="sm" asChild>
                             <Link href={`/dashboard/bookings/${booking.booking_id}/ticket`}>
                               <Download className="mr-2 h-4 w-4" />
-                              Download Ticket
+                            Download Ticket
                             </Link>
                           </Button>
-
                         </div>
                       </div>
                     </div>
@@ -346,13 +365,13 @@ export default function BookingsPage() {
                   {filteredPastBookings.map((booking) => (
                     <div key={booking.booking_id} className="rounded-lg border p-6">
                       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <div className="flex items-center gap-2">
                             <h3 className="text-xl font-semibold">{booking.event?.event_name || 'Unknown Event'}</h3>
-                            {booking.booking_status === "Confirmed" && (
+                            {booking.status === "Confirmed" && (
                               <Badge className="bg-blue-500 hover:bg-blue-600">Completed</Badge>
                             )}
-                            {booking.booking_status === "Cancelled" && (
+                            {booking.status === "Cancelled" && (
                               <Badge className="bg-red-500 hover:bg-red-600">Cancelled</Badge>
                             )}
                           </div>
@@ -362,71 +381,50 @@ export default function BookingsPage() {
                           </div>
 
                           {/* Display Games */}
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium">Games:</p>
-                            {booking.booking_games && booking.booking_games.length > 0 ? (
-                              booking.booking_games.map((bookingGame: any, index: number) => (
-                                <div key={index} className="ml-4 space-y-1">
-                                  <p className="text-sm font-medium">{bookingGame.game?.game_name || 'Unknown Game'}</p>
-                                  <div className="flex gap-2">
+                          <div className="mt-3">
+                            <p className="text-sm font-medium">Games Booked:</p>
+                            {booking.children && booking.children.length > 0 && booking.children[0].booking_games && booking.children[0].booking_games.length > 0 ? (
+                              <div className="mt-2 space-y-2">
+                                {booking.children[0].booking_games.map((bookingGame: any, index: number) => (
+                                  <div key={index} className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">{bookingGame.game_name || 'Unknown Game'}</p>
+                                      {bookingGame.slot_start_time && bookingGame.slot_end_time && (
+                                        <p className="text-xs text-muted-foreground">
+                                          {formatTime(bookingGame.slot_start_time)} - {formatTime(bookingGame.slot_end_time)}
+                                        </p>
+                                      )}
+                                    </div>
                                     <Badge variant="outline" className="text-xs">
                                       ₹{bookingGame.game_price}
                                     </Badge>
-                                    <Badge variant="outline" className="text-xs">
-                                      {bookingGame.attendance_status}
-                                    </Badge>
                                   </div>
-                                </div>
-                              ))
+                                ))}
+                              </div>
                             ) : (
-                              <p className="ml-4 text-xs text-muted-foreground">No games available</p>
+                              <p className="text-xs text-muted-foreground mt-2">No games available</p>
                             )}
                           </div>
 
                           {/* Display Payments */}
                           {booking.payments && booking.payments.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-sm font-medium">Payments:</p>
-                              {booking.payments.map((payment: any, index: number) => (
-                                <div key={index} className="ml-4 space-y-1">
-                                  <p className="text-sm">
-                                    {payment.payment_method} - ₹{payment.amount}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Transaction ID: {payment.transaction_id}
-                                  </p>
-                                  <div className="flex gap-2">
-                                    <Badge variant="outline" className="text-xs">
-                                      {payment.payment_status}
-                                    </Badge>
-                                    <Badge variant="outline" className="text-xs">
-                                      {formatDate(payment.payment_date)}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              ))}
+                            <div className="mt-3">
+                              <p className="text-sm font-medium">Payment:</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant={booking.payments[0].payment_status === "Paid" || booking.payments[0].payment_status === "successful" ? "default" : "outline"} 
+                                  className={booking.payments[0].payment_status === "Paid" || booking.payments[0].payment_status === "successful" ? "bg-green-500" : ""}>
+                                  {booking.payments[0].payment_status}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  via {booking.payments[0].payment_method}
+                                </span>
+                              </div>
                             </div>
                           )}
 
-                          <p className="text-sm">
-                            <span className="font-medium">Booking Reference:</span> {booking.booking_ref}
-                          </p>
-                          <p className="text-sm">
-                            <span className="font-medium">Payment:</span>{" "}
-                            {booking.payments && booking.payments.length > 0 ? (
-                              booking.payments[0].payment_status === "Paid" || booking.payments[0].payment_status === "successful" ? (
-                                <span className="text-green-600">Paid</span>
-                              ) : booking.payments[0].payment_status === "Refunded" ? (
-                                <span className="text-blue-600">Refunded</span>
-                              ) : booking.payments[0].payment_status === "Pending" ? (
-                                <span className="text-amber-600">Pending</span>
-                              ) : (
-                                <span className="text-gray-600">{booking.payments[0].payment_status}</span>
-                              )
-                            ) : (
-                              <span className="text-gray-600">No Payment</span>
-                            )}
-                          </p>
+                          <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>Ref: {booking.booking_ref}</span>
+                          </div>
                         </div>
                         <div className="flex flex-row gap-2 sm:flex-col">
                           <Button variant="outline" size="sm" asChild>
@@ -435,7 +433,7 @@ export default function BookingsPage() {
                               View Details
                             </Link>
                           </Button>
-                          {booking.booking_status === "Confirmed" && (
+                          {booking.status === "Confirmed" && (
                             <Button variant="outline" size="sm" asChild>
                               <Link href={`/dashboard/bookings/${booking.booking_ref}/review`}>
                                 Write Review

@@ -3,15 +3,14 @@ import { USER_API } from '@/config/api';
 
 export async function POST(request: Request) {
   try {
-
-
+    // Get the authorization header from the incoming request
+    const authHeader = request.headers.get('authorization');
+    
     // Parse the request body
     const userData = await request.json();
 
-
     // Ensure user_id is a number
     const userId = Number(userData.user_id);
-
 
     if (!userId || isNaN(userId) || userId <= 0) {
       console.error(`Server API route: Invalid user ID: ${userId}`);
@@ -51,70 +50,84 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      // Convert to number if it's a string
-      userData.city_id = Number(userData.city_id);
     }
 
+    // Build the API URL with user_id in the path (PUT /api/user/:id)
+    const apiUrl = `${USER_API.UPDATE}/${userId}`;
 
-
-    // Forward the request to the external API with the correct URL
-    const apiUrl = USER_API.UPDATE;
-
-
-    // Ensure city_id is a number when provided, otherwise keep it null
-    const normalizedUserData = {
-      ...userData,
-      user_id: userId,
-      // Preserve null/undefined, only convert to number if provided
-      city_id: userData.city_id !== null && userData.city_id !== undefined ? Number(userData.city_id) : null,
-      accept_terms: Boolean(userData.accept_terms)
+    // Prepare the data to send - exclude user_id from body since it's in the URL
+    const dataToSend: Record<string, any> = {
+      full_name: userData.full_name,
+      email: userData.email,
+      phone: userData.phone,
     };
 
+    // Add optional fields if provided
+    if (userData.city_id !== undefined && userData.city_id !== null) {
+      dataToSend.city_id = Number(userData.city_id);
+    }
 
+    if (userData.accept_terms !== undefined) {
+      dataToSend.accept_terms = Boolean(userData.accept_terms);
+    }
 
-    // Ensure boolean fields are properly set
     if (userData.is_active !== undefined) {
-      normalizedUserData.is_active = Boolean(userData.is_active);
+      dataToSend.is_active = Boolean(userData.is_active);
     }
 
     if (userData.is_locked !== undefined) {
-      normalizedUserData.is_locked = Boolean(userData.is_locked);
+      dataToSend.is_locked = Boolean(userData.is_locked);
     }
 
+    console.log(`Server API route: Updating user ${userId} at ${apiUrl}`);
+    console.log('Server API route: Data being sent:', dataToSend);
 
+    // Prepare headers - include Authorization if available
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    if (authHeader) {
+      headers["Authorization"] = authHeader;
+    }
 
+    // Use PUT method as required by the backend API
     const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(normalizedUserData),
+      method: "PUT",
+      headers,
+      body: JSON.stringify(dataToSend),
       cache: "no-store",
     });
 
-
-
     // Get the response data
     const responseText = await response.text();
-
+    console.log(`Server API route: Response status: ${response.status}`);
+    console.log(`Server API route: Response body:`, responseText);
 
     try {
       // Try to parse the response as JSON
       const responseData = JSON.parse(responseText);
 
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: responseData.message || responseData.error || "Failed to update user" },
+          { status: response.status }
+        );
+      }
 
+      // Return the updated user data
       return NextResponse.json(responseData, { status: 200 });
     } catch (parseError) {
       console.error("Server API route: Error parsing response:", parseError);
       // If parsing fails but we got a 200 status, consider it a success
       if (response.status >= 200 && response.status < 300) {
-        return NextResponse.json({ success: true }, { status: 200 });
+        return NextResponse.json({ success: true, message: "User updated successfully" }, { status: 200 });
       }
       // Otherwise, return the error
       return NextResponse.json(
         {
           error: "Failed to parse API response",
-          rawResponse: responseText.substring(0, 500) // Limit the size of the raw response
+          rawResponse: responseText.substring(0, 500)
         },
         { status: 500 }
       );

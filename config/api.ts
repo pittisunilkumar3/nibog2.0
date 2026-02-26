@@ -123,7 +123,7 @@ export const USER_AUTH_API = {
 export const USER_API = {
   GET_ALL: "https://ai.nibog.in/webhook/v1/nibog/user/get-all", // GET
   GET: "https://ai.nibog.in/webhook/v1/nibog/user/get", // GET with id
-  UPDATE: "https://ai.nibog.in/webhook/v1/nibog/user/edit", // POST - Using the edit endpoint as specified in the API docs
+  UPDATE: `${API_BASE_URL}/api/user`, // PUT - Uses backend API: PUT /api/user/:id
   DELETE: "https://ai.nibog.in/webhook/v1/nibog/user/delete", // POST
 };
 

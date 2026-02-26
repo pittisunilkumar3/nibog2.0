@@ -58,8 +58,13 @@ export default function BookingDetailPage({ params }: Props) {
     // Get payment information
     const payment = found.payments?.[0]
 
-    // Get games info
+    // Get games info from booking_games
     const games = child?.booking_games || []
+
+    // Get slot time from first game if available
+    const firstGame = games?.[0]
+    const slotStartTime = firstGame?.slot_start_time || found.event?.start_time || ''
+    const slotEndTime = firstGame?.slot_end_time || found.event?.end_time || ''
 
     return {
       booking_id: found.booking_id,
@@ -82,8 +87,8 @@ export default function BookingDetailPage({ params }: Props) {
       venue_name: found.event?.venue?.venue_name || 'N/A',
       city_name: found.event?.venue?.city || 'N/A',
       game_price: games?.[0]?.game_price?.toString() || '',
-      start_time: found.event?.start_time || '',
-      end_time: found.event?.end_time || '',
+      start_time: slotStartTime,
+      end_time: slotEndTime,
       slot_price: games?.[0]?.game_price?.toString() || '',
       games: games,
       payments: found.payments || []
@@ -264,7 +269,7 @@ export default function BookingDetailPage({ params }: Props) {
                     <h3 className="font-medium mb-2">Games Booked</h3>
                     {booking.games.map((bookingGame: any, index: number) => (
                       <div key={index} className="flex justify-between text-sm">
-                        <span>{bookingGame.game?.game_name || 'Unknown Game'}</span>
+                        <span>{bookingGame.game_name || 'Unknown Game'}</span>
                         <span>₹{bookingGame.game_price}</span>
                       </div>
                     ))}
@@ -298,7 +303,7 @@ export default function BookingDetailPage({ params }: Props) {
                   <div className="space-y-2">
                     {booking.games.map((bookingGame: any, index: number) => (
                       <div key={index} className="flex items-center justify-between text-sm">
-                        <span>{bookingGame.game?.game_name || 'Unknown Game'}</span>
+                        <span>{bookingGame.game_name || 'Unknown Game'}</span>
                         <Badge variant="outline">₹{bookingGame.game_price}</Badge>
                       </div>
                     ))}

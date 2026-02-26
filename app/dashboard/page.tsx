@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Baby, CreditCard, MapPin, User, Mail, Phone, Edit, Eye, Loader2, AlertTriangle, RefreshCw } from "lucide-react"
+import { Calendar, Baby, CreditCard, MapPin, User, Mail, Phone, Edit, Eye, Loader2, AlertTriangle, RefreshCw, Save } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -18,6 +19,7 @@ import { formatDateShort } from "@/lib/utils"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { useUserProfileWithBookings } from "@/lib/swr-hooks"
+import { updateUser } from "@/services/userService"
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -34,6 +36,7 @@ const cities = [
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
   const { userProfile, isLoading: profileLoading, isValidating, isError, refresh } = useUserProfileWithBookings(user?.user_id || null)
 
   // Debug logging
@@ -50,6 +53,7 @@ export default function DashboardPage() {
   }, [user?.user_id, authLoading, profileLoading, isValidating, isError, userProfile])
 
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
@@ -166,13 +170,60 @@ export default function DashboardPage() {
   }
 
   // Handle profile update
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // In a real app, this would be an API call to update the profile
+    if (!user?.user_id) {
+      toast({
+        title: "Error",
+        description: "User ID not found. Please log in again.",
+        variant: "destructive",
+      })
+      return
+    }
 
+    setIsSaving(true)
 
-    setIsEditing(false)
+    try {
+      await updateUser({
+        user_id: user.user_id,
+        full_name: name,
+        email: email,
+        phone: phone,
+      })
+
+      // Update localStorage with new user data
+      if (typeof window !== 'undefined') {
+        const updatedUser = {
+          ...user,
+          full_name: name,
+          email: email,
+          phone: phone,
+          updated_at: new Date().toISOString(),
+        }
+        localStorage.setItem('nibog-user', JSON.stringify(updatedUser))
+      }
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      })
+
+      // Close edit mode
+      setIsEditing(false)
+      
+      // Refresh the profile data
+      refresh()
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update profile. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Show loading state while checking authentication or loading profile
@@ -311,10 +362,22 @@ export default function DashboardPage() {
                       </Select>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                      <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                      <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={isSaving}>
                         Cancel
                       </Button>
-                      <Button type="submit">Save Changes</Button>
+                      <Button type="submit" disabled={isSaving}>
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </form>
