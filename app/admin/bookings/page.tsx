@@ -232,9 +232,38 @@ export default function BookingsPage() {
           getAllEvents(true),
           getAllBabyGames()
         ])
-        // Normalize events minimal structure
-        setEvents(eventsData.map((e: any) => ({ id: e.event_id ?? e.id, event_title: e.event_title ?? e.title })))
-        setGames(Array.isArray(gamesData) ? gamesData : [])
+        
+        // Normalize and deduplicate events by id AND title
+        const uniqueEvents = new Map()
+        const seenTitles = new Set()
+        const eventsList = eventsData.map((e: any) => ({ 
+          id: e.event_id ?? e.id, 
+          event_title: e.event_title ?? e.title 
+        }))
+        eventsList.forEach((e: any) => {
+          const normalizedTitle = e.event_title?.toLowerCase().trim()
+          // Dedupe by ID first, then by title to catch duplicates with different IDs
+          if (!uniqueEvents.has(e.id) && !seenTitles.has(normalizedTitle)) {
+            uniqueEvents.set(e.id, e)
+            seenTitles.add(normalizedTitle)
+          }
+        })
+        setEvents(Array.from(uniqueEvents.values()))
+        
+        // Deduplicate games by id AND name
+        const uniqueGames = new Map()
+        const seenGameNames = new Set()
+        const gamesList = Array.isArray(gamesData) ? gamesData : []
+        gamesList.forEach((g: any) => {
+          const id = g.id ?? g.game_id ?? g.game_name
+          const normalizedGameName = g.game_name?.toLowerCase().trim()
+          // Dedupe by ID first, then by name to catch duplicates with different IDs
+          if (!uniqueGames.has(id) && !seenGameNames.has(normalizedGameName)) {
+            uniqueGames.set(id, { ...g, id })
+            seenGameNames.add(normalizedGameName)
+          }
+        })
+        setGames(Array.from(uniqueGames.values()))
       } catch (err) {
         console.error('Failed to load filter data:', err)
       } finally {

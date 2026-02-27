@@ -9,61 +9,89 @@ import { Calendar, Clock, MapPin, Users, Info, Star, Heart, Share2 } from "lucid
 import BookingForm from "@/components/booking-form"
 import { Button } from "@/components/ui/button"
 import { formatPrice, formatDate } from "@/lib/utils"
+import EventDetailClient from "./client-page"
 
-// Mock data - in a real app, this would come from an API
-const events = [
-  {
-    id: "1",
-    title: "Baby Sensory Play",
-    description:
-      "Engage your baby's senses with various textures, sounds, and colors. This interactive session is designed to stimulate your baby's development through sensory exploration. Activities include tactile play, visual stimulation, and sound discovery. All materials used are baby-safe and age-appropriate.",
-    minAgeMonths: 6,
-    maxAgeMonths: 18,
-    date: "2025-04-15",
-    time: "10:00 AM - 11:30 AM",
-    venue: "Little Explorers Center",
-    address: "123 Play Street, Andheri West",
-    city: "Mumbai",
-    price: 799,
-    image: "/placeholder.svg?height=400&width=600",
-    gallery: [
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-    ],
-    spotsLeft: 5,
-    maxParticipants: 12,
-    facilitator: "Ms. Anjali Sharma",
-    whatToBring: "Comfortable clothes, extra set of clothes, diapers",
+// Force dynamic rendering - always fetch fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+type Props = {
+  params: { id: string }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  try {
+    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004'
+    const response = await fetch(`${BACKEND_URL}/api/events/${params.id}/details`, {
+      cache: 'no-store'
+    })
+    
+    if (!response.ok) {
+      return { title: "Event Not Found | NIBOG" }
+    }
+    
+    const event = await response.json()
+    
+    return {
+      title: `${event.title || event.event_title || 'Event'} | NIBOG`,
+      description: event.description || event.event_description || 'NIBOG Baby Games Event',
+    }
+  } catch {
+    return { title: "Event | NIBOG" }
+  }
+}
+
+async function getEventDetails(id: string) {
+  try {
+    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004'
+    const response = await fetch(`${BACKEND_URL}/api/events/${id}/details`, {
+      cache: 'no-store'
+    })
+    
+    if (!response.ok) {
+      return null
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching event details:', error)
+    return null
+  }
+}
+
+export default async function EventPage({ params }: Props) {
+  const event = await getEventDetails(params.id)
+
+  if (!event) {
+    notFound()
+  }
+
+  // Normalize event data from API response
+  const eventData = {
+    id: event.event_id || event.id || params.id,
+    title: event.event_title || event.title || 'Baby Games Event',
+    description: event.event_description || event.description || 'Join us for an exciting baby games event!',
+    minAgeMonths: 5, // Default minimum age
+    maxAgeMonths: 84, // Default maximum age (7 years)
+    date: event.event_date || event.date || new Date().toISOString(),
+    time: "10:00 AM - 8:00 PM", // Default time
+    venue: event.venue_name || event.venue?.venue_name || 'Venue to be announced',
+    address: event.venue_address || event.venue?.address || '',
+    city: event.city_name || event.city?.city_name || 'City',
+    price: 1800, // Default price
+    image: event.image_url || '/images/baby-crawling.jpg',
+    gallery: [],
+    spotsLeft: 100,
+    maxParticipants: 100,
+    facilitator: "NIBOG Team",
+    whatToBring: "Comfortable clothes, water bottle, and a smile!",
     benefits: [
-      "Enhances cognitive development",
-      "Improves fine motor skills",
-      "Encourages curiosity and exploration",
-      "Promotes parent-child bonding",
+      "Physical development and coordination",
+      "Social interaction with other children",
+      "Building confidence and self-esteem",
+      "Creating memorable experiences",
     ],
-    reviews: [
-      {
-        id: "r1",
-        name: "Priya Sharma",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2025-03-10",
-        comment:
-          "My 10-month-old had a blast at the sensory play event! The organizers were so attentive and the activities were perfectly suited for her age. We'll definitely be back!",
-      },
-      {
-        id: "r2",
-        name: "Vikram Singh",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 4,
-        date: "2025-03-05",
-        comment:
-          "Great event! My baby enjoyed the different textures and sounds. The venue was clean and well-organized. Would recommend to other parents.",
-      },
-    ],
+    reviews: [],
     faqs: [
       {
         question: "Do parents need to stay with their children during the event?",
@@ -71,154 +99,23 @@ const events = [
       },
       {
         question: "What should my child wear?",
-        answer:
-          "Comfortable clothes that you don't mind getting messy. Some activities may involve paint or other materials that could stain clothing.",
+        answer: "Comfortable clothes that allow free movement. Sports shoes are recommended.",
       },
       {
         question: "Is food provided?",
-        answer:
-          "No, food is not provided. You may bring snacks for your child if needed, but please be mindful of allergies.",
+        answer: "No, food is not provided. You may bring snacks and water for your child.",
       },
     ],
-    relatedEvents: ["2", "4", "5"],
-  },
-  {
-    id: "2",
-    title: "Toddler Music & Movement",
-    description:
-      "Fun-filled session with music, dance, and movement activities designed for toddlers. This class introduces children to rhythm, beat, and melody through interactive songs and simple dance movements. Children will use age-appropriate instruments and props to enhance their musical experience.",
-    minAgeMonths: 12,
-    maxAgeMonths: 36,
-    date: "2025-04-16",
-    time: "11:00 AM - 12:30 PM",
-    venue: "Rhythm Studio",
-    address: "45 Melody Lane, Connaught Place",
-    city: "Delhi",
-    price: 899,
-    image: "/placeholder.svg?height=400&width=600",
-    gallery: [
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-    ],
-    spotsLeft: 8,
-    maxParticipants: 15,
-    facilitator: "Mr. Rohit Kapoor",
-    whatToBring: "Comfortable clothes, water bottle",
-    benefits: [
-      "Develops rhythm and coordination",
-      "Enhances listening skills",
-      "Builds confidence through self-expression",
-      "Improves social interaction",
-    ],
-    isOlympics: false,
-    reviews: [
-      {
-        id: "r1",
-        name: "Ananya Patel",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 4,
-        date: "2025-03-12",
-        comment:
-          "The music and movement class was engaging and well-organized. My toddler enjoyed the interactive songs and dance activities. The venue was clean and child-friendly.",
-      },
-    ],
-    faqs: [
-      {
-        question: "Do parents need to participate?",
-        answer: "Yes, parents are encouraged to participate alongside their children to enhance the experience.",
-      },
-      {
-        question: "Do we need to bring our own instruments?",
-        answer: "No, all instruments and props will be provided during the session.",
-      },
-    ],
-    relatedEvents: ["1", "3", "7"],
-  },
-  {
-    id: "3",
-    title: "Baby Olympics: Crawling Race",
-    description:
-      "Let your little crawler compete in a fun and safe environment. This special Baby Olympics event features a crawling race where babies can show off their mobility skills. The course is designed with soft obstacles and interesting toys to encourage movement. Every participant receives a medal and certificate.",
-    minAgeMonths: 8,
-    maxAgeMonths: 14,
-    date: "2025-04-18",
-    time: "09:30 AM - 11:00 AM",
-    venue: "Tiny Champions Arena",
-    address: "78 Sports Complex, Koramangala",
-    city: "Bangalore",
-    price: 999,
-    image: "/placeholder.svg?height=400&width=600",
-    gallery: [
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-      "/placeholder.svg?height=200&width=300",
-    ],
-    spotsLeft: 3,
-    maxParticipants: 10,
-    facilitator: "Ms. Priya Nair",
-    whatToBring: "Comfortable clothes, knee pads (optional), camera for photos",
-    benefits: [
-      "Encourages physical development",
-      "Builds confidence and determination",
-      "Creates memorable experiences",
-      "Provides a fun social environment",
-    ],
-    isOlympics: true,
-    reviews: [
-      {
-        id: "r1",
-        name: "Rahul Verma",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2025-03-15",
-        comment:
-          "The Baby Olympics was such a fun experience for our family. Our 14-month-old participated in the crawling race and loved it. The medal ceremony was adorable!",
-      },
-    ],
-    faqs: [
-      {
-        question: "What if my baby doesn't want to crawl during the event?",
-        answer:
-          "That's completely fine! This is a fun, no-pressure event. Babies can participate at their own comfort level.",
-      },
-      {
-        question: "Will there be professional photography?",
-        answer:
-          "Yes, a professional photographer will be present to capture moments. Photos will be available for purchase after the event.",
-      },
-    ],
-    relatedEvents: ["1", "2", "6"],
-  },
-]
-
-type Props = {
-  params: { id: string }
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const event = events.find((e) => e.id === params.id)
-
-  if (!event) {
-    return {
-      title: "Event Not Found | NIBOG",
-    }
+    games: event.games || event.games_with_slots || [],
   }
 
-  return {
-    title: `${event.title} | NIBOG`,
-    description: event.description,
+  // Calculate age range from games if available
+  if (eventData.games && eventData.games.length > 0) {
+    const minAges = eventData.games.map((g: any) => g.min_age || 5).filter((a: number) => a > 0)
+    const maxAges = eventData.games.map((g: any) => g.max_age || 84).filter((a: number) => a > 0)
+    if (minAges.length > 0) eventData.minAgeMonths = Math.min(...minAges)
+    if (maxAges.length > 0) eventData.maxAgeMonths = Math.max(...maxAges)
   }
-}
-
-export default function EventPage({ params }: Props) {
-  const event = events.find((e) => e.id === params.id)
-
-  if (!event) {
-    notFound()
-  }
-
-  const relatedEvents = event.relatedEvents ? events.filter((e) => event.relatedEvents?.includes(e.id)) : []
 
   return (
     <div className="container py-8">
@@ -233,16 +130,14 @@ export default function EventPage({ params }: Props) {
           <div className="space-y-8">
             <div className="relative overflow-hidden rounded-lg">
               <Image
-                src={event.image || "/placeholder.svg"}
-                alt={event.title}
+                src={eventData.image || "/images/baby-crawling.jpg"}
+                alt={eventData.title}
                 width={800}
                 height={400}
                 className="w-full object-cover"
               />
               <div className="absolute right-3 top-3 flex gap-2">
-                {(event as any).isOlympics && <Badge className="bg-yellow-500 hover:bg-yellow-600">Baby Olympics</Badge>}
-                {(event as any).isAdventure && <Badge className="bg-green-500 hover:bg-green-600">Adventure Kids</Badge>}
-                {(event as any).isToddlerTuesday && <Badge className="bg-blue-500 hover:bg-blue-600">Toddler Tuesday</Badge>}
+                <Badge className="bg-yellow-500 hover:bg-yellow-600">Baby Olympics</Badge>
               </div>
               <div className="absolute right-3 bottom-3 flex gap-2">
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-background/80">
@@ -256,12 +151,12 @@ export default function EventPage({ params }: Props) {
 
             <div>
               <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold">{event.title}</h1>
+                <h1 className="text-3xl font-bold">{eventData.title}</h1>
                 <Badge variant="outline" className="text-sm">
-                  Age: {event.minAgeMonths}-{event.maxAgeMonths} months
+                  Age: {eventData.minAgeMonths}-{eventData.maxAgeMonths} months
                 </Badge>
               </div>
-              <p className="mt-2 text-muted-foreground">{event.description}</p>
+              <p className="mt-2 text-muted-foreground">{eventData.description}</p>
             </div>
 
             <div className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2 md:grid-cols-4">
@@ -269,7 +164,7 @@ export default function EventPage({ params }: Props) {
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Date</p>
-                  <p className="text-sm text-muted-foreground">{formatDate(event.date)}</p>
+                  <p className="text-sm text-muted-foreground">{formatDate(eventData.date)}</p>
                 </div>
               </div>
 
@@ -277,7 +172,7 @@ export default function EventPage({ params }: Props) {
                 <Clock className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Time</p>
-                  <p className="text-sm text-muted-foreground">{event.time}</p>
+                  <p className="text-sm text-muted-foreground">{eventData.time}</p>
                 </div>
               </div>
 
@@ -286,7 +181,7 @@ export default function EventPage({ params }: Props) {
                 <div>
                   <p className="text-sm font-medium">Venue</p>
                   <p className="text-sm text-muted-foreground">
-                    {event.venue}, {event.city}
+                    {eventData.venue}, {eventData.city}
                   </p>
                 </div>
               </div>
@@ -296,7 +191,7 @@ export default function EventPage({ params }: Props) {
                 <div>
                   <p className="text-sm font-medium">Capacity</p>
                   <p className="text-sm text-muted-foreground">
-                    {event.spotsLeft} spots left out of {event.maxParticipants}
+                    {eventData.spotsLeft} spots left out of {eventData.maxParticipants}
                   </p>
                 </div>
               </div>
@@ -305,8 +200,7 @@ export default function EventPage({ params }: Props) {
             <Tabs defaultValue="details">
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="gallery">Gallery</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                <TabsTrigger value="games">Games</TabsTrigger>
                 <TabsTrigger value="faqs">FAQs</TabsTrigger>
               </TabsList>
 
@@ -318,23 +212,23 @@ export default function EventPage({ params }: Props) {
                     <div>
                       <h3 className="font-medium">Age Range</h3>
                       <p className="text-sm text-muted-foreground">
-                        {event.minAgeMonths}-{event.maxAgeMonths} months
+                        {eventData.minAgeMonths}-{eventData.maxAgeMonths} months
                       </p>
                     </div>
 
                     <div>
-                      <h3 className="font-medium">Facilitator</h3>
-                      <p className="text-sm text-muted-foreground">{event.facilitator}</p>
+                      <h3 className="font-medium">Venue</h3>
+                      <p className="text-sm text-muted-foreground">{eventData.venue}</p>
                     </div>
 
                     <div>
                       <h3 className="font-medium">What to Bring</h3>
-                      <p className="text-sm text-muted-foreground">{event.whatToBring}</p>
+                      <p className="text-sm text-muted-foreground">{eventData.whatToBring}</p>
                     </div>
 
                     <div>
-                      <h3 className="font-medium">Price</h3>
-                      <p className="text-sm text-muted-foreground">{formatPrice(event.price)} per child</p>
+                      <h3 className="font-medium">Starting Price</h3>
+                      <p className="text-sm text-muted-foreground">From {formatPrice(eventData.price)}</p>
                     </div>
                   </div>
                 </div>
@@ -342,7 +236,7 @@ export default function EventPage({ params }: Props) {
                 <div>
                   <h2 className="text-xl font-semibold">Benefits</h2>
                   <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                    {event.benefits.map((benefit, index) => (
+                    {eventData.benefits.map((benefit, index) => (
                       <li key={index}>{benefit}</li>
                     ))}
                   </ul>
@@ -351,7 +245,7 @@ export default function EventPage({ params }: Props) {
                 <div>
                   <h2 className="text-xl font-semibold">Location</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {event.address}, {event.city}
+                    {eventData.address}, {eventData.city}
                   </p>
                   <div className="mt-2 h-[200px] overflow-hidden rounded-md bg-muted">
                     <div className="flex h-full items-center justify-center">
@@ -362,84 +256,61 @@ export default function EventPage({ params }: Props) {
                 </div>
               </TabsContent>
 
-              <TabsContent value="gallery" className="pt-4">
-                <h2 className="text-xl font-semibold">Gallery</h2>
-                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-                  {event.gallery.map((image, index) => (
-                    <div key={index} className="group relative aspect-square overflow-hidden rounded-md">
-                      <Image
-                        src={image || "/placeholder.svg"}
-                        alt={`${event.title} - Image ${index + 1}`}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="reviews" className="pt-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Reviews</h2>
-                  <div className="flex items-center gap-2">
-                    <div className="flex">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${i < 4.5 ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"}`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm font-medium">4.5/5</span>
-                    <span className="text-sm text-muted-foreground">({event.reviews?.length || 0} reviews)</span>
-                  </div>
-                </div>
-
-                {event.reviews && event.reviews.length > 0 ? (
+              <TabsContent value="games" className="pt-4">
+                <h2 className="text-xl font-semibold">Available Games</h2>
+                {eventData.games && eventData.games.length > 0 ? (
                   <div className="mt-4 space-y-4">
-                    {event.reviews.map((review) => (
-                      <div key={review.id} className="rounded-lg border p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                    {eventData.games.map((game: any, index: number) => (
+                      <div key={index} className="rounded-lg border p-4">
+                        <div className="flex items-start gap-4">
+                          {game.game_image && (
+                            <div className="relative h-20 w-20 overflow-hidden rounded-md flex-shrink-0">
                               <Image
-                                src={review.avatar || "/placeholder.svg"}
-                                alt={review.name}
+                                src={game.game_image.startsWith('./upload/') 
+                                  ? `/api/serve-image/${game.game_image.replace('./', '')}`
+                                  : game.game_image || '/images/baby-crawling.jpg'}
+                                alt={game.custom_title || game.game_name || 'Game'}
                                 fill
                                 className="object-cover"
                               />
                             </div>
-                            <div>
-                              <h4 className="font-medium">{review.name}</h4>
-                              <p className="text-xs text-muted-foreground">{formatDate(review.date)}</p>
+                          )}
+                          <div className="flex-1">
+                            <h3 className="font-medium">{game.custom_title || game.game_name || 'Game'}</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {game.custom_description || game.game_description || 'Fun activity for kids'}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                Age: {game.min_age || 5}-{game.max_age || 84} months
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {formatPrice(game.price || game.slot_price || 1800)}
+                              </Badge>
+                              {game.start_time && game.end_time && (
+                                <Badge variant="outline" className="text-xs">
+                                  {game.start_time} - {game.end_time}
+                                </Badge>
+                              )}
                             </div>
                           </div>
-                          <div className="flex">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < review.rating ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"
-                                }`}
-                              />
-                            ))}
-                          </div>
                         </div>
-                        <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-4 text-center text-muted-foreground">No reviews yet.</p>
+                  <p className="mt-4 text-center text-muted-foreground">
+                    Games will be available for selection during registration.
+                  </p>
                 )}
               </TabsContent>
 
               <TabsContent value="faqs" className="pt-4">
                 <h2 className="text-xl font-semibold">Frequently Asked Questions</h2>
 
-                {event.faqs && event.faqs.length > 0 ? (
+                {eventData.faqs && eventData.faqs.length > 0 ? (
                   <div className="mt-4 space-y-4">
-                    {event.faqs.map((faq, index) => (
+                    {eventData.faqs.map((faq, index) => (
                       <div key={index} className="rounded-lg border p-4">
                         <h3 className="font-medium">{faq.question}</h3>
                         <p className="mt-1 text-sm text-muted-foreground">{faq.answer}</p>
@@ -451,49 +322,20 @@ export default function EventPage({ params }: Props) {
                 )}
               </TabsContent>
             </Tabs>
-
-            {relatedEvents.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold">Similar Events You Might Like</h2>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {relatedEvents.map((relatedEvent) => (
-                    <Link key={relatedEvent.id} href={`/events/${relatedEvent.id}`} className="group">
-                      <div className="overflow-hidden rounded-lg border transition-all group-hover:border-primary group-hover:shadow-sm">
-                        <div className="relative h-32">
-                          <Image
-                            src={relatedEvent.image || "/placeholder.svg"}
-                            alt={relatedEvent.title}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="p-3">
-                          <h3 className="font-medium group-hover:text-primary">{relatedEvent.title}</h3>
-                          <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                            <span>{formatDate(relatedEvent.date)}</span>
-                            <span>{formatPrice(relatedEvent.price)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         <div>
           <div className="sticky top-20 rounded-lg border bg-card p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">Book This Event</h2>
+            <h2 className="text-xl font-semibold">Register for Event</h2>
             <div className="mt-4 space-y-4">
               <div className="flex items-center justify-between">
-                <span>Price per child</span>
-                <span className="font-medium">{formatPrice(event.price)}</span>
+                <span>Starting from</span>
+                <span className="font-medium">{formatPrice(eventData.price)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Available spots</span>
-                <span className="font-medium">{event.spotsLeft}</span>
+                <span className="font-medium">{eventData.spotsLeft}</span>
               </div>
               <Separator />
 
@@ -511,13 +353,13 @@ export default function EventPage({ params }: Props) {
               </div>
 
               <BookingForm
-                eventId={event.id}
-                price={event.price}
-                spotsLeft={event.spotsLeft}
-                minAgeMonths={event.minAgeMonths}
-                maxAgeMonths={event.maxAgeMonths}
-                eventDate={event.date}
-                eventCity={event.city}
+                eventId={eventData.id.toString()}
+                price={eventData.price}
+                spotsLeft={eventData.spotsLeft}
+                minAgeMonths={eventData.minAgeMonths}
+                maxAgeMonths={eventData.maxAgeMonths}
+                eventDate={eventData.date}
+                eventCity={eventData.city}
               />
             </div>
           </div>

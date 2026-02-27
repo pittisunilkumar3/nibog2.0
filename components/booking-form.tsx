@@ -20,13 +20,7 @@ import {
 import { Badge } from "./ui/badge"
 import { calculateAgeInMonths, formatAge, isChildEligible, formatPrice } from "@/lib/utils"
 import type { Child } from "@/types"
-
-// Mock data - in a real app, this would come from an API or context
-const isAuthenticated = false
-const children: Child[] = [
-  { id: "1", userId: "u1", name: "Aryan", dob: "2024-01-15", createdAt: "", updatedAt: "" },
-  { id: "2", userId: "u1", name: "Zara", dob: "2023-06-10", createdAt: "", updatedAt: "" },
-]
+import { useAuth } from "@/contexts/auth-context"
 
 type BookingFormProps = {
   eventId: string
@@ -48,12 +42,17 @@ export default function BookingForm({
   eventCity = "Hyderabad", // Default to Hyderabad if not provided
 }: BookingFormProps) {
   const router = useRouter()
+  const { isAuthenticated, user } = useAuth()
   const [selectedChild, setSelectedChild] = useState("")
   const [quantity, setQuantity] = useState(1)
   const [promoCode, setPromoCode] = useState("")
   const [discount, setDiscount] = useState(0)
   const [showLoginDialog, setShowLoginDialog] = useState(false)
   const [showAgeWarning, setShowAgeWarning] = useState(false)
+  
+  // Children will come from user's bookings/children data in a real implementation
+  // For now, we'll redirect to the full registration flow
+  const children: Child[] = []
 
   const handleApplyPromo = () => {
     // Mock promo code validation - in a real app, this would be an API call

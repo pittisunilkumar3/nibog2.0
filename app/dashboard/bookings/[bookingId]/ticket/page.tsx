@@ -1,15 +1,21 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import TicketClient from "./ticket-client"
+import { headers } from "next/headers"
 
 type Props = {
-  params: { bookingId: string }
+  params: Promise<{ bookingId: string }>
 }
 
 async function getBookingData(bookingId: string) {
   try {
-    // First try to get booking data from the API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/bookings/get/${bookingId}`, {
+    // Get the host from headers for server-side fetching
+    const headersList = await headers()
+    const host = headersList.get("host") || "localhost:3112"
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http"
+    const baseUrl = `${protocol}://${host}`
+    
+    const response = await fetch(`${baseUrl}/api/bookings/get/${bookingId}`, {
       cache: 'no-store'
     })
 
@@ -17,6 +23,10 @@ async function getBookingData(bookingId: string) {
       const bookingData = await response.json()
       return bookingData
     }
+    
+    // Log error for debugging
+    const errorData = await response.json().catch(() => ({}))
+    console.error('API error:', response.status, errorData)
   } catch (error) {
     console.error('Error fetching booking data:', error)
   }
@@ -25,7 +35,8 @@ async function getBookingData(bookingId: string) {
 }
 
 export default async function TicketPage({ params }: Props) {
-  const bookingData = await getBookingData(params.bookingId)
+  const { bookingId } = await params
+  const bookingData = await getBookingData(bookingId)
 
   if (!bookingData) {
     return (
@@ -41,6 +52,6 @@ export default async function TicketPage({ params }: Props) {
     )
   }
 
-  return <TicketClient bookingData={bookingData} bookingId={params.bookingId} />
+  return <TicketClient bookingData={bookingData} bookingId={bookingId} />
 }
 

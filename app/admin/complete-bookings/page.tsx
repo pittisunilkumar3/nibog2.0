@@ -208,15 +208,18 @@ function transformCompleteBooking(completeBooking: CompleteBooking): Booking[] {
 
 // Booking statuses for filtering
 const statusOptions = [
-  { id: "1", name: "Confirmed", value: "confirmed" },
-  { id: "2", name: "Pending", value: "pending" },
-  { id: "3", name: "Cancelled", value: "cancelled" },
-  { id: "4", name: "Completed", value: "completed" },
+  { id: "1", name: "Paid", value: "paid" },
+  { id: "2", name: "Confirmed", value: "confirmed" },
+  { id: "3", name: "Pending", value: "pending" },
+  { id: "4", name: "Cancelled", value: "cancelled" },
+  { id: "5", name: "Completed", value: "completed" },
 ]
 
 // Status badge component
 const getStatusBadge = (status: string) => {
   switch (status?.toLowerCase()) {
+    case 'paid':
+      return <Badge className="bg-emerald-500 hover:bg-emerald-600">Paid</Badge>
     case 'confirmed':
       return <Badge className="bg-green-500 hover:bg-green-600">Confirmed</Badge>
     case 'pending':
@@ -233,6 +236,7 @@ const getStatusBadge = (status: string) => {
 export default function CompleteBookingsPage() {
   const { toast } = useToast()
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [rawCompleteBookings, setRawCompleteBookings] = useState<CompleteBooking[]>([]) // Store original bookings for accurate stats
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState<number | null>(null)
@@ -272,8 +276,11 @@ export default function CompleteBookingsPage() {
       }
 
       // The API returns complete bookings in nested structure
-      // Transform them to flat structure for the table
+      // Store the original complete bookings for accurate statistics
       const completeBookings: CompleteBooking[] = data.data || []
+      setRawCompleteBookings(completeBookings)
+      
+      // Transform them to flat structure for the table
       const flatBookings: Booking[] = []
       
       completeBookings.forEach((completeBooking) => {
@@ -308,11 +315,40 @@ export default function CompleteBookingsPage() {
           getAllEvents(true),
           getAllBabyGames()
         ])
-        // Normalize events minimal structure
-        setEvents(eventsData.map((e: any) => ({ id: e.event_id ?? e.id, event_title: e.event_title ?? e.title })))
-        setGames(Array.isArray(gamesData) ? gamesData : [])
+        
+        // Normalize and deduplicate events by id AND title
+        const uniqueEvents = new Map()
+        const seenTitles = new Set()
+        const eventsList = eventsData.map((e: any) => ({ 
+          id: e.event_id ?? e.id, 
+          event_title: e.event_title ?? e.title 
+        }))
+        eventsList.forEach((e: any) => {
+          const normalizedTitle = e.event_title?.toLowerCase().trim()
+          // Dedupe by ID first, then by title to catch duplicates with different IDs
+          if (!uniqueEvents.has(e.id) && !seenTitles.has(normalizedTitle)) {
+            uniqueEvents.set(e.id, e)
+            seenTitles.add(normalizedTitle)
+          }
+        })
+        setEvents(Array.from(uniqueEvents.values()))
+        
+        // Deduplicate games by id AND name
+        const uniqueGames = new Map()
+        const seenGameNames = new Set()
+        const gamesList = Array.isArray(gamesData) ? gamesData : []
+        gamesList.forEach((g: any) => {
+          const id = g.id ?? g.game_id ?? g.game_name
+          const normalizedGameName = g.game_name?.toLowerCase().trim()
+          // Dedupe by ID first, then by name to catch duplicates with different IDs
+          if (!uniqueGames.has(id) && !seenGameNames.has(normalizedGameName)) {
+            uniqueGames.set(id, { ...g, id })
+            seenGameNames.add(normalizedGameName)
+          }
+        })
+        setGames(Array.from(uniqueGames.values()))
       } catch (err) {
-        // Silent error handling
+        console.error('Failed to load filter data:', err)
       } finally {
         setIsLoadingFilters(false)
       }
@@ -674,13 +710,31 @@ export default function CompleteBookingsPage() {
     },
   ]
 
-  // Calculate summary statistics for complete bookings
-  const confirmedBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'confirmed').length
-  const pendingBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'pending').length
-  const cancelledBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'cancelled').length
-  const completedBookings = bookings.filter(b => b.booking_status?.toLowerCase() === 'completed').length
-  const totalRevenue = bookings
-    .filter(b => ['confirmed', 'completed'].includes(b.booking_status?.toLowerCase() || ''))
+  // Calculate summary statistics from UNIQUE bookings (not flat rows)
+  // Each booking has one total_amount regardless of how many children/games it has
+  const totalBookingsCount = rawCompleteBookings.length
+
+  // Helper function to normalize status for comparison
+  // The API uses: "Paid", "Confirmed", "Pending", "Cancelled", "Completed"
+  const isPaidStatus = (status: string) => ['paid', 'confirmed', 'completed'].includes(status?.toLowerCase() || '')
+  
+  // Calculate counts from rawCompleteBookings (unique bookings from API)
+  // "Paid" means payment received - treat as confirmed/successful
+  // "Confirmed" means manually confirmed by admin
+  // Both should count as successful bookings
+  const paidBookings = rawCompleteBookings.filter(b => b.status?.toLowerCase() === 'paid').length
+  const confirmedBookings = rawCompleteBookings.filter(b => b.status?.toLowerCase() === 'confirmed').length
+  const pendingBookings = rawCompleteBookings.filter(b => b.status?.toLowerCase() === 'pending').length
+  const cancelledBookings = rawCompleteBookings.filter(b => b.status?.toLowerCase() === 'cancelled').length
+  const completedBookings = rawCompleteBookings.filter(b => b.status?.toLowerCase() === 'completed').length
+  
+  // Total successful bookings = Paid + Confirmed + Completed
+  const successfulBookings = paidBookings + confirmedBookings + completedBookings
+  
+  // Total revenue: sum of total_amount from all paid/confirmed/completed bookings
+  // "Paid" status means payment was received
+  const totalRevenue = rawCompleteBookings
+    .filter(b => isPaidStatus(b.status))
     .reduce((sum, b) => sum + parseFloat(b.total_amount || '0'), 0)
 
   if (isLoading) {
@@ -718,14 +772,15 @@ export default function CompleteBookingsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{bookings.length}</div>
+            <div className="text-2xl font-bold">{totalBookingsCount}</div>
             <p className="text-xs text-muted-foreground">Total Bookings</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">{confirmedBookings}</div>
-            <p className="text-xs text-muted-foreground">Confirmed</p>
+            <div className="text-2xl font-bold text-green-600">{successfulBookings}</div>
+            <p className="text-xs text-muted-foreground">Paid / Confirmed</p>
+            <p className="text-xs text-muted-foreground mt-1">Paid: {paidBookings} | Confirmed: {confirmedBookings}</p>
           </CardContent>
         </Card>
         <Card>
@@ -939,11 +994,11 @@ export default function CompleteBookingsPage() {
           {/* Results Summary */}
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              Showing {filteredBookings.length} of {bookings.length} bookings
+              Showing {filteredBookings.length} entries from {totalBookingsCount} unique bookings
             </span>
             {filteredBookings.length !== bookings.length && (
               <span className="text-primary font-medium">
-                {bookings.length - filteredBookings.length} filtered out
+                {bookings.length - filteredBookings.length} entries filtered out
               </span>
             )}
           </div>

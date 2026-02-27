@@ -710,3 +710,50 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
 }
+
+/* Print styles for ticket */
+@media print {
+  /* Hide non-printable elements */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure background colors print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ticket-specific print styles */
+  body {
+    background: white !important;
+  }
+
+  /* Remove shadows and borders for cleaner print */
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: none !important;
+  }
+
+  /* Ensure the ticket takes full width on print */
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure QR code prints correctly */
+  canvas {
+    max-width: 100% !important;
+  }
+
+  /* Page break handling */
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure text is readable */
+  .text-muted-foreground {
+    color: #666 !important;
+  }
+}
