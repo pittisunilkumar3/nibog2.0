@@ -5,15 +5,20 @@ const API_BASE_URL = process.env.BACKEND_URL || "http://localhost:3004";
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
   try {
+    // Await params before accessing (required in Next.js 15+)
+    const params = await context.params;
     const userId = params.userId;
+
+    console.log('[API /bookings/user/[userId]] Fetching bookings for userId:', userId);
 
     // Validate userId
     if (!userId || isNaN(Number(userId))) {
+      console.log('[API /bookings/user/[userId]] Invalid userId:', userId);
       return NextResponse.json(
-        { error: "User ID is required and must be a valid number" },
+        { success: false, error: "User ID is required and must be a valid number" },
         { 
           status: 400,
           headers: {
@@ -27,6 +32,7 @@ export async function GET(
 
     // Call the external API
     const apiUrl = `${API_BASE_URL}/api/bookings/user/${userId}`;
+    console.log('[API /bookings/user/[userId]] Calling backend:', apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -40,9 +46,12 @@ export async function GET(
       signal: AbortSignal.timeout(30000), // 30 second timeout
     });
 
+    console.log('[API /bookings/user/[userId]] Backend response status:', response.status);
+
     if (response.status === 404) {
+      console.log('[API /bookings/user/[userId]] User not found');
       return NextResponse.json(
-        { error: "User not found" },
+        { success: false, error: "User not found" },
         { 
           status: 404,
           headers: {
@@ -56,9 +65,9 @@ export async function GET(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Server API route: API error response: ${errorText}`);
+      console.error(`[API /bookings/user/[userId]] API error response: ${errorText}`);
       return NextResponse.json(
-        { error: `API returned error status: ${response.status}`, details: errorText },
+        { success: false, error: `API returned error status: ${response.status}`, details: errorText },
         { 
           status: response.status,
           headers: {
@@ -71,6 +80,7 @@ export async function GET(
     }
 
     const data = await response.json();
+    console.log('[API /bookings/user/[userId]] Success, bookings count:', data?.data?.bookings?.length || 0);
 
     // Create response with no-cache headers
     const jsonResponse = NextResponse.json(data);
@@ -82,9 +92,9 @@ export async function GET(
     
     return jsonResponse;
   } catch (error) {
-    console.error("Server API route: Error in user profile endpoint:", error);
+    console.error("[API /bookings/user/[userId]] Error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
+      { success: false, error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { 
         status: 500,
         headers: {

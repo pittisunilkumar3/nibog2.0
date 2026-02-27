@@ -766,25 +766,39 @@ export interface UserProfileData {
  * @returns User profile data and loading/error states
  */
 export function useUserProfileWithBookings(userId: number | null) {
-  console.log('[useUserProfileWithBookings] userId:', userId)
+  console.log('[useUserProfileWithBookings] Called with userId:', userId, 'type:', typeof userId)
   
   const fetcher = async (url: string) => {
     console.log('[useUserProfileWithBookings] Fetching:', url)
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for authentication
+      });
 
-    if (!response.ok) {
-      console.error('[useUserProfileWithBookings] Error:', response.status)
-      throw new Error(`Failed to fetch: ${response.status}`);
+      console.log('[useUserProfileWithBookings] Response status:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[useUserProfileWithBookings] Error response:', errorText);
+        throw new Error(`Failed to fetch: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('[useUserProfileWithBookings] Got data:', { 
+        success: data?.success, 
+        hasUser: !!data?.data?.user,
+        bookingsCount: data?.data?.bookings?.length 
+      });
+      return data;
+    } catch (error) {
+      console.error('[useUserProfileWithBookings] Fetch error:', error);
+      throw error;
     }
-
-    const data = response.json();
-    console.log('[useUserProfileWithBookings] Got data')
-    return data;
   };
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ success: boolean; data: UserProfileData }>(
@@ -794,6 +808,9 @@ export function useUserProfileWithBookings(userId: number | null) {
       revalidateOnFocus: false,
       revalidateOnMount: true,
       dedupingInterval: 5000,
+      onError: (err) => {
+        console.error('[useUserProfileWithBookings] SWR Error:', err);
+      }
     }
   );
 
@@ -801,6 +818,8 @@ export function useUserProfileWithBookings(userId: number | null) {
     hasData: !!data, 
     isLoading, 
     isValidating,
+    hasError: !!error,
+    errorMessage: error?.message,
     bookingsCount: data?.data?.bookings?.length 
   })
 
