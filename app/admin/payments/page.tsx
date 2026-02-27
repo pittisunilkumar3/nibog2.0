@@ -100,8 +100,11 @@ export default function PaymentsPage() {
         search: searchQuery || undefined,
       }
 
+      console.log('🔄 Fetching payments with filters:', filters)
+
       // Fetch payments first
       const paymentsData = await getAllPayments(filters)
+      console.log('✅ Payments loaded:', paymentsData?.length || 0)
       setPayments(paymentsData)
 
       // Try to fetch analytics, but don't fail if it doesn't work
@@ -114,9 +117,18 @@ export default function PaymentsPage() {
         setAnalytics(null)
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching payments:", error)
-      toast.error("Failed to fetch payments data")
+      
+      // Check if it's an authentication error
+      if (error?.message?.includes('Authentication') || error?.message?.includes('log in')) {
+        toast.error("Please log in to view payments")
+      } else {
+        toast.error(error?.message || "Failed to fetch payments data")
+      }
+      
+      // Set empty payments to show the empty state
+      setPayments([])
     } finally {
       setLoading(false)
     }
@@ -158,9 +170,10 @@ export default function PaymentsPage() {
 
   // Handle event name click to filter by event
   const handleEventClick = (eventTitle: string) => {
-    const event = events.find(e => e.event_title === eventTitle)
+    const event = events.find(e => (e.event_title || e.title) === eventTitle)
     if (event) {
-      setSelectedEvent(event.event_id.toString())
+      const eventId = event.event_id || event.id
+      setSelectedEvent(eventId.toString())
     }
   }
 
@@ -232,8 +245,9 @@ export default function PaymentsPage() {
 
     // Event filter
     if (selectedEvent !== "all" && payment.event_title) {
-      const eventId = events.find(event => event.event_title === payment.event_title)?.event_id?.toString();
-      if (eventId !== selectedEvent) {
+      const eventId = events.find(event => (event.event_title || event.title) === payment.event_title);
+      const paymentEventId = eventId?.event_id || eventId?.id;
+      if (paymentEventId?.toString() !== selectedEvent) {
         return false;
       }
     }
@@ -457,16 +471,21 @@ export default function PaymentsPage() {
                 <SelectContent>
                   <SelectItem value="all" className="touch-manipulation">All Events</SelectItem>
                   {events
-                    .filter(event => event?.event_id != null) // Filter out events without an ID
-                    .map((event) => (
-                      <SelectItem
-                        key={event.event_id}
-                        value={event.event_id.toString()}
-                        className="touch-manipulation"
-                      >
-                        {event.event_title || 'Untitled Event'}
-                      </SelectItem>
-                    ))}
+                    .filter(event => event?.event_id != null || event?.id != null) // Filter out events without an ID
+                    .map((event, index) => {
+                      // Support both event_id and id fields
+                      const eventId = event.event_id || event.id;
+                      // Use index in key to ensure uniqueness
+                      return (
+                        <SelectItem
+                          key={`event-${eventId}-${index}`}
+                          value={eventId.toString()}
+                          className="touch-manipulation"
+                        >
+                          {event.event_title || event.title || 'Untitled Event'}
+                        </SelectItem>
+                      );
+                    })}
                 </SelectContent>
               </Select>
 

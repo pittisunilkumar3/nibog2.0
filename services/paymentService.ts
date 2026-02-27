@@ -1,6 +1,6 @@
 // Payment service for handling payment gateway integrations and admin management
 
-import { BOOKING_API } from '@/config/api';
+import { BOOKING_API, PAYMENT_API } from '@/config/api';
 import {
   PHONEPE_CONFIG,
   PhonePePaymentRequest,
@@ -12,6 +12,54 @@ import {
   validatePhonePeConfig,
   logPhonePeConfig
 } from '@/config/phonepe';
+import { getSession } from '@/lib/auth/session';
+
+// Helper function to create headers with auth (async)
+const getAuthHeaders = async () => {
+  let token: string | null = null;
+  
+  if (typeof window !== 'undefined') {
+    // Priority 1: Check for adminToken in localStorage (set by superadmin login)
+    token = localStorage.getItem('adminToken');
+    
+    // Priority 2: Check sessionStorage
+    if (!token) {
+      token = sessionStorage.getItem('adminToken');
+    }
+    
+    // Priority 3: Try getSession which checks nibog-session and other sources
+    if (!token) {
+      token = await getSession();
+    }
+    
+    // Priority 4: Check for superadmin cookie (contains user data, but we need the actual token)
+    // Note: The superadmin-token cookie contains user data JSON, not the token itself
+    // The actual token is stored in localStorage as 'adminToken'
+  }
+  
+  console.log('🔐 getAuthHeaders - Token found:', !!token);
+  
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+};
+
+// Normalize payment status to standard values
+const normalizePaymentStatus = (status: string): 'successful' | 'pending' | 'failed' | 'refunded' => {
+  const statusMap: Record<string, 'successful' | 'pending' | 'failed' | 'refunded'> = {
+    'paid': 'successful',
+    'success': 'successful',
+    'successful': 'successful',
+    'completed': 'successful',
+    'pending': 'pending',
+    'failed': 'failed',
+    'failure': 'failed',
+    'refunded': 'refunded',
+    'refund': 'refunded'
+  };
+  return statusMap[status?.toLowerCase()] || 'pending';
+};
 
 // Payment interface for admin panel
 export interface Payment {
@@ -351,32 +399,86 @@ export async function getAllPayments(filters?: {
     // Return cached data if available and not expired
     const cached = paymentsCache.get(cacheKey);
     if (!forceRefresh && cached && (now - cached.timestamp < CACHE_TTL)) {
+      console.log('📦 Returning cached payments data');
       return cached.data;
     }
 
-    const url = `https://ai.nibog.in/webhook/v1/nibog/payments/get-all${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    // Get the auth token - try multiple sources
+    let token: string | null = null;
+    
+    if (typeof window !== 'undefined') {
+      // Try localStorage first
+      token = localStorage.getItem('adminToken');
+      
+      // Try sessionStorage
+      if (!token) {
+        token = sessionStorage.getItem('adminToken');
+      }
+      
+      // Try cookies as fallback
+      if (!token) {
+        const cookies = document.cookie.split('; ');
+        const authCookie = cookies.find(row => row.startsWith('auth-token='));
+        if (authCookie) {
+          token = authCookie.split('=')[1];
+        }
+      }
+      
+      // Try superadmin-token cookie (contains JSON with token)
+      if (!token) {
+        const cookies = document.cookie.split('; ');
+        const superadminCookie = cookies.find(row => row.startsWith('superadmin-token='));
+        if (superadminCookie) {
+          try {
+            const cookieValue = decodeURIComponent(superadminCookie.split('=')[1]);
+            const userData = JSON.parse(cookieValue);
+            token = userData.token;
+          } catch (e) {
+            console.warn('Failed to parse superadmin cookie:', e);
+          }
+        }
+      }
+    }
+    
+    console.log('🔐 Token found:', !!token);
+    
+    // Build the URL - use the backend URL directly
+    const baseUrl = 'http://localhost:3004';
+    const url = `${baseUrl}/api/payments${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    console.log('🔄 Fetching payments from:', url);
 
+    // Make the request with Authorization header
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
-      // Add cache control headers
-      cache: 'no-store', // Don't cache in the browser
-      next: { 
-        revalidate: 300 // Revalidate every 5 minutes (Next.js data cache)
-      }
+      cache: 'no-store',
     });
 
+    console.log('📡 Response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch payments. Status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ API Error:', errorData);
+      
+      // If unauthorized, provide helpful message
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+      
+      throw new Error(errorData.message || `Failed to fetch payments. Status: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('✅ Payments data received:', data?.data?.length || data?.length || 0, 'records');
     
-    // Process data for faster rendering
+    // Process data for faster rendering - backend returns { success: true, data: [...] }
     let results: Payment[];
-    if (Array.isArray(data)) {
+    if (data && data.success && Array.isArray(data.data)) {
+      results = data.data;
+    } else if (Array.isArray(data)) {
       results = data;
     } else if (data && data.payments && Array.isArray(data.payments)) {
       results = data.payments;
@@ -384,6 +486,12 @@ export async function getAllPayments(filters?: {
       console.warn('Unexpected payments response format:', data);
       results = [];
     }
+
+    // Normalize payment status
+    results = results.map(payment => ({
+      ...payment,
+      payment_status: normalizePaymentStatus(payment.payment_status as string)
+    }));
     
     // Update cache with new data
     paymentsCache.set(cacheKey, { data: results, timestamp: now });
@@ -402,20 +510,27 @@ export async function getAllPayments(filters?: {
  */
 export async function getPaymentById(paymentId: number): Promise<Payment> {
   try {
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/get', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id: paymentId }),
+    // Use backend API instead of webhook
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${PAYMENT_API.GET_BY_ID}/${paymentId}`, {
+      method: 'GET',
+      headers,
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch payment. Status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch payment. Status: ${response.status}`);
     }
 
     const data = await response.json();
-    return data;
+    // Backend returns { success: true, data: {...} }
+    const payment = data.data || data;
+    
+    // Normalize payment status
+    return {
+      ...payment,
+      payment_status: normalizePaymentStatus(payment.payment_status as string)
+    };
   } catch (error) {
     console.error('Error fetching payment:', error);
     throw error;
@@ -448,27 +563,37 @@ export async function updatePaymentStatus(
 }> {
   try {
     const payload = {
-      payment_id: paymentId,
-      status,
+      payment_status: status,
       ...refundData,
     };
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/update-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    // Use backend API instead of webhook
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${PAYMENT_API.UPDATE_STATUS}/${paymentId}/status`, {
+      method: 'PATCH',
+      headers,
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to update payment status. Status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to update payment status. Status: ${response.status}`);
     }
 
     const data = await response.json();
 
-    // API returns array with single object, extract it
-    if (Array.isArray(data) && data.length > 0) {
+    // Backend returns { success: true, message: string, data: {...} }
+    if (data && data.data) {
+      return {
+        payment_id: data.data.payment_id,
+        payment_status: data.data.payment_status,
+        refund_amount: data.data.refund_amount,
+        refund_date: data.data.refund_date,
+        updated_at: data.data.updated_at,
+        is_valid_update: true,
+        message: data.message || 'Payment status updated successfully'
+      };
+    } else if (Array.isArray(data) && data.length > 0) {
       return data[0];
     } else if (!Array.isArray(data)) {
       return data;
@@ -497,48 +622,50 @@ export async function getPaymentAnalytics(filters?: {
     if (filters?.end_date) queryParams.append('end_date', filters.end_date);
     if (filters?.city_id) queryParams.append('city_id', filters.city_id.toString());
 
-    const url = `https://ai.nibog.in/webhook/v1/nibog/payments/analytics${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    // Use backend API instead of webhook
+    const url = `${PAYMENT_API.ANALYTICS}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
+    const headers = await getAuthHeaders();
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch payment analytics. Status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch payment analytics. Status: ${response.status}`);
     }
 
     const data = await response.json();
 
-    // Handle different response formats
-    if (Array.isArray(data) && data.length > 0) {
-      // If response is an array, take the first item
-      const analyticsData = data[0];
-
-      // Transform the response to match our interface
-      return {
-        summary: {
-          total_revenue: parseFloat(analyticsData.total_revenue || 0),
-          total_payments: parseInt(analyticsData.total_payments || 0),
-          successful_payments: parseInt(analyticsData.successful_payments || 0),
-          pending_payments: parseInt(analyticsData.pending_payments || 0),
-          failed_payments: parseInt(analyticsData.failed_payments || 0),
-          refunded_payments: parseInt(analyticsData.refunded_payments || 0),
-          refund_amount: parseFloat(analyticsData.refund_amount || 0),
-          average_transaction: parseFloat(analyticsData.average_transaction || 0),
-        },
-        monthly_data: analyticsData.monthly_data || [],
-        payment_methods: analyticsData.payment_methods || [],
-        city_wise: analyticsData.city_wise || [],
-      };
+    // Handle backend response format: { success: true, data: {...} }
+    let analyticsData;
+    if (data && data.success && data.data) {
+      analyticsData = data.data;
+    } else if (Array.isArray(data) && data.length > 0) {
+      analyticsData = data[0];
     } else if (data && typeof data === 'object') {
-      // If response is already an object, return as is
-      return data;
+      analyticsData = data;
     } else {
       throw new Error('Invalid analytics response format');
     }
+
+    // Transform the response to match our interface
+    return {
+      summary: {
+        total_revenue: parseFloat(analyticsData.summary?.total_revenue || analyticsData.total_revenue || 0),
+        total_payments: parseInt(analyticsData.summary?.total_payments || analyticsData.total_payments || 0),
+        successful_payments: parseInt(analyticsData.summary?.successful_payments || analyticsData.successful_payments || 0),
+        pending_payments: parseInt(analyticsData.summary?.pending_payments || analyticsData.pending_payments || 0),
+        failed_payments: parseInt(analyticsData.summary?.failed_payments || analyticsData.failed_payments || 0),
+        refunded_payments: parseInt(analyticsData.summary?.refunded_payments || analyticsData.refunded_payments || 0),
+        refund_amount: parseFloat(analyticsData.summary?.refund_amount || analyticsData.refund_amount || 0),
+        average_transaction: parseFloat(analyticsData.summary?.average_transaction || analyticsData.average_transaction || 0),
+      },
+      monthly_data: analyticsData.monthly_data || [],
+      payment_methods: analyticsData.payment_methods || [],
+      city_wise: analyticsData.city_wise || [],
+    };
   } catch (error) {
     console.error('Error fetching payment analytics:', error);
     throw error;
@@ -558,53 +685,22 @@ export async function exportPayments(filters: {
   city_id?: number;
 }): Promise<string> {
   try {
-    // Build query parameters
-    const queryParams = new URLSearchParams();
-    queryParams.append('format', filters.format);
-
-    if (filters.start_date) queryParams.append('start_date', filters.start_date);
-    if (filters.end_date) queryParams.append('end_date', filters.end_date);
-    if (filters.status) queryParams.append('status', filters.status); // Send status as-is, including "all"
-    if (filters.city_id) queryParams.append('city_id', filters.city_id.toString());
-
-    const url = `https://ai.nibog.in/webhook/v1/nibog/payments/export?${queryParams.toString()}`;
-
-    
-    // Fetch the file from server
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    // First fetch the payments data
+    const payments = await getAllPayments({
+      status: filters.status !== 'all' ? filters.status : undefined,
+      start_date: filters.start_date,
+      end_date: filters.end_date,
+      city_id: filters.city_id
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to export payments. Status: ${response.status}`);
+    if (!payments || payments.length === 0) {
+      throw new Error('No payment data found for the selected filters');
     }
 
-    // Check response content type to handle both CSV and JSON
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('text/csv') || contentType.includes('application/csv')) {
-      // API returned CSV file directly
-      const csvContent = await response.text();
-      downloadCSV(csvContent, `payments-export-${new Date().toISOString().split('T')[0]}.csv`);
-      return 'Payments exported successfully!';
-    } else {
-      // API returned JSON data, convert to CSV
-      const data = await response.json();
-
-      if (Array.isArray(data) && data.length > 0) {
-        // Convert server data to CSV and download
-        const csvContent = convertToCSV(data);
-        downloadCSV(csvContent, `payments-export-${new Date().toISOString().split('T')[0]}.csv`);
-        return 'Payments exported successfully!';
-      } else if (Array.isArray(data) && data.length === 0) {
-        throw new Error('No payment data found for the selected filters');
-      } else {
-        console.error('Unexpected API response format:', data);
-        throw new Error('Invalid response format from export API');
-      }
-    }
+    // Convert to CSV and download
+    const csvContent = convertToCSV(payments);
+    downloadCSV(csvContent, `payments-export-${new Date().toISOString().split('T')[0]}.csv`);
+    return 'Payments exported successfully!';
   } catch (error) {
     console.error('Error exporting payments:', error);
     throw error;
@@ -664,11 +760,11 @@ export async function createManualPayment(paymentData: ManualPaymentData): Promi
       }
     };
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/create', {
+    // Use backend API instead of webhook
+    const headers = await getAuthHeaders();
+    const response = await fetch(PAYMENT_API.CREATE, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(paymentPayload),
     });
 
@@ -684,8 +780,8 @@ export async function createManualPayment(paymentData: ManualPaymentData): Promi
 
     const result = await response.json();
 
-    // Extract payment ID from response (API might return array or object)
-    const paymentId = Array.isArray(result) ? result[0]?.payment_id : result.payment_id;
+    // Extract payment ID from response - backend returns { success: true, data: {...} }
+    const paymentId = result.data?.payment_id || result.payment_id;
 
     // Now update the booking payment status
     try {
@@ -731,15 +827,18 @@ export async function createManualPayment(paymentData: ManualPaymentData): Promi
  */
 async function sendWhatsAppNotificationForManualPayment(bookingId: number, transactionId: string): Promise<void> {
   try {
-    // Fetch booking details from the API
-    const bookingResponse = await fetch(`https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get/${bookingId}`);
+    // Fetch booking details from the backend API
+    const headers = await getAuthHeaders();
+    const bookingResponse = await fetch(`${BOOKING_API.GET_ALL}/${bookingId}`, {
+      headers,
+    });
 
     if (!bookingResponse.ok) {
       throw new Error(`Failed to fetch booking details: ${bookingResponse.status}`);
     }
 
     const bookingResult = await bookingResponse.json();
-    const booking = bookingResult.booking;
+    const booking = bookingResult.data || bookingResult.booking || bookingResult;
 
     if (!booking) {
       throw new Error('Booking not found');
@@ -764,8 +863,8 @@ async function sendWhatsAppNotificationForManualPayment(bookingId: number, trans
 
     // Prepare WhatsApp message data with enhanced validation
     const whatsappData = {
-      bookingId: booking.booking_id,
-      bookingRef: booking.booking_ref || `B${String(booking.booking_id).padStart(7, '0')}`,
+      bookingId: booking.booking_id || booking.id,
+      bookingRef: booking.booking_ref || `B${String(booking.booking_id || booking.id).padStart(7, '0')}`,
       parentName: booking.parent_name || 'Valued Customer',
       parentPhone: formattedPhone,
       childName: booking.child_name || 'Child',

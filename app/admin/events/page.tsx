@@ -424,10 +424,10 @@ export default function EventsPage() {
       sortable: true,
       hideOnMobile: true, // Hide on mobile to save space
       render: (value) => (
-        <div className="max-w-[200px]">
+        <div className="flex flex-col gap-1 max-w-[200px]">
           {value && typeof value === 'string' ?
             value.split(", ").map((game, index) => (
-              <Badge key={index} variant="outline" className="mr-1 mb-1 text-xs">
+              <Badge key={index} variant="outline" className="text-xs w-fit">
                 {game}
               </Badge>
             )) : (

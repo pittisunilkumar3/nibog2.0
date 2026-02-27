@@ -1,5 +1,5 @@
-// API Base URL - Use environment variable or fallback to production
-export const API_BASE_URL = process.env.BACKEND_URL || "http://localhost:3004";
+// API Base URL - Use environment variable or fallback to localhost
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.BACKEND_URL || "http://localhost:3004";
 
 // Authentication API endpoints
 export const AUTH_API = {
@@ -144,14 +144,16 @@ export const PROMO_CODE_API = {
   GET_BY_ID: "https://ai.nibog.in/webhook/v1/nibog/promocode/get", // POST
 };
 
-// Payment API endpoints
+// Payment API endpoints - Using Backend API
 export const PAYMENT_API = {
-  CREATE: "https://ai.nibog.in/webhook/v1/nibog/payments/create", // POST
-  GET_ALL: "https://ai.nibog.in/webhook/v1/nibog/payments/get-all", // GET
-  GET_BY_ID: "https://ai.nibog.in/webhook/v1/nibog/payments/get", // POST
-  UPDATE_STATUS: "https://ai.nibog.in/webhook/v1/nibog/payments/update-status", // POST
-  ANALYTICS: "https://ai.nibog.in/webhook/v1/nibog/payments/analytics", // GET
-  EXPORT: "https://ai.nibog.in/webhook/v1/nibog/payments/export", // GET
+  BASE: `${API_BASE_URL}/api/payments`,
+  CREATE: `${API_BASE_URL}/api/payments`, // POST
+  GET_ALL: `${API_BASE_URL}/api/payments`, // GET with query params
+  GET_BY_ID: `${API_BASE_URL}/api/payments`, // GET /:id
+  UPDATE_STATUS: `${API_BASE_URL}/api/payments`, // PATCH /:id/status
+  ANALYTICS: `${API_BASE_URL}/api/payments/analytics`, // GET
+  UPDATE: `${API_BASE_URL}/api/payments`, // PATCH /:id
+  DELETE: `${API_BASE_URL}/api/payments`, // DELETE /:id
 };
 
 // Event Details with Image API endpoints
