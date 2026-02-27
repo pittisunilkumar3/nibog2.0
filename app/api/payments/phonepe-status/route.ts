@@ -209,11 +209,12 @@ export async function POST(request: Request) {
           // removed debug log
 
           // Extract user ID from transaction ID if it follows our new format: NIBOG_<userId>_<timestamp>
+          // Also try to get userId from bookingData as fallback
           const bookingMatch = merchantTransactionId.match(/NIBOG_(\d+)_/);
-          const userId = bookingMatch ? parseInt(bookingMatch[1]) : null;
+          const userId = bookingMatch ? parseInt(bookingMatch[1]) : (bookingData?.userId ? parseInt(bookingData.userId) : null);
 
           if (!userId) {
-            console.error('Server API route: Could not extract user ID from transaction ID');
+            console.error('Server API route: Could not extract user ID from transaction ID or bookingData');
             return NextResponse.json({
               ...responseData,
               message: "Payment successful. The client-side will handle booking creation.",
@@ -230,6 +231,7 @@ export async function POST(request: Request) {
           // NEW BOOKING API STRUCTURE - follows the updated API documentation
           // booking_games is now nested inside each child object
           let newBookingData: {
+            user_id: number;
             parent_name: string;
             email: string;
             phone: string;
@@ -283,6 +285,7 @@ export async function POST(request: Request) {
             // removed debug log
 
             newBookingData = {
+              user_id: userId, // Store user_id to link booking to the logged-in user
               parent_name: bookingData.parentName || "PhonePe Customer",
               email: bookingData.email || `customer-${userId}@example.com`,
               phone: bookingData.phone || "",
@@ -311,6 +314,7 @@ export async function POST(request: Request) {
             // removed debug log
 
             newBookingData = {
+              user_id: userId, // Store user_id to link booking to the logged-in user
               parent_name: "PhonePe Customer",
               email: `customer-${userId}@example.com`,
               phone: "",
