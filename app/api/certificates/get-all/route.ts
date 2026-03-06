@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     
     // Build the query parameters for the external API
-    let apiUrl = 'https://ai.nibog.in/webhook/v1/nibog/certificates/get-all';
+    let apiUrl = 'http://localhost:3004/api/certificates/get-all';
     const params = new URLSearchParams();
     
     if (eventId) {

@@ -1,48 +1,43 @@
 import { NextResponse } from 'next/server';
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004'
+
 export async function POST(request: Request) {
   try {
-    
-    // Parse the request body to get transaction ID
-    const { transaction_id } = await request.json();
+    const body = await request.json();
+    const { transaction_id } = body;
 
     if (!transaction_id) {
       return NextResponse.json(
-        { error: "Transaction ID is required" },
+        { success: false, error: 'transaction_id is required' },
         { status: 400 }
       );
     }
 
-    // Delete from database via external API
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/pending-bookings/delete', {
+    const response = await fetch(`${BACKEND_URL}/api/pending-bookings/delete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        transaction_id: transaction_id
-      }),
+      body: JSON.stringify({ transaction_id }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Failed to delete pending booking:', errorText);
+      console.error('❌ Failed to delete pending booking:', errorText);
       return NextResponse.json(
-        { error: `Failed to delete pending booking: ${response.status}` },
+        { success: false, error: 'Failed to delete pending booking' },
         { status: 500 }
       );
     }
 
-
-    return NextResponse.json({
-      success: true,
-      message: "Pending booking deleted successfully"
-    });
+    const result = await response.json();
+    return NextResponse.json(result);
 
   } catch (error: any) {
     console.error("Error deleting pending booking:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to delete pending booking" },
+      { success: false, error: error.message || "Failed to delete pending booking" },
       { status: 500 }
     );
   }

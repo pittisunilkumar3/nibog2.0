@@ -5,7 +5,7 @@ export async function GET() {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
 
     const primaryUrl = `${backendUrl}/api/terms`;
-    const fallbackWebhook = 'https://ai.nibog.in/webhook/v1/nibog/termsandconditionsget';
+    const fallbackWebhook = 'http://localhost:3004/api/termsandconditionsget';
 
     // Try primary endpoint first
     let response = await fetch(primaryUrl, {

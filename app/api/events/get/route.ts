@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       // removed debug log
 
       // Try with webhook-test instead of webhook
-      const alternativeUrl = "https://ai.nibog.in/webhook-test/v1/nibog/event-game-slots/get";
+      const alternativeUrl = "http://localhost:3004/api/event-game-slots/get";
       // removed debug log
 
       const alternativeResponse = await fetch(alternativeUrl, {

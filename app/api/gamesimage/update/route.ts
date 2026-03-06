@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call the correct update endpoint as specified by user
-    const webhookResponse = await fetch('https://ai.nibog.in/webhook/nibog/gamesimage/update', {
+    const webhookResponse = await fetch('http://localhost:3004/api/gamesimage/update', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

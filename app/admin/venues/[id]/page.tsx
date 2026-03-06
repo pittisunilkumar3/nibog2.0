@@ -27,7 +27,7 @@ import { useToast } from "@/components/ui/use-toast"
 // Function to fetch events data for a venue
 const fetchVenueEvents = async (venueId: number) => {
   try {
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/get-upcoming-events/venues-id', {
+    const response = await fetch('http://localhost:3004/api/get-upcoming-events/venues-id', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

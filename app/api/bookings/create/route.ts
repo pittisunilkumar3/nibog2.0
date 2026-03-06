@@ -1,22 +1,28 @@
 import { NextResponse } from 'next/server';
 import { BOOKING_API } from '@/config/api';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
+    console.log('[BOOKING] Booking creation request received');
+    
     // Parse the request body
     const bookingData = await request.json();
+    console.log('[BOOKING] Request data:', JSON.stringify(bookingData, null, 2));
 
     // Validate required fields
     if (!bookingData.parent || !bookingData.child || !bookingData.booking || !bookingData.booking_games) {
-      // Validation failed - missing required fields
+      console.error('[BOOKING] Validation failed: Missing required fields');
       return NextResponse.json(
-        { error: "Missing required booking data" },
+        { success: false, error: "Missing required booking data" },
         { status: 400 }
       );
     }
 
     // Forward the request to the external API
     const apiUrl = BOOKING_API.CREATE;
+    console.log('[BOOKING] Calling backend API:', apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -26,10 +32,12 @@ export async function POST(request: Request) {
       body: JSON.stringify(bookingData),
     });
 
+    console.log('[BOOKING] Backend response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Server API route: Error response (${response.status}):`, errorText);
-      console.error("Server API route: Request payload was:", JSON.stringify(bookingData, null, 2));
+      console.error("[BOOKING] Error response:", errorText);
+      console.error("[BOOKING] Request payload was:", JSON.stringify(bookingData, null, 2));
 
       let errorMessage = `Error creating booking: ${response.status} - ${response.statusText}`;
       let errorDetails = errorText;
@@ -49,6 +57,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
+          success: false,
           error: errorMessage,
           details: errorDetails,
           status: response.status,
@@ -65,10 +74,12 @@ export async function POST(request: Request) {
     try {
       // Try to parse the response as JSON
       data = JSON.parse(responseText);
+      console.log('[BOOKING] Success response:', data);
     } catch (parseError) {
-      console.error("Server API route: Error parsing response:", parseError);
+      console.error("[BOOKING] Error parsing response:", parseError);
       return NextResponse.json(
         { 
+          success: false, 
           error: "Failed to parse API response", 
           rawResponse: responseText 
         },
@@ -77,11 +88,11 @@ export async function POST(request: Request) {
     }
     
     // Return the response with success status
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json({ success: true, ...data }, { status: 200 });
   } catch (error: any) {
-    console.error("Server API route: Error creating booking:", error);
+    console.error("[BOOKING] Server error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create booking" },
+      { success: false, error: error.message || "Failed to create booking" },
       { status: 500 }
     );
   }

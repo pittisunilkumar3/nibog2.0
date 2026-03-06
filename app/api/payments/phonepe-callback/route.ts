@@ -273,7 +273,7 @@ async function updateExistingBooking(
 
     // removed debug log
 
-    const paymentResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/create', {
+    const paymentResponse = await fetch('http://localhost:3004/api/payments/create', {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -517,7 +517,7 @@ async function createBookingAndPaymentDirect(
 
     // removed debug log
 
-    const paymentResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/create', {
+    const paymentResponse = await fetch('http://localhost:3004/api/payments/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -647,7 +647,7 @@ async function createBookingAndPayment(
 
     const paymentStatus = paymentStatusMap[paymentState as keyof typeof paymentStatusMap] || 'failed';
 
-    const paymentResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/create', {
+    const paymentResponse = await fetch('http://localhost:3004/api/payments/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

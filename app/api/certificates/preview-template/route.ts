@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // First, fetch the certificate data
     const certificateResponse = await fetch(
-      `https://ai.nibog.in/webhook/v1/nibog/certificates/get`,
+      `http://localhost:3004/api/certificates/get`,
       {
         method: 'POST',
         headers: {

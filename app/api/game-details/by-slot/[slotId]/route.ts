@@ -21,7 +21,7 @@ export async function GET(
 
 
     // Call the existing event-game-slot API to get slot details
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/event-game-slot/get', {
+    const response = await fetch('http://localhost:3004/api/event-game-slot/get', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: parseInt(slotId) })

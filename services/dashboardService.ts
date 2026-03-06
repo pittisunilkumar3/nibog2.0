@@ -39,6 +39,9 @@ export interface DashboardMetrics {
     bookings: number
     users: number
   }
+  recentBookings?: any[]
+  upcomingEventsList?: any[]
+  monthlyRevenue?: any[]
 }
 
 export interface RevenueData {
@@ -101,16 +104,16 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     const activeUsers = users.filter(u => u.is_active).length
 
     const totalEvents = events.length
-    const now = new Date()
-    const nowTs = now.getTime()
-    const upcomingEvents = events.filter(e => new Date(e.event_date) > now).length
-    const completedEvents = events.filter(e => new Date(e.event_date) <= now).length
+    const nowDate = new Date()
+    const nowTs = nowDate.getTime()
+    const upcomingEvents = events.filter(e => new Date(e.event_date) > nowDate).length
+    const completedEvents = events.filter(e => new Date(e.event_date) <= nowDate).length
 
     const averageTicketPrice = totalBookings > 0 ? totalRevenue / totalBookings : 0
 
     // Calculate monthly growth (simplified - comparing last 30 days vs previous 30 days)
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+    const thirtyDaysAgo = new Date(nowDate.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const sixtyDaysAgo = new Date(nowDate.getTime() - 60 * 24 * 60 * 60 * 1000)
 
     const recentBookings = bookings.filter(b => new Date(b.booking_created_at) > thirtyDaysAgo)
     const previousBookings = bookings.filter(b => {
@@ -323,40 +326,32 @@ export function clearDashboardCache() {
   dashboardCache = {}
 }
 
-// Fetch dashboard data from API endpoint
-export async function getAPIDashboardData(): Promise<APIDashboardResponse> {
+// Fetch dashboard data from NEW backend API endpoint
+export async function getAPIDashboardData(): Promise<{ success: boolean; data: DashboardMetrics | null; error?: string }> {
   try {
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/dashboard/api', {
+    // Use the new backend API endpoint
+    const response = await fetch('/api/dashboard/stats', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
+      cache: 'no-store',
     })
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
-    const data = await response.json()
+    const result = await response.json()
 
-    // Validate response format
-    if (!Array.isArray(data) || data.length === 0) {
-      throw new Error('Invalid response format: expected array with data')
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Invalid response from API')
     }
 
-    const dashboardData = data[0] as APIDashboardData
-
-    // Validate required fields
-    const requiredFields = ['total_games', 'total_cities', 'total_venues', 'total_bookings', 'total_amount']
-    for (const field of requiredFields) {
-      if (!(field in dashboardData)) {
-        throw new Error(`Missing required field: ${field}`)
-      }
-    }
-
+    // The API already returns data in DashboardMetrics format
     return {
       success: true,
-      data: dashboardData
+      data: result.data as DashboardMetrics
     }
   } catch (error) {
     console.error('Error fetching API dashboard data:', error)
@@ -364,37 +359,6 @@ export async function getAPIDashboardData(): Promise<APIDashboardResponse> {
       success: false,
       data: null,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
-    }
-  }
-}
-
-// Convert API data to DashboardMetrics format
-export function convertAPIDashboardData(apiData: APIDashboardData): DashboardMetrics {
-  const totalRevenue = parseFloat(apiData.total_amount) || 0
-  const totalBookings = parseInt(apiData.total_bookings) || 0
-  const totalGames = parseInt(apiData.total_games) || 0
-  const totalCities = parseInt(apiData.total_cities) || 0
-  const totalVenues = parseInt(apiData.total_venues) || 0
-
-  return {
-    totalRevenue,
-    totalBookings,
-    confirmedBookings: Math.floor(totalBookings * 0.8), // Estimate 80% confirmed
-    pendingBookings: Math.floor(totalBookings * 0.15), // Estimate 15% pending
-    cancelledBookings: Math.floor(totalBookings * 0.05), // Estimate 5% cancelled
-    completedBookings: Math.floor(totalBookings * 0.7), // Estimate 70% completed
-    totalUsers: Math.floor(totalBookings * 0.6), // Estimate users based on bookings
-    activeUsers: Math.floor(totalBookings * 0.4), // Estimate active users
-    totalEvents: totalGames,
-    upcomingEvents: Math.floor(totalGames * 0.3), // Estimate 30% upcoming
-    completedEvents: Math.floor(totalGames * 0.7), // Estimate 70% completed
-    totalCities,
-    totalVenues,
-    averageTicketPrice: totalBookings > 0 ? totalRevenue / totalBookings : 0,
-    monthlyGrowth: {
-      revenue: 12.5, // Default growth values - could be enhanced with historical data
-      bookings: 8.3,
-      users: 15.2
     }
   }
 }
@@ -419,7 +383,7 @@ export async function getDashboardMetricsFromAPI(): Promise<DashboardMetrics> {
       return await getDashboardMetrics()
     }
 
-    const metrics = convertAPIDashboardData(apiResponse.data)
+    const metrics = apiResponse.data
 
     // Cache the result
     dashboardCache[cacheKey] = {

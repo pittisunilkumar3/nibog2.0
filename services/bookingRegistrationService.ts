@@ -65,7 +65,7 @@ export interface BookingRegistrationResponse {
 export async function registerBooking(bookingData: BookingRegistrationData): Promise<any> {
   try {
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/bookingsevents/create', {
+    const response = await fetch('/api/bookings/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

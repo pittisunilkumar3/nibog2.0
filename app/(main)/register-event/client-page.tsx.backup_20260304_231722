@@ -16,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format, addMonths, differenceInMonths, differenceInDays } from "date-fns"
 import { cn, formatDateForAPI } from "@/lib/utils"
-// Pending booking removed - going directly to payment
+import { createPendingBooking } from "@/services/pendingBookingServices"
 import { getEventWithVenueDetails } from "@/services/bookingService"
 import { Calendar as CalendarIcon, ArrowLeft, ChevronRight, MapPin, AlertTriangle, AlertCircle, Loader2, Info, CheckCircle } from "lucide-react"
 import { useState, useEffect, useMemo, useCallback, memo } from "react"
@@ -338,7 +338,7 @@ export default function RegisterEventClientPage() {
 
       // Check if we got any events
       if (!eventsData || eventsData.length === 0) {
-        setEventError("No events currently available for this city. Please check back later or try another city.");
+        setEventError("No events available for this city");
         setEligibleEvents([]);
         setAvailableDates([]);
         setApiEvents([]);
@@ -492,7 +492,7 @@ export default function RegisterEventClientPage() {
         // Clear any previous errors on success
         setEventError(null);
       } else {
-        setEventError("No events currently available for this city. Please check back later or try another city.");
+        setEventError("No events available for this city");
         setEligibleEvents([]);
         setAvailableDates([]);
       }
@@ -532,27 +532,15 @@ export default function RegisterEventClientPage() {
     setAvailablePromocodes([])
 
     try {
-      // If bookingCities is empty, fetch it first and retry automatically
-      let citiesToUse = bookingCities;
+      // If bookingCities is empty, fetch it first
       if (bookingCities.length === 0) {
         console.log('[handleCityChange] bookingCities is empty, fetching data...');
-        try {
-          const bookingData = await getCitiesWithBookingInfo();
-          console.log('[handleCityChange] Fetched booking data:', bookingData?.length || 0, 'cities');
-          setBookingCities(bookingData);
-          citiesToUse = bookingData;
-          
-          // Also update the cities dropdown
-          const formattedCities = bookingData.map((city: any) => ({
-            id: city.id,
-            name: city.city_name
-          }));
-          setCities(formattedCities);
-        } catch (fetchError) {
-          console.error('[handleCityChange] Failed to fetch cities:', fetchError);
-          setEventError("Failed to load cities. Please refresh the page.");
-          return;
-        }
+        await fetchCitiesData();
+        // After fetching, the state will be updated and we need to re-check
+        // Note: This creates a recursive issue, so we'll handle it differently
+        setIsLoadingEvents(false);
+        setEventError("Please select the city again after data loads");
+        return;
       }
 
       // Find city in booking data
@@ -562,7 +550,7 @@ export default function RegisterEventClientPage() {
       if (!cityData) {
         console.error('[handleCityChange] No city data found for:', city);
         console.log('[handleCityChange] Available city names:', bookingCities.map(c => c.city_name));
-        setEventError("No events currently available for this city. Please try another city.");
+        setEventError("No events found for this city");
         setApiEvents([]);
         return;
       }
@@ -615,7 +603,7 @@ export default function RegisterEventClientPage() {
         console.log('[handleCityChange] cityData.events type:', typeof cityData.events);
         console.log('[handleCityChange] cityData.events is array?', Array.isArray(cityData.events));
         setApiEvents([]);
-        setEventError("No events currently available for this city. Please check back later or try another city.");
+        setEventError("No events available for this city");
       }
     } catch (error: any) {
       console.error('[handleCityChange] Error processing city change:', error);
@@ -1036,9 +1024,9 @@ export default function RegisterEventClientPage() {
       // Redirect to login with return URL that includes step information
       router.push(`/login?returnUrl=${encodeURIComponent('/register-event?step=payment')}`)
     } else {
-      // User is authenticated, skip add-ons step and proceed directly to payment
+      // User is authenticated, proceed to add-ons step
       saveDataToSession()
-      setStep(3)
+      setStep(2)
     }
   }
 
@@ -1405,14 +1393,17 @@ export default function RegisterEventClientPage() {
         }))
       }
 
-      // Booking validation removed
+      // Booking validation and pending booking debug logs removed
 
-      // Generate transaction ID locally (removed pending booking)
+      // Create pending booking record in database
+      const pendingBookingResult = await createPendingBooking(bookingData)
 
-      const timestamp = Date.now();
+      if (!pendingBookingResult.success || !pendingBookingResult.transactionId) {
+        throw new Error(`Failed to create pending booking: ${pendingBookingResult.error}`)
+      }
 
-      const transactionId = `NIBOG_${userId}_${timestamp}`;
-      // Transaction ID generated locally - storing booking data in localStorage as backup
+      const transactionId = pendingBookingResult.transactionId
+      // Pending booking created and stored; PhonePe initiation debug logs removed
       // Also store in localStorage as backup
       localStorage.setItem('nibog_booking_data', JSON.stringify({
         ...bookingData,
@@ -1560,13 +1551,13 @@ export default function RegisterEventClientPage() {
     }
   }, [fetchCitiesData]) // Depend on fetchCitiesData
 
-  // Do NOT auto-refresh data when page becomes visible to preserve user selection
+  // Auto-refresh data when page becomes visible (user switches back to tab)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && !isLoadingCities) {
-        console.log('[Visibility] Page became visible, preserving user selection (no refresh)');
-        // router.refresh(); // DISABLED: This was causing state loss on tab switch
-        // fetchCitiesData(); // DISABLED: This was causing state loss on tab switch
+        console.log('[Visibility] Page became visible, refreshing data...');
+        router.refresh(); // Force Next.js to revalidate
+        fetchCitiesData();
       }
     };
 
@@ -1600,22 +1591,6 @@ export default function RegisterEventClientPage() {
     if (savedData) {
       try {
         const data = JSON.parse(savedData)
-        
-        // Check if saved data is stale (older than 24 hours)
-        const savedTimestamp = data.timestamp ? new Date(data.timestamp).getTime() : 0
-        const currentTimestamp = Date.now()
-        const hoursSinceSaved = (currentTimestamp - savedTimestamp) / (1000 * 60 * 60)
-        
-        if (hoursSinceSaved > 24) {
-          console.log('[Session Restore] Data is stale (>' + hoursSinceSaved.toFixed(1) + ' hours old), clearing')
-          sessionStorage.removeItem('registrationData')
-          sessionStorage.removeItem('selectedAddOns')
-          sessionStorage.removeItem('eligibleGames')
-          sessionStorage.removeItem('nibog_restored_city')
-          sessionStorage.removeItem('nibog_restored_eventType')
-          sessionStorage.removeItem('nibog_restored_childAgeMonths')
-          localStorage.removeItem('nibog_booking_data')
-        } else {
 
         // Restoring registration data from session storage (debug logs removed)
 
@@ -1708,7 +1683,6 @@ export default function RegisterEventClientPage() {
           const newUrl = window.location.pathname + (cityParam ? `?city=${cityParam}` : '')
           window.history.replaceState({}, '', newUrl)
         }
-        } // end of else for timestamp check
       } catch (error) {
         console.error('Error parsing saved registration data:', error)
       }
@@ -1722,16 +1696,7 @@ export default function RegisterEventClientPage() {
   useEffect(() => {
     const restoredCity = sessionStorage.getItem('nibog_restored_city')
     if (restoredCity && cities.length > 0) {
-      // Validate that the restored city still exists in the current cities list
-      const cityExists = cities.some(c => c.name === restoredCity)
-      if (cityExists) {
-        handleCityChange(restoredCity)
-      } else {
-        console.log('[City Restore] Restored city "' + restoredCity + '" no longer available, clearing stale data')
-        // Clear stale data
-        setSelectedCity("")
-        setEventError(null)
-      }
+      handleCityChange(restoredCity)
       sessionStorage.removeItem('nibog_restored_city')
     }
   }, [cities])
@@ -1751,14 +1716,6 @@ export default function RegisterEventClientPage() {
         setSelectedEventType(restoredEventType) // Restore the title for display
         setSelectedEventId(selectedApiEvent.event_id) // FIX: Set the ID for lookups
         fetchGamesByEventAndAge(selectedApiEvent.event_id, Number(restoredChildAgeMonths))
-        sessionStorage.removeItem('nibog_restored_eventType')
-        sessionStorage.removeItem('nibog_restored_childAgeMonths')
-      } else {
-        console.log('[Event Restore] Restored event "' + restoredEventType + '" no longer available, clearing stale data')
-        // Clear stale event data
-        setSelectedEventType("")
-        setSelectedEventId(null)
-        setGameError(null)
         sessionStorage.removeItem('nibog_restored_eventType')
         sessionStorage.removeItem('nibog_restored_childAgeMonths')
       }
@@ -1845,7 +1802,7 @@ export default function RegisterEventClientPage() {
 
           <div className="text-center">
             <p className="text-sm text-neutral-charcoal/70 dark:text-white/70 font-semibold">
-              Step {step} of 2: {step === 1 ? '📝 Registration Details' : '💳 Payment & Confirmation'}
+              Step {step} of 3: {step === 1 ? '📝 Registration Details' : step === 2 ? '🎁 Add-ons & Extras' : '💳 Payment & Confirmation'}
             </p>
           </div>
         </CardHeader>
@@ -2595,8 +2552,7 @@ export default function RegisterEventClientPage() {
             </>
           )}
 
-          {/* Add-ons step - disabled */}
-          {false && selectedEventDetails && (
+          {step === 2 && selectedEventDetails && (
             <>
               <div className="rounded-md bg-muted p-4 mb-6">
                 <h3 className="font-semibold">Registration Summary</h3>
@@ -2879,8 +2835,7 @@ export default function RegisterEventClientPage() {
                   </div>
                 </div>
 
-                {/* Promo code section - disabled */}
-                <div className="space-y-2 mt-6 hidden">
+                <div className="space-y-2 mt-6">
                   <Label htmlFor="promo">Promo Code</Label>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                     <Input

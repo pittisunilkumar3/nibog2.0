@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
 
-    const apiUrl = 'https://ai.nibog.in/webhook/v1/nibog/footer_setting/get';
+    const apiUrl = 'http://localhost:3004/api/footer-settings';
 
     const response = await fetch(apiUrl, {
       method: "GET",

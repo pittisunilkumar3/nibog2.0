@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     // Forward the request to the external API
-    const response = await fetch("https://ai.nibog.in/webhook/v1/nibog/event-game-slot/create", {
+    const response = await fetch("http://localhost:3004/api/event-game-slot/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

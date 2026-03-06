@@ -222,7 +222,7 @@ function transformBookingForTicket(booking: any) {
 // Fallback function to fetch from webhook API (active events only)
 async function fetchFallbackBooking(bookingId: string) {
   try {
-    const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get-all-active-event";
+    const apiUrl = "http://localhost:3004/api/bookingsevents/get-all-active-event";
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);

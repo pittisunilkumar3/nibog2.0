@@ -6,7 +6,7 @@ import {
   ApiResponse
 } from '@/types/certificate';
 
-const API_BASE_URL = 'https://ai.nibog.in/webhook/v1/nibog';
+const API_BASE_URL = 'http://localhost:3004/api';
 
 /**
  * Upload certificate background image

@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     
     
     
-    const response = await fetch(`https://ai.nibog.in/webhook/v1/nibog/sports-importance/get?t=${timestamp}`, {
+    const response = await fetch(`http://localhost:3004/api/sports-importance/get?t=${timestamp}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

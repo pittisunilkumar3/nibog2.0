@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await fetch(
-      'https://ai.nibog.in/webhook/v1/nibog/certificate/generate-single',
+      'http://localhost:3004/api/certificate/generate-single',
       {
         method: 'POST',
         headers: {

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Try the new API endpoint first
-    const apiUrl = `https://ai.nibog.in/webhook/v1/nibog/events/participants?event_id=${eventId}`;
+    const apiUrl = `http://localhost:3004/api/events/participants?event_id=${eventId}`;
     
     const response = await fetch(
       apiUrl,

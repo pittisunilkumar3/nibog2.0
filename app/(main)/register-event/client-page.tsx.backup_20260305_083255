@@ -16,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format, addMonths, differenceInMonths, differenceInDays } from "date-fns"
 import { cn, formatDateForAPI } from "@/lib/utils"
-// Pending booking removed - going directly to payment
+import { createPendingBooking } from "@/services/pendingBookingServices"
 import { getEventWithVenueDetails } from "@/services/bookingService"
 import { Calendar as CalendarIcon, ArrowLeft, ChevronRight, MapPin, AlertTriangle, AlertCircle, Loader2, Info, CheckCircle } from "lucide-react"
 import { useState, useEffect, useMemo, useCallback, memo } from "react"
@@ -1036,9 +1036,9 @@ export default function RegisterEventClientPage() {
       // Redirect to login with return URL that includes step information
       router.push(`/login?returnUrl=${encodeURIComponent('/register-event?step=payment')}`)
     } else {
-      // User is authenticated, skip add-ons step and proceed directly to payment
+      // User is authenticated, proceed to add-ons step
       saveDataToSession()
-      setStep(3)
+      setStep(2)
     }
   }
 
@@ -1405,14 +1405,17 @@ export default function RegisterEventClientPage() {
         }))
       }
 
-      // Booking validation removed
+      // Booking validation and pending booking debug logs removed
 
-      // Generate transaction ID locally (removed pending booking)
+      // Create pending booking record in database
+      const pendingBookingResult = await createPendingBooking(bookingData)
 
-      const timestamp = Date.now();
+      if (!pendingBookingResult.success || !pendingBookingResult.transactionId) {
+        throw new Error(`Failed to create pending booking: ${pendingBookingResult.error}`)
+      }
 
-      const transactionId = `NIBOG_${userId}_${timestamp}`;
-      // Transaction ID generated locally - storing booking data in localStorage as backup
+      const transactionId = pendingBookingResult.transactionId
+      // Pending booking created and stored; PhonePe initiation debug logs removed
       // Also store in localStorage as backup
       localStorage.setItem('nibog_booking_data', JSON.stringify({
         ...bookingData,
@@ -1845,7 +1848,7 @@ export default function RegisterEventClientPage() {
 
           <div className="text-center">
             <p className="text-sm text-neutral-charcoal/70 dark:text-white/70 font-semibold">
-              Step {step} of 2: {step === 1 ? '📝 Registration Details' : '💳 Payment & Confirmation'}
+              Step {step} of 3: {step === 1 ? '📝 Registration Details' : step === 2 ? '🎁 Add-ons & Extras' : '💳 Payment & Confirmation'}
             </p>
           </div>
         </CardHeader>
@@ -2595,8 +2598,7 @@ export default function RegisterEventClientPage() {
             </>
           )}
 
-          {/* Add-ons step - disabled */}
-          {false && selectedEventDetails && (
+          {step === 2 && selectedEventDetails && (
             <>
               <div className="rounded-md bg-muted p-4 mb-6">
                 <h3 className="font-semibold">Registration Summary</h3>
@@ -2879,8 +2881,7 @@ export default function RegisterEventClientPage() {
                   </div>
                 </div>
 
-                {/* Promo code section - disabled */}
-                <div className="space-y-2 mt-6 hidden">
+                <div className="space-y-2 mt-6">
                   <Label htmlFor="promo">Promo Code</Label>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                     <Input

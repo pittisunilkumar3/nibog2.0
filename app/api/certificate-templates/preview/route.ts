@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     // Generate preview HTML for the certificate
     const response = await fetch(
-      'https://ai.nibog.in/webhook/v1/nibog/certificates/download/0',
+      'http://localhost:3004/api/certificates/download/0',
       {
         method: 'GET',
         headers: {

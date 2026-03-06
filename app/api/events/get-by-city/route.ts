@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     }
 
     // Forward the request to the external API with the correct URL
-    const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/event-registration/getbycityid";
+    const apiUrl = "http://localhost:3004/api/event-registration/getbycityid";
 
     // Use POST method with request body as specified in the API documentation
     const response = await fetch(apiUrl, {

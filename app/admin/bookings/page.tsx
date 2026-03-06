@@ -100,7 +100,7 @@ export default function BookingsPage() {
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch('/api/bookings/all')
+      const response = await fetch('/api/bookings')
       if (!response.ok) {
         throw new Error('Failed to fetch bookings')
       }

@@ -1,46 +1,81 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004'
+
 export async function POST(request: Request) {
   try {
-
+    console.log('[PENDING-BOOKING] ========== CREATE START ==========');
+    
     // Parse the request body
-    const bookingData = await request.json();
+    const body = await request.json();
+    console.log('[PENDING-BOOKING] Request data keys:', Object.keys(body));
+    console.log('[PENDING-BOOKING] userId:', body.userId);
+    console.log('[PENDING-BOOKING] parentName:', body.parentName);
+    console.log('[PENDING-BOOKING] eventId:', body.eventId);
+    console.log('[PENDING-BOOKING] totalAmount:', body.totalAmount);
 
-    // Validate required fields
-    const requiredFields = [
-      'userId', 'parentName', 'email', 'phone', 'childName', 'childDob',
-      'schoolName', 'gender', 'eventId', 'gameId', 'totalAmount', 'termsAccepted'
-    ];
-
-    for (const field of requiredFields) {
-      if (!bookingData[field]) {
-        console.error(`❌ Missing required field: ${field}`);
-        console.error(`❌ Field value:`, bookingData[field]);
-        console.error(`❌ Field type:`, typeof bookingData[field]);
-        console.error(`❌ All booking data:`, JSON.stringify(bookingData, null, 2));
-        return NextResponse.json(
-          { error: `Missing required field: ${field}` },
-          { status: 400 }
-        );
-      }
+    // Validate essential fields from frontend (based on PendingBookingData interface)
+    if (!body.userId) {
+      console.error('[PENDING-BOOKING] Missing userId');
+      return NextResponse.json(
+        { success: false, error: 'userId is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!body.parentName) {
+      console.error('[PENDING-BOOKING] Missing parentName');
+      return NextResponse.json(
+        { success: false, error: 'parentName is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!body.eventId) {
+      console.error('[PENDING-BOOKING] Missing eventId');
+      return NextResponse.json(
+        { success: false, error: 'eventId is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!body.totalAmount) {
+      console.error('[PENDING-BOOKING] Missing totalAmount');
+      return NextResponse.json(
+        { success: false, error: 'totalAmount is required' },
+        { status: 400 }
+      );
     }
 
     // Generate a unique transaction ID for this pending booking
     const timestamp = Date.now();
-    const transactionId = `NIBOG_${bookingData.userId}_${timestamp}`;
-    
-    // Create the pending booking record
+    const transactionId = `NIBOG_${body.userId}_${timestamp}`;
+    console.log('[PENDING-BOOKING] Generated transaction ID:', transactionId);
+
+    // Calculate expiration time (30 minutes from now)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const expiresAtStr = expiresAt.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+
+    // Create the pending booking payload for backend
+    // The backend expects: transaction_id, user_id, booking_data, expires_at, status
     const pendingBookingPayload = {
       transaction_id: transactionId,
-      user_id: bookingData.userId,
-      booking_data: JSON.stringify(bookingData),
-      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
+      user_id: String(body.userId),
+      booking_data: JSON.stringify(body),
+      expires_at: expiresAtStr,
       status: 'pending'
     };
 
-    // Store in database via external API
+    console.log('[PENDING-BOOKING] Calling backend:', `${BACKEND_URL}/api/pending-bookings/create`);
+    console.log('[PENDING-BOOKING] Payload:');
+    console.log('  - transaction_id:', pendingBookingPayload.transaction_id);
+    console.log('  - user_id:', pendingBookingPayload.user_id);
+    console.log('  - booking_data length:', pendingBookingPayload.booking_data.length);
+    console.log('  - expires_at:', pendingBookingPayload.expires_at);
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/pending-bookings/create', {
+    const response = await fetch(`${BACKEND_URL}/api/pending-bookings/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,37 +83,38 @@ export async function POST(request: Request) {
       body: JSON.stringify(pendingBookingPayload),
     });
 
+    console.log('[PENDING-BOOKING] Backend response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Failed to create pending booking - External API Error:');
-      console.error(`❌ Status: ${response.status}`);
-      console.error(`❌ Status Text: ${response.statusText}`);
-      console.error(`❌ Response Body: ${errorText}`);
-      console.error(`❌ Request Payload: ${JSON.stringify(pendingBookingPayload, null, 2)}`);
+      console.error('[PENDING-BOOKING] Backend error response:', errorText);
 
       return NextResponse.json(
         {
-          error: `Failed to create pending booking: ${response.status} - ${response.statusText}`,
-          details: errorText,
-          status: response.status
+          success: false,
+          error: `Backend error: ${response.status} - ${errorText}`,
         },
-        { status: 500 }
+        { status: response.status }
       );
     }
 
     const result = await response.json();
+    console.log('[PENDING-BOOKING] ========== CREATE SUCCESS ==========');
+    console.log('[PENDING-BOOKING] Result:', result);
 
     return NextResponse.json({
       success: true,
       transactionId,
-      pendingBookingId: result.id || result.pending_booking_id,
-      expiresAt: pendingBookingPayload.expires_at
+      pendingBookingId: result.id,
+      expiresAt: expiresAt.toISOString()
     });
 
   } catch (error: any) {
-    console.error("Error creating pending booking:", error);
+    console.error('[PENDING-BOOKING] ========== CREATE ERROR ==========');
+    console.error('[PENDING-BOOKING] Error:', error.message);
+    console.error('[PENDING-BOOKING] Stack:', error.stack);
     return NextResponse.json(
-      { error: error.message || "Failed to create pending booking" },
+      { success: false, error: error.message || "Failed to create pending booking" },
       { status: 500 }
     );
   }

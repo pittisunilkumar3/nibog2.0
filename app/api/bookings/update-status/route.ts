@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     // If a booking status (friendly string like 'Confirmed') is provided, call the update-status endpoint
     if (status) {
-      const statusResponse = await fetch("https://ai.nibog.in/webhook/v1/nibog/bookingsevents/update-status", {
+      const statusResponse = await fetch("http://localhost:3004/api/bookingsevents/update-status", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     // Otherwise, proceed with payment status update (legacy behavior)
-    const updateUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/update";
+    const updateUrl = "http://localhost:3004/api/bookingsevents/update";
 
     const response = await fetch(updateUrl, {
       method: "POST",
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       
       const bookingStatus = statusMapping[paymentStatus.toLowerCase() as keyof typeof statusMapping] || 'Pending';
       
-      const statusResponse = await fetch("https://ai.nibog.in/webhook/v1/nibog/bookingsevents/update-status", {
+      const statusResponse = await fetch("http://localhost:3004/api/bookingsevents/update-status", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

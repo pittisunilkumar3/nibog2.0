@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const footerData = await request.json();
     
-    const apiUrl = 'https://ai.nibog.in/webhook/v1/nibog/footer_setting/post';
+    const apiUrl = 'http://localhost:3004/api/footer-settings';
 
     const response = await fetch(apiUrl, {
       method: "POST",

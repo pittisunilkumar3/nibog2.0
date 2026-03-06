@@ -62,7 +62,7 @@ export function getCityIdFromName(cityName: string): number | null {
  */
 export async function fetchCityMappings(): Promise<CityMapping[]> {
   try {
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/city/get-all');
+    const response = await fetch('http://localhost:3004/api/city/get-all');
     if (!response.ok) {
       throw new Error('Failed to fetch cities');
     }

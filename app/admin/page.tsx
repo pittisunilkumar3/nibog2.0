@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button"
 import AdminOverviewChart from "@/components/admin/admin-overview-chart"
 import AdminRecentBookings from "@/components/admin/admin-recent-bookings"
 import AdminUpcomingEvents from "@/components/admin/admin-upcoming-events"
-import AdminAddonAnalytics from "@/components/admin/admin-addon-analytics"
-import AdminPromoAnalytics from "@/components/admin/admin-promo-analytics"
 import EnhancedKPICard, { KPIData } from "@/components/admin/enhanced-kpi-card"
 import QuickActions from "@/components/admin/quick-actions"
 import { PageTransition, Stagger, StaggerItem, FadeIn } from "@/components/ui/animated-components"
@@ -339,11 +337,9 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="addons" className="space-y-6">
-            <AdminAddonAnalytics />
           </TabsContent>
 
           <TabsContent value="promos" className="space-y-6">
-            <AdminPromoAnalytics />
           </TabsContent>
             </Tabs>
           </div>

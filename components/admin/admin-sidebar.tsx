@@ -150,18 +150,6 @@ const adminRoutes: AdminRouteSection[] = [
         icon: <CreditCard className="h-4 w-4" />,
         description: "Payment tracking",
       },
-      {
-        href: "/admin/promo-codes",
-        label: "Promo Codes",
-        icon: <Tag className="h-4 w-4" />,
-        description: "Discount codes",
-      },
-      {
-        href: "/admin/add-ons",
-        label: "Add-ons",
-        icon: <Package className="h-4 w-4" />,
-        description: "Extra services",
-      },
     ],
   },
   {

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Fetch from external API
-    const apiResponse = await fetch('https://ai.nibog.in/webhook/nibog/gamesimage/get', {
+    const apiResponse = await fetch('http://localhost:3004/api/gamesimage/get', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

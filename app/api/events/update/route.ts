@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       // If the first attempt fails, try with a different URL format
 
       // Try with webhook instead of webhook-test as a fallback
-      const alternativeUrl = "https://ai.nibog.in/webhook/v1/nibog/event-game-slots/update";
+      const alternativeUrl = "http://localhost:3004/api/event-game-slots/update";
 
       const alternativeResponse = await fetch(alternativeUrl, {
         method: "POST",

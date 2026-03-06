@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     }
 
     // Forward the request to the external API with the original URL
-    const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get-all";
+    const apiUrl = "http://localhost:3004/api/bookingsevents/get-all";
 
     // Set a timeout for the fetch request
     const controller = new AbortController();

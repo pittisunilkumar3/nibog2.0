@@ -74,10 +74,10 @@ export const EVENT_GAME_SLOT_API = {
 
 
 
-// Social Media API endpoints
+// Social Media API endpoints - FIXED: Using local backend
 export const SOCIAL_MEDIA_API = {
-  CREATE: "https://ai.nibog.in/webhook/v1/nibog/socialmedia/create", // POST
-  GET: "https://ai.nibog.in/webhook/v1/nibog/socialmedia/get", // GET
+  CREATE: `${API_BASE_URL}/api/social-media-settings`, // POST
+  GET: `${API_BASE_URL}/api/social-media-settings`, // GET
 };
 
 // Sports Importance API endpoints
@@ -94,10 +94,10 @@ export const GAME_IMPORTANCE_API = {
 
 
 
-// Email Settings API endpoints
+// Email Settings API endpoints - FIXED: Using local backend
 export const EMAIL_SETTING_API = {
-  CREATE: "https://ai.nibog.in/webhook/v1/nibog/emailsetting/create", // POST
-  GET: "https://ai.nibog.in/webhook/v1/nibog/emailsetting/get", // GET
+  CREATE: `${API_BASE_URL}/api/email-settings`, // POST
+  GET: `${API_BASE_URL}/api/email-settings`, // GET
 };
 
 
@@ -113,18 +113,18 @@ export const GENERAL_SETTING_API = {
 
 
 
-// User Authentication API endpoints
+// User Authentication API endpoints - FIXED: Using local backend
 export const USER_AUTH_API = {
-  REGISTER: "https://ai.nibog.in/webhook/v1/nibog/user/register", // POST
-  LOGIN: "https://ai.nibog.in/webhook/v1/nibog/user/login", // POST
+  REGISTER: `${API_BASE_URL}/api/user/register`, // POST
+  LOGIN: `${API_BASE_URL}/api/user/login`, // POST
 };
 
-// User Management API endpoints
+// User Management API endpoints - FIXED: Using local backend
 export const USER_API = {
-  GET_ALL: "https://ai.nibog.in/webhook/v1/nibog/user/get-all", // GET
-  GET: "https://ai.nibog.in/webhook/v1/nibog/user/get", // GET with id
+  GET_ALL: `${API_BASE_URL}/api/user`, // GET
+  GET: `${API_BASE_URL}/api/user`, // GET with id
   UPDATE: `${API_BASE_URL}/api/user`, // PUT - Uses backend API: PUT /api/user/:id
-  DELETE: "https://ai.nibog.in/webhook/v1/nibog/user/delete", // POST
+  DELETE: `${API_BASE_URL}/api/user`, // POST
 };
 
 // Booking API endpoints
@@ -137,11 +137,11 @@ export const BOOKING_API = {
   UPDATE_STATUS: `${API_BASE_URL}/bookingsevents/update-status`, // POST
 };
 
-// Promo Code API endpoints
+// Promo Code API endpoints - FIXED: Using local backend
 export const PROMO_CODE_API = {
-  CREATE: "https://ai.nibog.in/webhook/v1/nibog/promocode/create", // POST
-  GET_ALL: "https://ai.nibog.in/webhook/v1/nibog/promocode/get-all", // GET
-  GET_BY_ID: "https://ai.nibog.in/webhook/v1/nibog/promocode/get", // POST
+  CREATE: `${API_BASE_URL}/api/promo-codes`, // POST
+  GET_ALL: `${API_BASE_URL}/api/promo-codes`, // GET
+  GET_BY_ID: `${API_BASE_URL}/api/promo-codes`, // POST
 };
 
 // Payment API endpoints - Using Backend API
@@ -158,7 +158,7 @@ export const PAYMENT_API = {
 
 // Event Details with Image API endpoints
 export const EVENT_DETAILS_API = {
-  GET_WITH_IMAGES: "https://ai.nibog.in/webhook/nibog/getting/eventdetailswithimage", // GET
+  GET_WITH_IMAGES: `${API_BASE_URL}/api/events/list`, // GET
 };
 
 // Testimonials API endpoints
@@ -170,13 +170,13 @@ export const TESTIMONIALS_API = {
   DELETE: `${API_BASE_URL}/testimonials/delete`, // POST with id in body
 };
 
-// FAQ API endpoints
+// FAQ API endpoints - FIXED: Using local backend with correct paths
 export const FAQ_API = {
-  CREATE: "https://ai.nibog.in/webhook/nibog/v1/faq/create", // POST
-  GET_SINGLE: "https://ai.nibog.in/webhook/nibog/v1/faq/get_single", // POST with id in body
-  GET_ALL: "https://ai.nibog.in/webhook/nibog/v1/faq/getall", // GET
-  UPDATE: "https://ai.nibog.in/webhook/nibog/v1/faq/updated", // POST
-  DELETE: "https://ai.nibog.in/webhook/nibog/v1/faq/delete", // POST with id in body
+  CREATE: `${API_BASE_URL}/api/faq/faqs`, // POST
+  GET_SINGLE: `${API_BASE_URL}/api/faq/faqs`, // GET with id in path
+  GET_ALL: `${API_BASE_URL}/api/faq/faqs`, // GET
+  UPDATE: `${API_BASE_URL}/api/faq/faqs`, // PUT with id in path
+  DELETE: `${API_BASE_URL}/api/faq/faqs`, // DELETE with id in path
 };
 
 // PhonePe API endpoints are now in config/phonepe.ts

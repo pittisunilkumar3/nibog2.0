@@ -5,7 +5,7 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/game-importance/save', {
+    const response = await fetch('http://localhost:3004/api/game-importance/save', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

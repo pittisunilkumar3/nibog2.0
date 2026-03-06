@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // Forward to n8n webhook
     const response = await fetch(
-      'https://ai.nibog.in/webhook/v1/nibog/certificate-templates/create',
+      'http://localhost:3004/api/certificate-templates/create',
       {
         method: 'POST',
         headers: {

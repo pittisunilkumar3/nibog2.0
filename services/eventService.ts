@@ -805,7 +805,7 @@ export async function getUpcomingEventsByCityId(
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
       // Use the upcoming events API endpoint
-      const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/events/upcoming-events-by-cityid', {
+      const response = await fetch('http://localhost:3004/api/events/upcoming-events-by-cityid', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -928,7 +928,7 @@ export async function getGamesByAgeAndEvent(eventId: number, childAge: number): 
   try {
     
     // Use the new games by age and event API endpoint with slot grouping
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/events/get-games-by-ageandevent-new', {
+    const response = await fetch('http://localhost:3004/api/events/get-games-by-ageandevent-new', {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

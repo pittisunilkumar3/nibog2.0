@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const response = await fetch(
-      `https://ai.nibog.in/webhook/v1/nibog/certificate-templates/by-type/${type}`,
+      `http://localhost:3004/api/certificate-templates/by-type/${type}`,
       {
         method: 'GET',
         headers: {

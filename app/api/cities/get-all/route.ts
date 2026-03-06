@@ -6,7 +6,7 @@ export async function GET() {
   try {
 
     // Forward the request to the external API with the correct URL
-    const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/city/get-all";
+    const apiUrl = "http://localhost:3004/api/city";
 
     let response;
     try {

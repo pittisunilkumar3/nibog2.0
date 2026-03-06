@@ -61,7 +61,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
           throw new Error('Event ID is required');
         }
 
-        const response = await fetch(`https://ai.nibog.in/webhook/v1/nibog/events/participants`, {
+        const response = await fetch(`http://localhost:3004/api/events/participants`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

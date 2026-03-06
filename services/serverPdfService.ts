@@ -32,7 +32,7 @@ export function generateCertificateHTMLForServer(
           // Use absolute URL for server-side generation
           const backgroundImageUrl = imageUrl.startsWith('http')
             ? imageUrl
-            : `https://ai.nibog.in${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+            : `http://localhost:3004${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
           backgroundStyle = `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
         }
       } else if (template.background_style.type === 'solid' && template.background_style.solid_color) {
@@ -44,7 +44,7 @@ export function generateCertificateHTMLForServer(
       // Legacy background image support
       const backgroundImageUrl = template.background_image.startsWith('http')
         ? template.background_image
-        : `https://ai.nibog.in${template.background_image.startsWith('/') ? '' : '/'}${template.background_image}`;
+        : `http://localhost:3004${template.background_image.startsWith('/') ? '' : '/'}${template.background_image}`;
       backgroundStyle = `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
     }
 
@@ -70,7 +70,7 @@ export function generateCertificateHTMLForServer(
             // Render signature as image
             const signatureUrl = template.signature_image.startsWith('http')
               ? template.signature_image
-              : `https://ai.nibog.in${template.signature_image.startsWith('/') ? '' : '/'}${template.signature_image}`;
+              : `http://localhost:3004${template.signature_image.startsWith('/') ? '' : '/'}${template.signature_image}`;
             
             fieldsHTML += `
               <div class="field signature-field" style="

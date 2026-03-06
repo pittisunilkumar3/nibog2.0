@@ -8,7 +8,7 @@ export async function GET(
     const bookingId = params.id;
 
     // Forward the request to the external API
-    const apiUrl = "https://ai.nibog.in/webhook/v1/nibog/bookingsevents/get-all";
+    const apiUrl = "http://localhost:3004/api/bookingsevents/get-all";
 
     const response = await fetch(apiUrl, {
       method: "GET",

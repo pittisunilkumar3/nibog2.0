@@ -103,16 +103,36 @@ export default function AdminHeader({ title, description }: AdminHeaderProps) {
 
   const handleLogout = async () => {
     try {
+      // Call the logout API to clear server-side cookies
       await fetch('/api/auth/superadmin/logout', {
         method: 'POST',
         credentials: 'include',
       })
+      
+      // Clear all local storage items
       localStorage.removeItem('superadmin')
       localStorage.removeItem('adminToken')
+      localStorage.removeItem('superadminToken')
+      localStorage.removeItem('token')
+      localStorage.removeItem('nibog-session')
+      
+      // Clear all session storage items
+      sessionStorage.removeItem('superadmin')
       sessionStorage.removeItem('adminToken')
+      sessionStorage.removeItem('superadminToken')
+      sessionStorage.removeItem('token')
+      
+      // Clear cookies on client side as well
+      document.cookie = 'superadmin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      document.cookie = 'nibog-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      
+      // Redirect to login page
       window.location.href = '/superadmin/login'
     } catch (error) {
       console.error('Logout error:', error)
+      // Still redirect even if API fails
+      window.location.href = '/superadmin/login'
     }
   }
 

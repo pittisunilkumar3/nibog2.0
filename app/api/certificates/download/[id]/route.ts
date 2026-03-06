@@ -15,7 +15,7 @@ export async function GET(
     }
 
     const response = await fetch(
-      `https://ai.nibog.in/webhook/v1/nibog/certificates/download/${id}`,
+      `http://localhost:3004/api/certificates/download/${id}`,
       {
         method: 'GET',
         headers: {

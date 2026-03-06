@@ -588,7 +588,7 @@ export function convertBookingRefFormat(ref: string, targetFormat: 'B' | 'PPT' =
  */
 export async function getEventGameSlotDetailsBySlotId(slotId: number) {
   try {
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/event-game-slot/get', {
+    const response = await fetch('http://localhost:3004/api/event-game-slot/get', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: slotId })
@@ -631,7 +631,7 @@ export async function findMostLikelySlotForBooking(booking: any) {
     const slotsController = new AbortController();
     const slotsTimeout = setTimeout(() => slotsController.abort(), 10000); // 10 second timeout
 
-    const slotsResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/event-game-slot/get-all', {
+    const slotsResponse = await fetch('http://localhost:3004/api/event-game-slot/get-all', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       signal: slotsController.signal
@@ -650,7 +650,7 @@ export async function findMostLikelySlotForBooking(booking: any) {
     const eventsController = new AbortController();
     const eventsTimeout = setTimeout(() => eventsController.abort(), 10000); // 10 second timeout
 
-    const eventsResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/event/get-all', {
+    const eventsResponse = await fetch('http://localhost:3004/api/event/get-all', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       signal: eventsController.signal
@@ -680,7 +680,7 @@ export async function findMostLikelySlotForBooking(booking: any) {
     const gamesController = new AbortController();
     const gamesTimeout = setTimeout(() => gamesController.abort(), 10000); // 10 second timeout
 
-    const gamesResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/baby-games/get-all', {
+    const gamesResponse = await fetch('http://localhost:3004/api/baby-games/get-all', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       signal: gamesController.signal
@@ -793,7 +793,7 @@ export async function findMostLikelySlotForBooking(booking: any) {
  */
 export async function getEventGameSlotDetails(eventId: number, gameId: number) {
   try {
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/event-game-slot/get-all', {
+    const response = await fetch('http://localhost:3004/api/event-game-slot/get-all', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -830,7 +830,7 @@ export async function getEventGameSlotDetails(eventId: number, gameId: number) {
  */
 export async function getBookingPaymentDetails(bookingId: number) {
   try {
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/payments/get-all', {
+    const response = await fetch('http://localhost:3004/api/payments/get-all', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -863,7 +863,7 @@ export async function getBookingPaymentDetails(bookingId: number) {
 export async function getBookingAddons(bookingId: number): Promise<any> {
   try {
 
-    const response = await fetch('https://ai.nibog.in/webhook/v1/nibog/getting/add-on/by-bookingid', { 
+    const response = await fetch('http://localhost:3004/api/getting/add-on/by-bookingid', { 
       method: "POST",
       headers: {
         "Content-Type": "application/json",

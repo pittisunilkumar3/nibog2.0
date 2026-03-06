@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     let templateData = null;
     try {
       const getResponse = await fetch(
-        'https://ai.nibog.in/webhook/v1/nibog/certificate-templates/get',
+        'http://localhost:3004/api/certificate-templates/get',
         {
           method: 'POST',
           headers: {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Delete the template from the database
     const response = await fetch(
-      'https://ai.nibog.in/webhook/v1/nibog/certificate-templates/delete',
+      'http://localhost:3004/api/certificate-templates/delete',
       {
         method: 'POST',
         headers: {

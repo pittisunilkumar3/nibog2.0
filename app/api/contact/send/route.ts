@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     }
 
     // Get email settings from the existing API
-    const emailSettingsResponse = await fetch('https://ai.nibog.in/webhook/v1/nibog/emailsetting/get', {
+    const emailSettingsResponse = await fetch('http://localhost:3004/api/email-settings', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store'
