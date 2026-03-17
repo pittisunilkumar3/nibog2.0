@@ -120,9 +120,9 @@ export function transformEventDetailsToListItems(eventDetails: EventDetailsWithI
   return Object.entries(eventGroups).map(([eventId, details]) => {
     const firstDetail = details[0]; // Use first detail for common event info
     
-    // Format date
-    const eventDate = new Date(firstDetail.event_date);
-    const formattedDate = eventDate.toISOString().split('T')[0];
+    // Format date - with dateStrings: true in MySQL config, dates come as 'YYYY-MM-DD' strings
+    // event_date is typed as string, so just use it directly or handle edge cases
+    const formattedDate: string = firstDetail.event_date || '';
     
     // Format time from start_time and end_time
     const formatTime = (timeStr: string) => {
@@ -272,8 +272,12 @@ export function transformBackendEventsToListItems(events: any[]): EventListItem[
     let formattedDate: string;
     
     if (!dateStr) {
-      // No date provided, use a placeholder
-      formattedDate = new Date().toISOString().split('T')[0];
+      // No date provided, use a placeholder - use local date to avoid timezone issues
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
     } else if (typeof dateStr === 'string') {
       // String date from MySQL (with dateStrings: true config)
       if (dateStr.includes('T') || dateStr.includes(' ')) {

@@ -8,11 +8,21 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3004';
  * GET /api/events/list
  * List all events with their slots, venue name, city name, and event_games_with_slots
  * No authentication required
+ * Query params:
+ *   - all: if set to 'true', returns all events (including inactive) - for admin use
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Get the URL and extract query params
+    const { searchParams } = new URL(request.url);
+    const showAll = searchParams.get('all');
+    
+    // Build backend URL with query param if needed
+    const backendUrl = showAll === 'true' 
+      ? `${BACKEND_URL}/api/events/list?all=true`
+      : `${BACKEND_URL}/api/events/list`;
 
-    const response = await fetch(`${BACKEND_URL}/api/events/list`, {
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

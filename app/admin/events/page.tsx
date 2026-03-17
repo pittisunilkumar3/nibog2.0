@@ -82,7 +82,7 @@ export default function EventsPage() {
 
   // Function to fetch events with complete information
   const fetchEventsWithGames = async () => {
-    const response = await fetch('/api/events/list?t=' + Date.now(), {
+    const response = await fetch('/api/events/list?all=true&t=' + Date.now(), {
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

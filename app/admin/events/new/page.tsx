@@ -682,7 +682,8 @@ export default function NewEventPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">\n                  <Label>Event Date</Label>
+                <div className="space-y-2">
+                  <Label>Event Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -715,27 +716,37 @@ export default function NewEventPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="status">Initial Status</Label>
+                  <Label htmlFor="status">Event Status (Internal)</Label>
                   <Select value={eventStatus} onValueChange={setEventStatus}>
                     <SelectTrigger id="status">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="draft">Draft - Being Planned</SelectItem>
+                      <SelectItem value="scheduled">Published - Ready for Display</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Internal status for organization. Use the toggle below to control visibility on the website.
+                  </p>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 p-3 rounded-md border bg-muted/30">
                   <Switch
                     id="is-active"
                     checked={isActive}
                     onCheckedChange={setIsActive}
                   />
-                  <Label htmlFor="is-active" className="cursor-pointer">
-                    Active Event (visible to users)
-                  </Label>
+                  <div className="flex-1">
+                    <Label htmlFor="is-active" className="cursor-pointer font-medium">
+                      {isActive ? "🔴 Event is LIVE" : "⚪ Event is HIDDEN"}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {isActive 
+                        ? "This event will be visible on the public website" 
+                        : "This event will NOT be shown on the public website"}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
