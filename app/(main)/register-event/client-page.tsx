@@ -1260,6 +1260,12 @@ export default function RegisterEventClientPage() {
         throw new Error("Please enter your mobile number to continue.")
       }
 
+      // Validate 10-digit Indian mobile number starting with 6-9
+      const phoneRegex = /^[6-9]\d{9}$/
+      if (!phoneRegex.test(phone.trim())) {
+        throw new Error("Please enter a valid 10-digit Indian mobile number starting with 6-9.")
+      }
+
       if (!childName.trim()) {
         throw new Error("Please enter your child's name to continue.")
       }
@@ -2156,10 +2162,17 @@ export default function RegisterEventClientPage() {
                       type="tel"
                       placeholder="Enter your 10-digit mobile number"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '')
+                        if (val.length <= 10) setPhone(val)
+                      }}
                       required
+                      maxLength={10}
                       className="border-2 border-mint-200 focus:border-mint-400 focus:ring-2 focus:ring-mint-200 bg-white hover:bg-mint-50 dark:bg-gray-800 dark:border-mint-600 dark:hover:bg-gray-700 dark:text-white h-12 text-base rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl"
                     />
+                    {phone.length > 0 && phone.length < 10 && (
+                      <p className="text-xs text-red-500 mt-1">Please enter a valid 10-digit mobile number</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2416,9 +2429,6 @@ export default function RegisterEventClientPage() {
                                   </p>
                                   <div className="flex flex-wrap gap-2">
                                     <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
-                                      {gameInfo.game_duration_minutes} min
-                                    </div>
-                                    <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
                                       Age: {gameInfo.min_age}-{gameInfo.max_age} months
                                     </div>
                                   </div>
@@ -2568,13 +2578,13 @@ export default function RegisterEventClientPage() {
                 size="lg"
                 className={cn(
                   "w-full relative overflow-hidden group transition-all duration-300 h-16 text-lg font-bold touch-manipulation rounded-3xl shadow-2xl hover:shadow-3xl transform hover:scale-105 border-2 border-white/50 animate-medal-shine",
-                  (!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
+                  (!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || phone.length !== 10 || !childName ||
                  (childAgeMonths && childAgeMonths >= 36 && !schoolName) || !termsAccepted || isProcessingPayment)
                     ? "opacity-50 cursor-not-allowed bg-gray-400"
                     : "bg-gradient-to-r from-skyblue-400 via-coral-400 to-mint-400 hover:from-skyblue-500 hover:via-coral-500 hover:to-mint-500 text-white"
                 )}
                 onClick={handleRegistration}
-                disabled={!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || !childName ||
+                disabled={!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || phone.length !== 10 || !childName ||
                          (childAgeMonths && childAgeMonths >= 36 && !schoolName) || !termsAccepted || isProcessingPayment}
               >
                 <span className="relative z-10 flex items-center justify-center">
