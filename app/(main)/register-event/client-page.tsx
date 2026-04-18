@@ -1256,6 +1256,11 @@ export default function RegisterEventClientPage() {
         throw new Error("Please enter your email address to continue.")
       }
 
+      // Validate Gmail address
+      if (!email.trim().toLowerCase().endsWith('@gmail.com')) {
+        throw new Error("Please enter a valid Gmail address (e.g. name@gmail.com).")
+      }
+
       if (!phone.trim()) {
         throw new Error("Please enter your mobile number to continue.")
       }
@@ -2145,12 +2150,15 @@ export default function RegisterEventClientPage() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="name@example.com"
+                      placeholder="name@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       className="border-2 border-coral-200 focus:border-coral-400 focus:ring-2 focus:ring-coral-200 bg-white hover:bg-coral-50 dark:bg-gray-800 dark:border-coral-600 dark:hover:bg-gray-700 dark:text-white h-12 text-base rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl"
                     />
+                    {email.length > 0 && !email.toLowerCase().endsWith('@gmail.com') && (
+                      <p className="text-xs text-red-500 mt-1">Please enter a valid Gmail address (e.g. name@gmail.com)</p>
+                    )}
                   </div>
                   <div className="space-y-3">
                     <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-bold text-neutral-charcoal dark:text-white">
@@ -2170,8 +2178,11 @@ export default function RegisterEventClientPage() {
                       maxLength={10}
                       className="border-2 border-mint-200 focus:border-mint-400 focus:ring-2 focus:ring-mint-200 bg-white hover:bg-mint-50 dark:bg-gray-800 dark:border-mint-600 dark:hover:bg-gray-700 dark:text-white h-12 text-base rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl"
                     />
-                    {phone.length > 0 && phone.length < 10 && (
-                      <p className="text-xs text-red-500 mt-1">Please enter a valid 10-digit mobile number</p>
+                    {phone.length > 0 && !/^[6-9]/.test(phone) && (
+                      <p className="text-xs text-red-500 mt-1">Mobile number must start with 6, 7, 8 or 9</p>
+                    )}
+                    {phone.length > 0 && /^[6-9]/.test(phone) && phone.length < 10 && (
+                      <p className="text-xs text-red-500 mt-1">Please enter all 10 digits</p>
                     )}
                   </div>
                 </div>
@@ -2578,13 +2589,13 @@ export default function RegisterEventClientPage() {
                 size="lg"
                 className={cn(
                   "w-full relative overflow-hidden group transition-all duration-300 h-16 text-lg font-bold touch-manipulation rounded-3xl shadow-2xl hover:shadow-3xl transform hover:scale-105 border-2 border-white/50 animate-medal-shine",
-                  (!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || phone.length !== 10 || !childName ||
+                  (!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !email.toLowerCase().endsWith('@gmail.com') || !phone || phone.length !== 10 || !childName ||
                  (childAgeMonths && childAgeMonths >= 36 && !schoolName) || !termsAccepted || isProcessingPayment)
                     ? "opacity-50 cursor-not-allowed bg-gray-400"
                     : "bg-gradient-to-r from-skyblue-400 via-coral-400 to-mint-400 hover:from-skyblue-500 hover:via-coral-500 hover:to-mint-500 text-white"
                 )}
                 onClick={handleRegistration}
-                disabled={!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !phone || phone.length !== 10 || !childName ||
+                disabled={!selectedCity || !dob || !selectedEventType || !selectedEvent || selectedGames.length === 0 || childAgeMonths === null || !parentName || !email || !email.toLowerCase().endsWith('@gmail.com') || !phone || phone.length !== 10 || !childName ||
                          (childAgeMonths && childAgeMonths >= 36 && !schoolName) || !termsAccepted || isProcessingPayment}
               >
                 <span className="relative z-10 flex items-center justify-center">
