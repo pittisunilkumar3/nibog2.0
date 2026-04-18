@@ -16,9 +16,9 @@ import { EventListItem } from "@/types"
 
 // Memoized EventCard component to prevent unnecessary re-renders
 const EventCard = memo(({ event }: { event: EventListItem }) => {
-  // Use static age range for all events (5-84 months)
-  const minAgeMonths = 5;
-  const maxAgeMonths = 84;
+  // Use dynamic age range from event data, with fallback defaults
+  const minAgeMonths = event.minAgeMonths ?? 6;
+  const maxAgeMonths = event.maxAgeMonths ?? 84;
 
   // Check if event is in the past
   const isEventComplete = useMemo(() => {
@@ -105,6 +105,9 @@ const EventCard = memo(({ event }: { event: EventListItem }) => {
         <div className="absolute bottom-3 left-3 right-3">
           <Badge className="bg-white/90 backdrop-blur-sm text-neutral-charcoal font-bold px-3 py-2 rounded-full shadow-lg">
             👶 {minAgeMonths}-{maxAgeMonths} months
+            <span className="ml-1 text-xs text-neutral-charcoal/50 hidden sm:inline">
+              ({Math.floor(minAgeMonths/12) !== Math.floor(maxAgeMonths/12) ? `${Math.floor(minAgeMonths/12)}-${Math.floor(maxAgeMonths/12)}` : `${Math.floor(minAgeMonths/12)}`} yrs)
+            </span>
           </Badge>
         </div>
 
@@ -150,7 +153,11 @@ const EventCard = memo(({ event }: { event: EventListItem }) => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="font-medium text-neutral-charcoal">Time:</span>
-                  <span className="ml-1 truncate">{event.time}</span>
+                  {event.time ? (
+                    <span className="ml-1 truncate">{event.time}</span>
+                  ) : (
+                    <span className="ml-1 text-amber-600 italic text-xs">Time will be updated soon</span>
+                  )}
                 </div>
               </div>
 
@@ -160,7 +167,9 @@ const EventCard = memo(({ event }: { event: EventListItem }) => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="font-medium text-neutral-charcoal">Venue:</span>
-                  <span className="ml-1 truncate">{event.venue}</span>
+                  <span className={event.venue && /^venue will be/i.test(event.venue) ? "ml-1 text-amber-600 italic" : "ml-1 truncate"}>
+                    {event.venue}
+                  </span>
                 </div>
               </div>
 
@@ -182,7 +191,7 @@ const EventCard = memo(({ event }: { event: EventListItem }) => {
                   <span className="font-medium text-neutral-charcoal">Age:</span>
                   <span className="ml-1">{minAgeMonths}-{maxAgeMonths} months</span>
                   <span className="ml-1 text-xs text-neutral-charcoal/50 hidden sm:inline">
-                    ({Math.floor(minAgeMonths/12)}-{Math.floor(maxAgeMonths/12)} years)
+                    ({Math.floor(minAgeMonths/12) !== Math.floor(maxAgeMonths/12) ? `${Math.floor(minAgeMonths/12)}-${Math.floor(maxAgeMonths/12)}` : `${Math.floor(minAgeMonths/12)}`} years)
                   </span>
                 </div>
               </div>
@@ -233,12 +242,9 @@ export default function EventList() {
     const date = searchParams.get('date');
 
     const filtered = events.filter((event) => {
-      // Use default age range if not provided
-      // const eventMinAge = event.minAgeMonths || 5;
-      // const eventMaxAge = event.maxAgeMonths || 84;
-      
-      const eventMinAge = 5;
-      const eventMaxAge = 84;
+      // Use event's actual age range for filtering
+      const eventMinAge = event.minAgeMonths ?? 6;
+      const eventMaxAge = event.maxAgeMonths ?? 84;
 
       if (city && event.city.toLowerCase() !== city.toLowerCase()) return false;
       if (minAge && eventMinAge < parseInt(minAge)) return false;

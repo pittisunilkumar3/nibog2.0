@@ -71,10 +71,10 @@ export default async function EventPage({ params }: Props) {
     id: event.event_id || event.id || params.id,
     title: event.event_title || event.title || 'Baby Games Event',
     description: event.event_description || event.description || 'Join us for an exciting baby games event!',
-    minAgeMonths: 5, // Default minimum age
-    maxAgeMonths: 84, // Default maximum age (7 years)
+    minAgeMonths: 6, // Will be computed from games below
+    maxAgeMonths: 84, // Will be computed from games below
     date: event.event_date || event.date || new Date().toISOString(),
-    time: "10:00 AM - 8:00 PM", // Default time
+    time: null, // Will be computed below from event-level or slot-level times
     venue: event.venue_name || event.venue?.venue_name || 'Venue to be announced',
     address: event.venue_address || event.venue?.address || '',
     city: event.city_name || event.city?.city_name || 'City',
@@ -109,13 +109,30 @@ export default async function EventPage({ params }: Props) {
     games: event.games || event.games_with_slots || [],
   }
 
-  // Calculate age range from games if available
+  // Calculate age range from ACTIVE games only (is_active === 1)
   if (eventData.games && eventData.games.length > 0) {
-    const minAges = eventData.games.map((g: any) => g.min_age || 5).filter((a: number) => a > 0)
-    const maxAges = eventData.games.map((g: any) => g.max_age || 84).filter((a: number) => a > 0)
+    const activeGames = eventData.games.filter((g: any) => g.is_active === 1);
+    const gamesToUse = activeGames.length > 0 ? activeGames : eventData.games;
+    const minAges = gamesToUse.map((g: any) => g.min_age).filter((a: any) => a != null && a > 0)
+    const maxAges = gamesToUse.map((g: any) => g.max_age).filter((a: any) => a != null && a > 0)
     if (minAges.length > 0) eventData.minAgeMonths = Math.min(...minAges)
     if (maxAges.length > 0) eventData.maxAgeMonths = Math.max(...maxAges)
   }
+  
+  // Only use event-level time, do NOT fall back to slot times
+  const formatTime = (t: string) => {
+    const [hours, minutes] = t.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+  if (event.start_time && event.end_time) {
+    eventData.time = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
+  }
+  // If no event-level time, eventData.time stays null — UI shows "Time will be updated soon"
+  
+  console.log(`[EventDetail] Event ${eventData.id}: minAge=${eventData.minAgeMonths}, maxAge=${eventData.maxAgeMonths}, games=${eventData.games.length}`);
 
   return (
     <div className="container py-8">
@@ -172,7 +189,9 @@ export default async function EventPage({ params }: Props) {
                 <Clock className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Time</p>
-                  <p className="text-sm text-muted-foreground">{eventData.time}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {eventData.time ? eventData.time : <span className="italic text-amber-600">Time will be updated soon</span>}
+                  </p>
                 </div>
               </div>
 
@@ -282,7 +301,7 @@ export default async function EventPage({ params }: Props) {
                             </p>
                             <div className="mt-2 flex flex-wrap gap-2">
                               <Badge variant="outline" className="text-xs">
-                                Age: {game.min_age || 5}-{game.max_age || 84} months
+                                Age: {game.min_age ?? '-'}/{game.max_age ?? '-'} months
                               </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {formatPrice(game.price || game.slot_price || 1800)}

@@ -8,6 +8,8 @@ export interface Event {
   city_id: number;
   venue_id: number;
   event_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
   status: string;
   is_active?: number;
   image_url?: string;
@@ -221,6 +223,8 @@ export function formatEventDataForAPI(formData: {
     city_id: formData.cityId || 0,
     venue_id: parseInt(formData.venueId),
     event_date: formData.date,
+    start_time: formData.startTime ? formData.startTime.includes(":") && formData.startTime.split(":").length === 2 ? formData.startTime + ":00" : formData.startTime : null,
+    end_time: formData.endTime ? formData.endTime.includes(":") && formData.endTime.split(":").length === 2 ? formData.endTime + ":00" : formData.endTime : null,
     status: formData.status === "draft" ? "Draft" : "Published",
     is_active: formData.isActive !== false ? 1 : 0,
     image_url: formData.imagePath || "",
@@ -685,6 +689,8 @@ export function formatEventDataForUpdate(
     description: string;
     venueId: string;
     date: string;
+    startTime?: string | null;
+    endTime?: string | null;
     status: string;
     isActive?: boolean;
     imagePath?: string | null;
@@ -751,6 +757,8 @@ export function formatEventDataForUpdate(
     city_id: formData.cityId || 0,
     venue_id: parseInt(formData.venueId),
     event_date: formData.date,
+    start_time: formData.startTime ? formData.startTime.includes(":") && formData.startTime.split(":").length === 2 ? formData.startTime + ":00" : formData.startTime : null,
+    end_time: formData.endTime ? formData.endTime.includes(":") && formData.endTime.split(":").length === 2 ? formData.endTime + ":00" : formData.endTime : null,
     status: formData.status === "draft" ? "Draft" : "Published",
     is_active: formData.isActive !== undefined ? (formData.isActive ? 1 : 0) : 1,
     event_games_with_slots: eventGamesWithSlots

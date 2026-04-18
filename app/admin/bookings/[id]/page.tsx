@@ -456,7 +456,7 @@ export default function BookingDetailPage({ params }: Props) {
               Booking #{booking.booking_id}
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground truncate">
-              {booking.event_title} - {new Date(booking.event_event_date).toLocaleDateString()}
+              {booking.event_title} - {formatDateShort(booking.event_event_date)}
             </p>
           </div>
           {/* Explore Modal Trigger - Hidden on mobile to save space */}
@@ -652,7 +652,7 @@ export default function BookingDetailPage({ params }: Props) {
                         <div className="min-w-0 w-full">
                           <p className="font-medium break-words">{child.full_name}</p>
                           <p className="text-sm text-muted-foreground">
-                            Born: {new Date(child.date_of_birth).toLocaleDateString()}, {child.gender}
+                            Born: {formatDateShort(child.date_of_birth)}, {child.gender}
                           </p>
                           {child.date_of_birth && (
                             <p className="text-sm text-muted-foreground">
@@ -704,7 +704,7 @@ export default function BookingDetailPage({ params }: Props) {
                       <div className="min-w-0">
                         <p className="font-medium break-words">{booking.child_full_name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Born: {new Date(booking.child_date_of_birth).toLocaleDateString()}, {booking.child_gender}
+                          Born: {formatDateShort(booking.child_date_of_birth)}, {booking.child_gender}
                         </p>
                         {booking.child_age && (
                           <p className="text-sm text-muted-foreground">Age: {booking.child_age}</p>
@@ -823,7 +823,7 @@ export default function BookingDetailPage({ params }: Props) {
                             )}
                             {payment.payment_date && (
                               <p className="text-sm text-muted-foreground mt-1">
-                                Payment Date: {new Date(payment.payment_date).toLocaleDateString()}
+                                Payment Date: {formatDateShort(payment.payment_date)}
                               </p>
                             )}
                             {payment.amount && (
@@ -876,7 +876,7 @@ export default function BookingDetailPage({ params }: Props) {
                         )}
                         {booking.payment_details?.payment_date && (
                           <p className="text-sm text-muted-foreground mt-1">
-                            Payment Date: {new Date(booking.payment_details.payment_date).toLocaleDateString()}
+                            Payment Date: {formatDateShort(booking.payment_details.payment_date)}
                           </p>
                         )}
                         <p className="text-sm text-muted-foreground mt-1">
@@ -894,19 +894,19 @@ export default function BookingDetailPage({ params }: Props) {
                     <Calendar className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm text-muted-foreground">
-                        Booked on: {new Date(booking.booking_created_at).toLocaleDateString()}
+                        Booked on: {formatDateShort(booking.booking_created_at)}
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Last updated: {new Date(booking.booking_updated_at).toLocaleDateString()}
+                        Last updated: {formatDateShort(booking.booking_updated_at)}
                       </p>
                       {booking.cancelled_at && (
                         <p className="text-sm text-red-500 mt-1">
-                          Cancelled on: {new Date(booking.cancelled_at).toLocaleDateString()}
+                          Cancelled on: {formatDateShort(booking.cancelled_at)}
                         </p>
                       )}
                       {booking.completed_at && (
                         <p className="text-sm text-green-500 mt-1">
-                          Completed on: {new Date(booking.completed_at).toLocaleDateString()}
+                          Completed on: {formatDateShort(booking.completed_at)}
                         </p>
                       )}
                     </div>
@@ -1070,7 +1070,7 @@ function ExploreModal({ booking }: { booking: any }) {
       case "booking_status":
         return <div><strong>Status:</strong> {booking.booking_status}</div>;
       case "booking_created_at":
-        return <div><strong>Booking Date:</strong> {new Date(booking.booking_created_at).toLocaleDateString()}</div>;
+        return <div><strong>Booking Date:</strong> {formatDateShort(booking.booking_created_at)}</div>;
       default:
         return <div>{booking[colKey]}</div>;
     }

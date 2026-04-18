@@ -104,6 +104,8 @@ export default function EditEventPage({ params }: Props) {
   const [selectedCity, setSelectedCity] = useState("")
   const [selectedVenue, setSelectedVenue] = useState("")
   const [selectedDate, setSelectedDate] = useState<Date>()
+  const [eventStartTime, setEventStartTime] = useState<string>("")
+  const [eventEndTime, setEventEndTime] = useState<string>("")
   const [eventStatus, setEventStatus] = useState("draft")
   const [isActive, setIsActive] = useState(true)
   const [selectedGames, setSelectedGames] = useState<Array<{
@@ -177,6 +179,14 @@ export default function EditEventPage({ params }: Props) {
           const parsedDate = new Date(year, month, day)
           console.log('📅 Converted to IST date:', parsedDate.toLocaleDateString())
           setSelectedDate(parsedDate)
+        }
+        
+        // Set event-level time if available
+        if (event.start_time) {
+          setEventStartTime(event.start_time.substring(0, 5)) // HH:mm:ss -> HH:mm
+        }
+        if (event.end_time) {
+          setEventEndTime(event.end_time.substring(0, 5)) // HH:mm:ss -> HH:mm
         }
         
         setEventStatus((event.status || event.event_status || "draft").toLowerCase())
@@ -652,6 +662,8 @@ export default function EditEventPage({ params }: Props) {
         description: eventDescription,
         venueId: selectedVenue,
         date: apiDate,
+        startTime: eventStartTime || null,
+        endTime: eventEndTime || null,
         status: eventStatus,
         isActive: isActive,
         games: selectedGames,
@@ -1006,6 +1018,38 @@ export default function EditEventPage({ params }: Props) {
                       />
                     </PopoverContent>
                   </Popover>
+                </div>
+
+                {/* Event Time (Event-level) */}
+                <div className="space-y-2">
+                  <Label htmlFor="editEventStartTime">
+                    Event Start Time
+                    <span className="text-xs text-muted-foreground ml-1">(Overall event timing)</span>
+                  </Label>
+                  <Input
+                    id="editEventStartTime"
+                    type="time"
+                    value={eventStartTime}
+                    onChange={(e) => setEventStartTime(e.target.value)}
+                    placeholder="e.g. 10:00"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="editEventEndTime">
+                    Event End Time
+                    <span className="text-xs text-muted-foreground ml-1">(Overall event timing)</span>
+                  </Label>
+                  <Input
+                    id="editEventEndTime"
+                    type="time"
+                    value={eventEndTime}
+                    onChange={(e) => setEventEndTime(e.target.value)}
+                    placeholder="e.g. 16:00"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank to show &quot;Time will be updated soon&quot; on the event page.
+                  </p>
                 </div>
 
                 <div className="space-y-2">

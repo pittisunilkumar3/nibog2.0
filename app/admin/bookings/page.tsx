@@ -396,7 +396,7 @@ export default function BookingsPage() {
       hideOnMobile: true, // Hide on mobile to save space
       render: (value) => (
         <div className="min-w-0">
-          <div className="font-medium text-sm">{value ? new Date(value).toLocaleDateString('en-IN') : 'N/A'}</div>
+          <div className="font-medium text-sm">{value ? formatDateShort(value) : 'N/A'}</div>
         </div>
       )
     },

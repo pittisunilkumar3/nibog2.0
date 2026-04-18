@@ -33,7 +33,7 @@ export default function EventFilters() {
   // Initialize state from URL params or defaults
   const [city, setCity] = useState(searchParams.get("city") || "")
   const [ageRange, setAgeRange] = useState<[number, number]>([
-    Number.parseInt(searchParams.get("minAge") || "5"),
+    Number.parseInt(searchParams.get("minAge") || "6"),
     Number.parseInt(searchParams.get("maxAge") || "144"),
   ])
   const [date, setDate] = useState<Date | undefined>(

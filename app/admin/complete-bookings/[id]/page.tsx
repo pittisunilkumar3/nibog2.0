@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Booking } from "@/services/bookingService"
 import { SkeletonCard } from "@/components/ui/skeleton-loader"
 import { EmptyError } from "@/components/ui/empty-state"
+import { formatDateShort } from "@/lib/utils"
 
 // Status badge component
 const getStatusBadge = (status: string) => {
@@ -171,7 +172,7 @@ export default function CompleteBookingDetailPage() {
             <div className="space-y-2">
               {getStatusBadge(booking.booking_status)}
               <p className="text-xs text-muted-foreground">
-                Created: {new Date(booking.booking_created_at).toLocaleDateString()}
+                Created: {formatDateShort(booking.booking_created_at)}
               </p>
             </div>
           </CardContent>
@@ -202,7 +203,7 @@ export default function CompleteBookingDetailPage() {
             <div className="space-y-2">
               <p className="font-medium break-words">{booking.event_title}</p>
               <p className="text-sm text-muted-foreground">
-                {booking.event_event_date && new Date(booking.event_event_date).toLocaleDateString()}
+                {booking.event_event_date && formatDateShort(booking.event_event_date)}
               </p>
             </div>
           </CardContent>
@@ -294,7 +295,7 @@ export default function CompleteBookingDetailPage() {
               <div className="space-y-2">
                 <p className="font-medium break-words">{booking.child_full_name}</p>
                 <p className="text-sm text-muted-foreground">
-                  Born: {new Date(booking.child_date_of_birth).toLocaleDateString()}, {booking.child_gender}
+                  Born: {formatDateShort(booking.child_date_of_birth)}, {booking.child_gender}
                 </p>
                 {booking.child_age && (
                   <p className="text-sm text-muted-foreground">Age: {booking.child_age}</p>
@@ -317,7 +318,7 @@ export default function CompleteBookingDetailPage() {
                   </Badge>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Registered: {new Date(booking.child_created_at).toLocaleDateString()}
+                  Registered: {formatDateShort(booking.child_created_at)}
                 </p>
               </div>
             </div>

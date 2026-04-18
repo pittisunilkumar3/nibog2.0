@@ -180,14 +180,14 @@ const fetcher = async (url: string) => {
 function transformEventsData(apiEvents: any[]): EventListItem[] {
   return apiEvents.map((event: any) => {
     // Calculate age range from games if available
-    let minAgeMonths = 6; // default
-    let maxAgeMonths = 84; // default
+    let minAgeMonths: number | null = null;
+    let maxAgeMonths: number | null = null;
 
     // Extract age range information from games if available
     if (event.games && event.games.length > 0) {
       // Extract age ranges from games
-      const minAges = event.games.map((game: any) => game.min_age || 6).filter((age: number) => age > 0);
-      const maxAges = event.games.map((game: any) => game.max_age || 84).filter((age: number) => age > 0);
+      const minAges = event.games.map((game: any) => game.min_age).filter((age: any) => age != null && age > 0);
+      const maxAges = event.games.map((game: any) => game.max_age).filter((age: any) => age != null && age > 0);
 
       if (minAges.length > 0) {
         minAgeMonths = Math.min(...minAges);
@@ -197,35 +197,29 @@ function transformEventsData(apiEvents: any[]): EventListItem[] {
       }
     }
 
+    const finalMinAge = minAgeMonths ?? 6;
+    const finalMaxAge = maxAgeMonths ?? 84;
+
     // Format date and time
     const eventDate = new Date(event.event_date);
     const formattedDate = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-    // Extract time from games if available, otherwise use default
-    let formattedTime = "9:00 AM - 8:00 PM"; // Default time range
-    if (event.games && event.games.length > 0) {
-      const startTimes = event.games.map((game: any) => game.start_time).filter((t: string) => t);
-      const endTimes = event.games.map((game: any) => game.end_time).filter((t: string) => t);
-
-      if (startTimes.length > 0 && endTimes.length > 0) {
-        const earliestStart = startTimes.sort()[0];
-        const latestEnd = endTimes.sort().reverse()[0];
-
-        // Format times to 12-hour format
-        const formatTime = (time: string) => {
-          try {
-            const [hours, minutes] = time.split(':');
-            const hour = parseInt(hours);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-            return `${displayHour}:${minutes} ${ampm}`;
-          } catch {
-            return time;
-          }
-        };
-
-        formattedTime = `${formatTime(earliestStart)} - ${formatTime(latestEnd)}`;
-      }
+    // Only use event-level time, do NOT compute from game slots
+    // If no event-level time, leave null so UI shows "Time will be updated soon"
+    let formattedTime: string | null = null;
+    if (event.start_time && event.end_time) {
+      const formatTime = (time: string) => {
+        try {
+          const [hours, minutes] = time.split(':');
+          const hour = parseInt(hours);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+          return `${displayHour}:${minutes} ${ampm}`;
+        } catch {
+          return time;
+        }
+      };
+      formattedTime = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
     }
 
     // Determine appropriate image based on age range and game types
@@ -257,8 +251,8 @@ function transformEventsData(apiEvents: any[]): EventListItem[] {
       id: event.event_id?.toString() || Math.random().toString(),
       title: event.event_title || 'Baby Game Event',
       description: event.event_description || 'Fun baby games event',
-      minAgeMonths,
-      maxAgeMonths,
+      minAgeMonths: finalMinAge,
+      maxAgeMonths: finalMaxAge,
       date: formattedDate,
       time: formattedTime,
       venue: event.venue?.venue_name || 'Indoor Stadium',
@@ -299,8 +293,8 @@ export function useEvents(initialData?: EventListItem[]) {
             id: event.event_id?.toString() || Math.random().toString(),
             title: event.event_title || 'Baby Game Event',
             description: event.event_description || 'Fun baby games event',
-            minAgeMonths: 6,
-            maxAgeMonths: 84,
+            minAgeMonths: event.min_age || 6,
+            maxAgeMonths: event.max_age || 84,
             date: new Date(event.event_date).toISOString().split('T')[0],
             time: "9:00 AM - 8:00 PM",
             venue: event.venue_name || 'Indoor Stadium',

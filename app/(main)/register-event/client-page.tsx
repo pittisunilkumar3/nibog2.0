@@ -459,7 +459,7 @@ export default function RegisterEventClientPage() {
             id: event.event_id.toString(),
             title: event.event_title,
             description: event.event_description,
-            minAgeMonths: 5, // Default min age if not specified in API data
+            minAgeMonths: 6, // Default min age if not specified in API data
             maxAgeMonths: 84, // Default max age if not specified in API data
             date: displayDate,
             time: "9:00 AM - 8:00 PM", // Default time
@@ -470,7 +470,7 @@ export default function RegisterEventClientPage() {
           };
         });
 
-        // Set all events as eligible without age filtering
+        // Set all events as eligible - actual age filtering happens at game level
         setEligibleEvents(apiEventsMapped);
 
         // Get unique dates for this city from API events
@@ -652,8 +652,8 @@ export default function RegisterEventClientPage() {
         id: selectedApiEvent.event_id.toString(),
         title: selectedApiEvent.event_title,
         description: selectedApiEvent.event_description,
-        minAgeMonths: 0,
-        maxAgeMonths: 84,
+        minAgeMonths: 6,
+        maxAgeMonths: 72,
         date: (() => {
           // Convert UTC date to IST for display
           if (selectedApiEvent.event_date) {
@@ -865,8 +865,8 @@ export default function RegisterEventClientPage() {
               id: currentSelectedApiEvent.event_id.toString(),
               title: currentSelectedApiEvent.event_title,
               description: currentSelectedApiEvent.event_description,
-              minAgeMonths: 5,
-              maxAgeMonths: 84,
+              minAgeMonths: 6,
+              maxAgeMonths: 72,
               date: correctDate, // Use the correct date from games API (already in correct timezone)
               time: "9:00 AM - 8:00 PM",
               venue: finalVenueValue, // Use the best available venue information

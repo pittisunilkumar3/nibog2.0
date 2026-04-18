@@ -240,7 +240,7 @@ export type EventListItem = {
   minAgeMonths: number
   maxAgeMonths: number
   date: string
-  time: string
+  time: string | null
   venue: string
   city: string
   price: number

@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { getAllEvents } from "@/services/eventService"
+import { formatDateShort } from "@/lib/utils"
 import { getAllBabyGames, type BabyGame } from "@/services/babyGameService"
 
 // Complete booking interface matching the new API structure

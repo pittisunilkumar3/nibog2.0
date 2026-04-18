@@ -29,6 +29,7 @@ export interface BookingRegistrationData {
   };
   booking: {
     event_id: number;
+    total_amount?: number;
     payment_method: string;
     payment_status: string;
     terms_accepted: boolean;
@@ -174,6 +175,7 @@ export function formatBookingDataForAPI(formData: {
     },
     booking: {
       event_id: formData.eventId,
+      total_amount: formData.totalAmount,
       payment_method: formData.paymentMethod,
       payment_status: formData.paymentStatus,
       terms_accepted: formData.termsAccepted,

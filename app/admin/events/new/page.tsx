@@ -70,6 +70,8 @@ export default function NewEventPage() {
   // Remove unused selectedCity state
   const [selectedVenue, setSelectedVenue] = useState("")
   const [selectedDate, setSelectedDate] = useState<Date>()
+  const [eventStartTime, setEventStartTime] = useState<string>("")
+  const [eventEndTime, setEventEndTime] = useState<string>("")
   const [eventTitle, setEventTitle] = useState("")
   const [eventDescription, setEventDescription] = useState("")
   const [eventStatus, setEventStatus] = useState("draft")
@@ -400,6 +402,8 @@ export default function NewEventPage() {
         description: eventDescription,
         venueId: selectedVenue,
         date: apiDate,
+        startTime: eventStartTime || null,
+        endTime: eventEndTime || null,
         status: eventStatus,
         isActive: isActive,
         games: selectedGames,
@@ -462,6 +466,8 @@ export default function NewEventPage() {
             description: eventDescription,
             venueId: selectedVenue,
             date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
+            startTime: eventStartTime || null,
+            endTime: eventEndTime || null,
             status: eventStatus,
             isActive: isActive,
             games: [], // EMPTY array - do not send games to prevent slot duplication
@@ -713,6 +719,41 @@ export default function NewEventPage() {
                       />
                     </PopoverContent>
                   </Popover>
+                </div>
+
+                {/* Event Time (Event-level) */}
+                <div className="space-y-2">
+                  <Label htmlFor="eventStartTime">
+                    Event Start Time
+                    <span className="text-xs text-muted-foreground ml-1">(Overall event timing)</span>
+                  </Label>
+                  <Input
+                    id="eventStartTime"
+                    type="time"
+                    value={eventStartTime}
+                    onChange={(e) => setEventStartTime(e.target.value)}
+                    placeholder="e.g. 10:00"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is the overall event start time shown to users. Individual game slot times are set below.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="eventEndTime">
+                    Event End Time
+                    <span className="text-xs text-muted-foreground ml-1">(Overall event timing)</span>
+                  </Label>
+                  <Input
+                    id="eventEndTime"
+                    type="time"
+                    value={eventEndTime}
+                    onChange={(e) => setEventEndTime(e.target.value)}
+                    placeholder="e.g. 16:00"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is the overall event end time shown to users. Leave blank to show "Time will be updated soon".
+                  </p>
                 </div>
 
                 <div className="space-y-2">

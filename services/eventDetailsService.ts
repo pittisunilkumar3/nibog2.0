@@ -79,7 +79,8 @@ export async function getEventsFromBackend(): Promise<any[]> {
 export async function getEventDetailsWithImages(): Promise<EventDetailsWithImage[]> {
   try {
 
-    const response = await fetch(EVENT_DETAILS_API.GET_WITH_IMAGES, {
+    // Use apiUrl() for proxy routing instead of direct backend URL to avoid CORS
+    const response = await fetch(apiUrl('/api/events/list'), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -138,13 +139,15 @@ export function transformEventDetailsToListItems(eventDetails: EventDetailsWithI
     const timeRange = `${startTime} - ${endTime}`;
     
     // Calculate age range across all games for this event
-    const minAge = Math.min(...details.map(d => d.min_age));
-    const maxAge = Math.max(...details.map(d => d.max_age));
+    const validMinAges = details.map(d => d.min_age).filter((a: number) => a != null && a > 0);
+    const validMaxAges = details.map(d => d.max_age).filter((a: number) => a != null && a > 0);
+    const minAge = validMinAges.length > 0 ? Math.min(...validMinAges) : 6;
+    const maxAge = validMaxAges.length > 0 ? Math.max(...validMaxAges) : 84;
     
-    // Build venue string
-    const venue = firstDetail.venue_name !== "Venue Will be updated soon" 
-      ? firstDetail.venue_name 
-      : "Venue TBD";
+    // Build venue string - handle various placeholder messages
+    const venueName = firstDetail.venue_name || 'Venue TBD';
+    const isVenueTBD = /^(venue\s+will\s+be|tbd)$/i.test(venueName.trim());
+    const venue = isVenueTBD ? 'Venue TBD' : venueName;
     
     // Build description with game information
     const gameNames = [...new Set(details.map(d => d.baby_game_name))];
@@ -203,42 +206,39 @@ export function transformBackendEventsToListItems(events: any[]): EventListItem[
   console.log('[EventDetailsService] Transforming events:', events.length);
   
   return events.map((event) => {
-    // Extract time range from event_games_with_slots
+    // Extract time range - ONLY use event-level time
+    // Do NOT fall back to slot times - if event has no time set, show "Time will be updated soon"
     const slots = event.event_games_with_slots || [];
-    let timeRange = "9:00 AM - 8:00 PM"; // Default
+    let timeRange: string | null = null;
     
-    if (slots.length > 0) {
-      const startTimes = slots.map((s: any) => s.start_time).filter(Boolean);
-      const endTimes = slots.map((s: any) => s.end_time).filter(Boolean);
-      
-      if (startTimes.length > 0 && endTimes.length > 0) {
-        // Convert 24h to 12h format
-        const formatTime = (time: string) => {
-          const [hours, minutes] = time.split(':');
-          const hour = parseInt(hours);
-          const ampm = hour >= 12 ? 'PM' : 'AM';
-          const hour12 = hour % 12 || 12;
-          return `${hour12}:${minutes} ${ampm}`;
-        };
-        
-        const earliestStart = startTimes.sort()[0];
-        const latestEnd = endTimes.sort().reverse()[0];
-        timeRange = `${formatTime(earliestStart)} - ${formatTime(latestEnd)}`;
-      }
+    // Only use event-level time
+    if (event.start_time && event.end_time) {
+      const formatTime = (time: string) => {
+        const [hours, minutes] = time.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${minutes} ${ampm}`;
+      };
+      timeRange = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
     }
+    // If no event-level time, leave null — the UI will show "Time will be updated soon"
 
-    // Get min/max ages from slots
-    let minAge = 5;
-    let maxAge = 84;
+    // Get min/max ages from ACTIVE slots only (is_active === 1)
+    let minAge: number | null = null;
+    let maxAge: number | null = null;
     
-    if (slots.length > 0) {
-      const ages = slots.map((s: any) => ({
-        min: s.min_age || 5,
-        max: s.max_age || 84
-      }));
-      minAge = Math.min(...ages.map((a: { min: number; max: number }) => a.min));
-      maxAge = Math.max(...ages.map((a: { min: number; max: number }) => a.max));
+    const activeSlots = slots.filter((s: any) => s.is_active === 1);
+    if (activeSlots.length > 0) {
+      const validMinAges = activeSlots.map((s: any) => s.min_age).filter((a: any) => a != null && a > 0);
+      const validMaxAges = activeSlots.map((s: any) => s.max_age).filter((a: any) => a != null && a > 0);
+      if (validMinAges.length > 0) minAge = Math.min(...validMinAges);
+      if (validMaxAges.length > 0) maxAge = Math.max(...validMaxAges);
     }
+    
+    // Use computed ages or fallback defaults
+    const finalMinAge = minAge ?? 6;
+    const finalMaxAge = maxAge ?? 84;
 
     // Handle image URL
     let imageUrl = event.image_url;
@@ -307,8 +307,8 @@ export function transformBackendEventsToListItems(events: any[]): EventListItem[
       id: event.id.toString(),
       title: event.title,
       description: event.description || '',
-      minAgeMonths: minAge,
-      maxAgeMonths: maxAge,
+      minAgeMonths: finalMinAge,
+      maxAgeMonths: finalMaxAge,
       date: formattedDate,
       time: timeRange,
       venue: event.venue_name || 'Venue',
@@ -318,6 +318,8 @@ export function transformBackendEventsToListItems(events: any[]): EventListItem[
       spotsLeft: 0, // Not used in display
       totalSpots: 0, // Not used in display
       isOlympics: true,
+      eventStatus: event.status,
+      venueAddress: event.venue_address || null,
     };
 
     console.log('[EventDetailsService] Transformed event:', {
@@ -325,8 +327,13 @@ export function transformBackendEventsToListItems(events: any[]): EventListItem[
       title: result.title,
       originalDate: event.event_date,
       formattedDate: result.date,
+      time: result.time,
       venue: result.venue,
-      city: result.city
+      city: result.city,
+      minAge: result.minAgeMonths,
+      maxAge: result.maxAgeMonths,
+      slotsCount: slots.length,
+      rawSlots: slots.slice(0, 2).map((s: any) => ({ min_age: s.min_age, max_age: s.max_age }))
     });
 
     return result;
