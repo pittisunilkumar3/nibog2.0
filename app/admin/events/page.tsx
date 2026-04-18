@@ -308,6 +308,16 @@ export default function EventsPage() {
   // Filter events based on search and filters
   const filteredEvents = eventsToUse.filter((event) => {
     if (!event) return false;
+
+    // Exclude completed (past) events - only show upcoming and today's events
+    if (event.date) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const parts = event.date.split('-')
+      const eventDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
+      if (eventDate < today) return false
+    }
+
     // Search query filter
     if (
       searchQuery &&
