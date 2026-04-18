@@ -2475,9 +2475,16 @@ export default function RegisterEventClientPage() {
                                               onCheckedChange={() => isAvailable && handleGameSelection(slot.id)}
                                               disabled={!isAvailable}
                                               data-testid={`slot-checkbox-${slot.id}`}
-                                              className="h-5 w-5 !rounded-none border-2"
+                                              className="h-5 w-5 !rounded-none border-2 pointer-events-auto"
                                             />
-                                            <div>
+                                            <label
+                                              htmlFor={`slot-checkbox-${slot.id}`}
+                                              className="cursor-pointer select-none"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (isAvailable) handleGameSelection(slot.id);
+                                              }}
+                                            >
                                               <div className="font-medium text-sm">
                                                 {slot.start_time} - {slot.end_time}
                                               </div>
@@ -2488,12 +2495,12 @@ export default function RegisterEventClientPage() {
                                                 }
                                               </div>
                                               {slot.note && (
-                                                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
-                                                  <Info className="h-3 w-3" />
-                                                  {slot.note}
+                                                <div className="text-sm font-semibold text-red-600 dark:text-red-400 mt-1 flex items-center gap-1.5">
+                                                  <Info className="h-4 w-4 flex-shrink-0" />
+                                                  <span>{slot.note}</span>
                                                 </div>
                                               )}
-                                            </div>
+                                            </label>
                                           </div>
                                           <div className="text-right">
                                             <div className="font-bold text-lg text-primary">
