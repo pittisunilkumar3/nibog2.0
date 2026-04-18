@@ -42,6 +42,20 @@ import { getPromoCodesByEventAndGames, validatePromoCodePreview } from "@/servic
 import { validateGameData } from "@/utils/gameIdValidation"
 
 // Helper function to format price.
+const formatTime12hr = (time: string | null | undefined) => {
+  if (!time) return ''
+  const [hours, minutes] = time.split(':')
+  const h = parseInt(hours)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return `${h12}:${minutes} ${ampm}`
+}
+
+const formatTimeRange = (start: string | null | undefined, end: string | null | undefined) => {
+  if (!start || !end) return 'Time TBD'
+  return `${formatTime12hr(start)} - ${formatTime12hr(end)}`
+}
+
 const formatPrice = (price: number | string | undefined) => {
   // Convert price to a number and handle undefined/NaN cases
   const numericPrice = typeof price === 'string' ? parseFloat(price) : Number(price || 0);
@@ -1394,9 +1408,9 @@ export default function RegisterEventClientPage() {
           start_time: game?.start_time,
           end_time: game?.end_time,
           // Enhanced timing information for email ticket
-          slot_timing: `${game?.start_time} - ${game?.end_time}`,
+          slot_timing: formatTimeRange(game?.start_time, game?.end_time),
           formatted_timing: game?.start_time && game?.end_time ?
-            `${game.start_time} to ${game.end_time}` : 'Time TBD',
+            formatTimeRange(game.start_time, game.end_time) : 'Time TBD',
           slot_price: game?.slot_price,
           custom_price: game?.custom_price,
           max_participants: game?.max_participants,
@@ -1410,7 +1424,7 @@ export default function RegisterEventClientPage() {
         // Add a separate games_with_timings array for easy access in email templates
         games_with_timings: selectedGamesObj.map(game => ({
           game_name: game?.custom_title || game?.game_title || 'Game',
-          slot_timing: `${game?.start_time} - ${game?.end_time}`,
+          slot_timing: formatTimeRange(game?.start_time, game?.end_time),
           price: game?.slot_price || game?.custom_price || 0,
           duration: `${game?.game_duration_minutes || 0} minutes`
         }))
@@ -2470,23 +2484,30 @@ export default function RegisterEventClientPage() {
                                           onClick={() => isAvailable && handleGameSelection(slot.id)}
                                         >
                                           <div className="flex items-center space-x-3">
-                                            <Checkbox
-                                              checked={isSelected}
-                                              onCheckedChange={() => isAvailable && handleGameSelection(slot.id)}
-                                              disabled={!isAvailable}
-                                              data-testid={`slot-checkbox-${slot.id}`}
-                                              className="h-5 w-5 !rounded-none border-2 pointer-events-auto"
-                                            />
-                                            <label
-                                              htmlFor={`slot-checkbox-${slot.id}`}
-                                              className="cursor-pointer select-none"
+                                            <div
+                                              className="cursor-pointer"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (isAvailable) handleGameSelection(slot.id);
+                                              }}
+                                            >
+                                              <Checkbox
+                                                checked={isSelected}
+                                                onCheckedChange={() => isAvailable && handleGameSelection(slot.id)}
+                                                disabled={!isAvailable}
+                                                data-testid={`slot-checkbox-${slot.id}`}
+                                                className="h-5 w-5 !rounded-none border-2"
+                                              />
+                                            </div>
+                                            <div
+                                              className="cursor-pointer select-none flex-1"
                                               onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (isAvailable) handleGameSelection(slot.id);
                                               }}
                                             >
                                               <div className="font-medium text-sm">
-                                                {slot.start_time} - {slot.end_time}
+                                                {formatTimeRange(slot.start_time, slot.end_time)}
                                               </div>
                                               <div className={`text-xs ${!isAvailable ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                                                 {!isAvailable
@@ -2500,7 +2521,7 @@ export default function RegisterEventClientPage() {
                                                   <span>{slot.note}</span>
                                                 </div>
                                               )}
-                                            </label>
+                                            </div>
                                           </div>
                                           <div className="text-right">
                                             <div className="font-bold text-lg text-primary">
