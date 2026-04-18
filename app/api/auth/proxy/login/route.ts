@@ -76,7 +76,7 @@ export async function POST(request: Request) {
         secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
       });
 
       // Also set the auth token separately for API calls
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
         secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
       });
     }
 

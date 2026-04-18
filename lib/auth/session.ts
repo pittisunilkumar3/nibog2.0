@@ -134,7 +134,7 @@ export function setSession(token: string) {
     localStorage.setItem(SESSION_COOKIE_NAME, token);
 
     // Sync with cookies for server-side access - set with proper expiry
-    const maxAge = 60 * 60 * 24 * 7; // 7 days in seconds
+    const maxAge = 60 * 60 * 24 * 365 * 10; // 10 years - token never expires
     // Ensure Secure flag only when the page is served over HTTPS (otherwise cookie won't be sent)
     const secure = (typeof window !== 'undefined' && window.location && window.location.protocol === 'https:') ? 'Secure; ' : '';
     document.cookie = `${SESSION_COOKIE_NAME}=${token}; path=/; max-age=${maxAge}; ${secure}SameSite=Lax`;

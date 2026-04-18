@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       sameSite: 'lax',
       path: '/',
       // 30 days
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
     });
 
     return NextResponse.json({ success: true });

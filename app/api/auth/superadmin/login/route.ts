@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     const token = sign(
       { email, role: 'superadmin' },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '1d' }
+      { expiresIn: '1000y' }
     );
 
     // Create response with success message
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       secure: false,  // Don't set secure flag to work with both HTTP and HTTPS
       sameSite: 'strict',
       path: '/',
-      maxAge: 60 * 60 * 24 // 1 day
+      maxAge: 60 * 60 * 24 * 365 * 10 // 10 years
     });
 
     return response;

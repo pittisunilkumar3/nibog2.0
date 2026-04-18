@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       secure: false,  // Changed: Remove secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7  // 7 days
+      maxAge: 60 * 60 * 24 * 365 * 10  // 10 years
     });
 
     // Set user-token for backward compatibility
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
       secure: false,  // Changed: Remove secure flag to work with both HTTP and HTTPS
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7  // 7 days
+      maxAge: 60 * 60 * 24 * 365 * 10  // 10 years
     });
 
     return res;

@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 
 // In a production environment, this should be loaded from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'nibog-jwt-secret-key';
-const JWT_EXPIRES_IN = 7 * 24 * 60 * 60; // 7 days in seconds
+const JWT_EXPIRES_IN = '1000y'; // Token never expires (1000 years)
 
 export interface JwtPayload {
   user_id: number;
