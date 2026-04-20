@@ -40,7 +40,7 @@ export interface DashboardMetrics {
     users: number
   }
   recentBookings?: any[]
-  upcomingEventsList?: any[]
+  upcomingEvents?: any[]
   monthlyRevenue?: any[]
 }
 

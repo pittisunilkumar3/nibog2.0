@@ -363,7 +363,7 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground mt-1">Latest event registrations and their status</p>
               </CardHeader>
               <CardContent>
-                {isLoading ? <SkeletonChart /> : <AdminRecentBookings />}
+                {isLoading ? <SkeletonChart /> : <AdminRecentBookings bookings={metrics?.recentBookings} />}
               </CardContent>
             </Card>
 
@@ -376,7 +376,7 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground mt-1">Scheduled events and their booking status</p>
               </CardHeader>
               <CardContent>
-                {isLoading ? <SkeletonChart /> : <AdminUpcomingEvents />}
+                {isLoading ? <SkeletonChart /> : <AdminUpcomingEvents events={metrics?.upcomingEvents} />}
               </CardContent>
             </Card>
           </div>

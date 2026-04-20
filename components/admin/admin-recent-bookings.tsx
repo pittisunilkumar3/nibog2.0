@@ -1,173 +1,104 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye } from "lucide-react"
+import { Eye, Calendar, User, IndianRupee } from "lucide-react"
 import Link from "next/link"
-import { formatDateShort } from "@/lib/utils"
-import { getAllBookings, Booking } from "@/services/bookingService"
-import { SkeletonTable } from "@/components/ui/skeleton-loader"
-
-// Mock data - in a real app, this would come from an API
-const recentBookings = [
-  {
-    id: "B001",
-    user: "Harikrishna",
-    event: "Baby Crawling",
-    date: "2025-10-26",
-    time: "9:00 AM",
-    children: 1,
-    amount: 1800,
-    status: "confirmed",
-  },
-  {
-    id: "B002",
-    user: "Durga Prasad",
-    event: "Baby Walker",
-    date: "2025-10-26",
-    time: "9:00 AM",
-    children: 1,
-    amount: 1800,
-    status: "pending_payment",
-  },
-  {
-    id: "B003",
-    user: "Srujana",
-    event: "Running Race",
-    date: "2025-10-26",
-    time: "9:00 AM",
-    children: 2,
-    amount: 3600,
-    status: "confirmed",
-  },
-  {
-    id: "B004",
-    user: "Ramesh Kumar",
-    event: "Hurdle Toddle",
-    date: "2025-03-16",
-    time: "9:00 AM",
-    children: 1,
-    amount: 1800,
-    status: "cancelled_by_user",
-  },
-  {
-    id: "B005",
-    user: "Suresh Reddy",
-    event: "Cycle Race",
-    date: "2025-08-15",
-    time: "9:00 AM",
-    children: 1,
-    amount: 1800,
-    status: "confirmed",
-  },
-]
 
 const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "confirmed":
-      return <Badge className="bg-green-500 hover:bg-green-600">Confirmed</Badge>
-    case "pending_payment":
-      return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pending Payment</Badge>
-    case "cancelled_by_user":
-      return <Badge className="bg-red-500 hover:bg-red-600">Cancelled by User</Badge>
-    case "cancelled_by_admin":
-      return <Badge className="bg-red-500 hover:bg-red-600">Cancelled by Admin</Badge>
-    case "attended":
-      return <Badge className="bg-blue-500 hover:bg-blue-600">Attended</Badge>
-    case "no_show":
-      return <Badge variant="outline">No Show</Badge>
-    default:
-      return <Badge variant="outline">{status}</Badge>
-  }
+  const s = (status || "").toLowerCase()
+  if (s === "confirmed") return <Badge className="bg-green-500 hover:bg-green-600">Confirmed</Badge>
+  if (s === "completed") return <Badge className="bg-blue-500 hover:bg-blue-600">Completed</Badge>
+  if (s === "pending") return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pending</Badge>
+  if (s.includes("cancel")) return <Badge className="bg-red-500 hover:bg-red-600">Cancelled</Badge>
+  return <Badge variant="outline">{status || "Unknown"}</Badge>
 }
 
-export default function AdminRecentBookings() {
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+interface RecentBooking {
+  booking_id: number
+  booking_ref?: string
+  status: string
+  total_amount: string | number
+  booking_date: string
+  parent_name?: string
+  email?: string
+  phone?: string
+  event_title?: string
+  event_date?: string
+  city_name?: string
+  venue_name?: string
+}
 
-  useEffect(() => {
-    const fetchRecentBookings = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const allBookings = await getAllBookings()
-        // Get the 5 most recent bookings
-        const recentBookings = allBookings
-          .sort((a, b) => new Date(b.booking_created_at).getTime() - new Date(a.booking_created_at).getTime())
-          .slice(0, 5)
-        setBookings(recentBookings)
-      } catch (error: any) {
-        console.error('Error fetching recent bookings:', error)
-        setError(error.message || 'Failed to load recent bookings')
-      } finally {
-        setIsLoading(false)
-      }
-    }
+export default function AdminRecentBookings({ bookings }: { bookings?: RecentBooking[] }) {
+  const data = bookings || []
 
-    fetchRecentBookings()
-  }, [])
-
-  if (isLoading) {
-    return <SkeletonTable />
-  }
-
-  if (error) {
+  if (data.length === 0) {
     return (
-      <div className="rounded-md border p-6 text-center">
-        <p className="text-destructive mb-2">Failed to load recent bookings</p>
-        <p className="text-sm text-muted-foreground">{error}</p>
+      <div className="text-center py-8 text-muted-foreground">
+        <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p className="text-sm">No recent bookings found</p>
       </div>
     )
   }
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Booking ID</TableHead>
-            <TableHead>User</TableHead>
+            <TableHead>Ref</TableHead>
+            <TableHead>Parent</TableHead>
             <TableHead>Event</TableHead>
-            <TableHead>Date & Time</TableHead>
-            <TableHead>Children</TableHead>
+            <TableHead>Date</TableHead>
             <TableHead>Amount</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {bookings.length > 0 ? (
-            bookings.map((booking) => (
-              <TableRow key={booking.booking_id}>
-                <TableCell className="font-medium">{booking.booking_id}</TableCell>
-                <TableCell>{booking.parent_name}</TableCell>
-                <TableCell>{booking.event_title}</TableCell>
-                <TableCell>
-                  {formatDateShort(booking.booking_created_at)} at{' '}
-                  {new Date(booking.booking_created_at).toLocaleTimeString()}
-                </TableCell>
-                <TableCell>{booking.child_full_name}</TableCell>
-                <TableCell>₹{parseFloat(booking.total_amount || '0').toLocaleString()}</TableCell>
-                <TableCell>{getStatusBadge(booking.booking_status || 'pending')}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" asChild>
-                    <Link href={`/admin/bookings/${booking.booking_id}`}>
-                      <Eye className="h-4 w-4" />
-                      <span className="sr-only">View details</span>
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                No recent bookings found
+          {data.map((booking) => (
+            <TableRow key={booking.booking_id}>
+              <TableCell className="font-mono text-xs font-medium">
+                {booking.booking_ref || `#${booking.booking_id}`}
+              </TableCell>
+              <TableCell>
+                <div>
+                  <p className="font-medium text-sm">{booking.parent_name || "—"}</p>
+                  {booking.city_name && (
+                    <p className="text-xs text-muted-foreground">{booking.city_name}</p>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div>
+                  <p className="text-sm">{booking.event_title || "—"}</p>
+                  {booking.event_date && (
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(booking.event_date).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" })}
+                    </p>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell className="text-sm">
+                {booking.booking_date
+                  ? new Date(booking.booking_date).toLocaleDateString("en-IN", { day:"numeric", month:"short" })
+                  : "—"}
+              </TableCell>
+              <TableCell className="font-semibold text-green-700">
+                ₹{parseFloat(String(booking.total_amount || 0)).toLocaleString("en-IN")}
+              </TableCell>
+              <TableCell>{getStatusBadge(booking.status)}</TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="icon" asChild>
+                  <Link href={`/admin/bookings/${booking.booking_id}`}>
+                    <Eye className="h-4 w-4" />
+                    <span className="sr-only">View</span>
+                  </Link>
+                </Button>
               </TableCell>
             </TableRow>
-          )}
+          ))}
         </TableBody>
       </Table>
     </div>
