@@ -379,16 +379,16 @@ export default function ReportsPage() {
               <div>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <TrendingUp className="h-4 w-4 text-amber-500"/>
-                  {trendPeriod === "today" && "Today's Revenue"}
-                  {trendPeriod === "weekly" && "This Week's Revenue"}
-                  {trendPeriod === "monthly" && "This Month's Revenue"}
-                  {trendPeriod === "yearly" && "Yearly Revenue"}
+                  {trendPeriod === "today" && "Today's Bookings & Revenue"}
+                  {trendPeriod === "weekly" && "This Week's Bookings & Revenue"}
+                  {trendPeriod === "monthly" && "This Month's Bookings & Revenue"}
+                  {trendPeriod === "yearly" && "Yearly Bookings & Revenue"}
                 </CardTitle>
                 <CardDescription className="mt-1">
-                  {trendPeriod === "today" && "Hourly breakdown for today"}
-                  {trendPeriod === "weekly" && "Daily breakdown this week (Mon-Sun)"}
-                  {trendPeriod === "monthly" && "Day-by-day breakdown this month"}
-                  {trendPeriod === "yearly" && "Month-by-month breakdown this year"}
+                  {trendPeriod === "today" && "Hourly breakdown • Hover bars for details"}
+                  {trendPeriod === "weekly" && "Mon-Sun breakdown • Hover bars for details"}
+                  {trendPeriod === "monthly" && "Day-by-day breakdown • Hover bars for details"}
+                  {trendPeriod === "yearly" && "Month-by-month breakdown • Hover bars for details"}
                 </CardDescription>
               </div>
               <div className="flex flex-col items-end gap-1.5">
@@ -418,8 +418,8 @@ export default function ReportsPage() {
                 <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={trendData||[]} margin={{top:5,right:20,left:10,bottom:5}}>
+              <ResponsiveContainer width="100%" height={340}>
+                <BarChart data={trendData||[]} margin={{top:5,right:10,left:10,bottom:5}} barGap={2}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3}/>
                   <XAxis
                     dataKey="label"
@@ -429,29 +429,77 @@ export default function ReportsPage() {
                     height={trendPeriod === "monthly" ? 60 : 40}
                     interval={trendPeriod === "today" ? 1 : 0}
                   />
+                  {/* Left Y-axis: Revenue */}
                   <YAxis
+                    yAxisId="revenue"
                     tickFormatter={(v)=>`₹${(v/1000).toFixed(0)}k`}
-                    tick={{fontSize:11}}
+                    tick={{fontSize:10, fill:"#6366f1"}}
+                    label={{value:"Revenue", angle:-90, position:"insideLeft", offset:5, style:{fontSize:11,fill:"#6366f1"}}}
+                  />
+                  {/* Right Y-axis: Bookings */}
+                  <YAxis
+                    yAxisId="bookings"
+                    orientation="right"
+                    tick={{fontSize:10, fill:"#f59e0b"}}
+                    label={{value:"Bookings", angle:90, position:"insideRight", offset:5, style:{fontSize:11,fill:"#f59e0b"}}}
+                    allowDecimals={false}
                   />
                   <Tooltip
-                    formatter={(value: number, name: string) => {
-                      if (name.toLowerCase().includes("revenue")) return fmt(value)
-                      return fmtNum(value)
-                    }}
-                    labelFormatter={(l) => {
-                      const prefix = trendPeriod === "today" ? "Hour" : trendPeriod === "weekly" ? "Day" : trendPeriod === "monthly" ? "Date" : "Month"
-                      return `${prefix}: ${l}`
+                    content={({active,payload,label}:any)=>{
+                      if(!active||!payload?.length) return null
+                      // Find the raw data entry for this label
+                      const entry = (trendData||[]).find((d:any)=>d.label===label) as TrendItem | undefined
+                      const prefix = trendPeriod==="today"?"Hour":trendPeriod==="weekly"?"Day":trendPeriod==="monthly"?"Date":"Month"
+                      return (
+                        <div className="rounded-lg border bg-background p-3 shadow-xl text-sm min-w-[180px]">
+                          <p className="font-semibold mb-2 border-b pb-1">{prefix}: {label}</p>
+                          <div className="space-y-1.5">
+                            <p className="flex justify-between gap-4 text-xs">
+                              <span className="flex items-center gap-1.5">
+                                <span className="inline-block w-3 h-3 rounded-sm bg-indigo-500"/> Revenue
+                              </span>
+                              <span className="font-semibold text-indigo-700">{fmt(entry?.revenue||0)}</span>
+                            </p>
+                            <p className="flex justify-between gap-4 text-xs">
+                              <span className="flex items-center gap-1.5">
+                                <span className="inline-block w-3 h-3 rounded-sm bg-amber-500"/> Bookings
+                              </span>
+                              <span className="font-semibold text-amber-700">{fmtNum(entry?.bookings||0)}</span>
+                            </p>
+                            <p className="flex justify-between gap-4 text-xs">
+                              <span className="flex items-center gap-1.5">
+                                <span className="inline-block w-3 h-3 rounded-sm bg-pink-500"/> Children
+                              </span>
+                              <span className="font-semibold text-pink-700">{fmtNum(entry?.children||0)}</span>
+                            </p>
+                            <p className="flex justify-between gap-4 text-xs">
+                              <span className="flex items-center gap-1.5">
+                                <span className="inline-block w-3 h-3 rounded-sm bg-purple-500"/> Games
+                              </span>
+                              <span className="font-semibold text-purple-700">{fmtNum(entry?.gameBookings||0)}</span>
+                            </p>
+                          </div>
+                          {entry && entry.revenue > 0 && entry.bookings > 0 && (
+                            <p className="mt-2 pt-1.5 border-t text-[11px] text-muted-foreground">
+                              Avg: {fmt(entry.revenue / entry.bookings)}/booking
+                            </p>
+                          )}
+                        </div>
+                      )
                     }}
                   />
-                  <Legend />
-                  <Bar dataKey="revenue" name="Revenue" radius={[4,4,0,0]}>
-                    {(trendData||[]).map((entry: any, i: number) => {
-                      // Color based on value intensity
-                      const maxRev = Math.max(...(trendData||[]).map((d: any) => d.revenue || 0), 1)
-                      const intensity = (entry.revenue || 0) / maxRev
-                      const opacity = Math.max(0.3, intensity)
-                      return <Cell key={i} fill={`rgba(99,102,241,${opacity})`} />
-                    })}
+                  <Legend
+                    formatter={(value:string)=>(
+                      <span style={{color:value==="Revenue"?"#6366f1":"#f59e0b",fontWeight:500}}>{value}</span>
+                    )}
+                  />
+                  {/* Revenue bar (left axis) */}
+                  <Bar yAxisId="revenue" dataKey="revenue" name="Revenue" radius={[4,4,0,0]} fill="#6366f1" opacity={0.85}>
+                    {(trendData||[]).map((_:any, i:number)=><Cell key={i} fill="#6366f1" opacity={0.85}/>)}
+                  </Bar>
+                  {/* Bookings bar (right axis) */}
+                  <Bar yAxisId="bookings" dataKey="bookings" name="Bookings" radius={[4,4,0,0]} fill="#f59e0b" opacity={0.85}>
+                    {(trendData||[]).map((_:any, i:number)=><Cell key={i} fill="#f59e0b" opacity={0.85}/>)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
