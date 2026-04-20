@@ -992,6 +992,37 @@ export default function BookingsPage() {
         exportColumns={createBookingExportColumns()}
         exportTitle="NIBOG Bookings Report"
         exportFilename="nibog-bookings"
+        exportData={(() => {
+          // Flatten: one row per game per booking
+          const flatRows: any[] = []
+          filteredBookings.forEach((b: any) => {
+            const baseRow = { ...b }
+            const gamesList = b._games_list || []
+            const pricesList = b._games_prices || []
+            const slotsList = b._games_slots || []
+
+            if (gamesList.length === 0) {
+              // No games — still export the row
+              flatRows.push({
+                ...baseRow,
+                game_name: 'No games booked',
+                game_price: '',
+                slot_start_time: '',
+              })
+            } else {
+              // One row per game
+              gamesList.forEach((game: string, idx: number) => {
+                flatRows.push({
+                  ...baseRow,
+                  game_name: game,
+                  game_price: pricesList[idx] || '',
+                  slot_start_time: slotsList[idx] || '',
+                })
+              })
+            }
+          })
+          return flatRows
+        })()}
         emptyMessage="No bookings found"
         onRefresh={fetchBookings}
         className="min-h-[400px]"

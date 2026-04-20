@@ -441,32 +441,21 @@ export const createBookingExportColumns = () => [
   { key: 'child_dob' as const, label: 'Child DOB', width: 120, format: (value: any, row: any) => (value || row.child_date_of_birth) ? formatDateShort(value || row.child_date_of_birth) : 'N/A' },
   {
     key: 'game_name' as const,
-    label: 'Games',
+    label: 'Game',
     width: 200,
-    format: (value: any, row: any) => {
-      // Use same │ separator as frontend display
-      return row._games_list?.join('│') || value || 'No games booked'
-    }
+    format: (value: any) => value || 'No games booked'
   },
   {
     key: 'game_price' as const,
-    label: 'Game Prices',
-    width: 150,
-    format: (value: any, row: any) => {
-      // Add ₹ symbol and use same │ separator as frontend
-      const prices = row._games_prices || []
-      if (prices.length === 0) return 'N/A'
-      return prices.map((p: string) => `₹${p}`).join('│')
-    }
+    label: 'Game Price',
+    width: 120,
+    format: (value: any) => value ? `₹${value}` : 'N/A'
   },
   {
     key: 'slot_start_time' as const,
-    label: 'Time Slots',
-    width: 200,
-    format: (value: any, row: any) => {
-      // Use same │ separator as frontend display
-      return row._games_slots?.join('│') || value || 'N/A'
-    }
+    label: 'Time Slot',
+    width: 180,
+    format: (value: any) => value || 'N/A'
   },
   { key: 'event_title' as const, label: 'Event', width: 180 },
   { key: 'event_date' as const, label: 'Event Date', width: 110, format: (value: any) => value ? formatDateShort(value) : 'N/A' },
@@ -475,7 +464,13 @@ export const createBookingExportColumns = () => [
   { key: 'total_amount' as const, label: 'Booking Total', width: 110, format: (value: any) => `₹${value}`, align: 'right' as const },
   { key: 'booking_status' as const, label: 'Booking Status', width: 110 },
   { key: 'payment_status' as const, label: 'Payment Status', width: 110 },
-  { key: 'booking_created_at' as const, label: 'Booking Date', width: 110, format: (value: any) => formatDateShort(value) },
+  { key: 'booking_created_at' as const, label: 'Booking Time', width: 160, format: (value: any) => {
+    if (!value) return 'N/A'
+    try {
+      const d = new Date(value)
+      return d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
+    } catch { return formatDateShort(value) }
+  }},
 ]
 
 export const createEventExportColumns = () => [

@@ -97,6 +97,7 @@ interface EnhancedDataTableProps<T> {
   exportColumns?: ExportColumn<T>[]
   exportTitle?: string
   exportFilename?: string
+  exportData?: T[]  // Optional override data for export (e.g., flattened rows)
 }
 
 export default function EnhancedDataTable<T extends Record<string, any>>({
@@ -117,6 +118,7 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
   exportColumns,
   exportTitle = "Data Export",
   exportFilename = "data-export",
+  exportData,
 }: EnhancedDataTableProps<T>) {
   const isMobile = useIsMobile()
   const [searchQuery, setSearchQuery] = useState("")
@@ -688,7 +690,7 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
       <ExportDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
-        data={sortedData}
+        data={exportData || sortedData}
         columns={finalExportColumns}
         title={exportTitle}
         defaultFilename={exportFilename}
