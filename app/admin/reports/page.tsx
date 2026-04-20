@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   BarChart3, TrendingUp, IndianRupee, Users, Calendar,
   Gamepad2, RefreshCw, MapPin, Building2, CreditCard,
-  PieChart as PieChartIcon, Baby, UserCheck, Trophy
+  PieChart as PieChartIcon, Baby, UserCheck, Trophy, Filter
 } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -35,6 +35,8 @@ interface ReportsData {
   childAgeGroupDist: NameVal[]
   cities: { id: string; name: string }[]
   events: { id: string; name: string }[]
+  activeEvents: number
+  completedEvents: number
 }
 
 const COLORS = ["#6366f1","#f59e0b","#10b981","#ef4444","#3b82f6","#ec4899","#8b5cf6","#14b8a6","#f97316","#06b6d4"]
@@ -80,6 +82,12 @@ function ChartSkeleton() {
   return <div className="space-y-3"><Skeleton className="h-4 w-40" /><Skeleton className="h-[300px] w-full rounded-xl" /></div>
 }
 
+const EVENT_STATUS_OPTIONS = [
+  { value: "all", label: "All Events" },
+  { value: "active", label: "Active / Upcoming" },
+  { value: "completed", label: "Completed" },
+] as const
+
 export default function ReportsPage() {
   const [data, setData] = useState<ReportsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -87,6 +95,11 @@ export default function ReportsPage() {
   const [cityFilter, setCityFilter] = useState("all")
   const [eventFilter, setEventFilter] = useState("all")
   const [chartType, setChartType] = useState<"revenue"|"bookings">("revenue")
+
+  // City chart-specific event status filter
+  const [cityEventStatus, setCityEventStatus] = useState<string>("all")
+  const [cityChartData, setCityChartData] = useState<NameVal[] | null>(null)
+  const [cityChartLoading, setCityChartLoading] = useState(false)
 
   const fetchReports = useCallback(async () => {
     setLoading(true); setError(null)
@@ -99,15 +112,50 @@ export default function ReportsPage() {
       const json = await res.json()
       if (!json.success) throw new Error(json.error || "Failed")
       setData(json.data)
+      // Initialize city chart data
+      setCityChartData(json.data.revenueByCity)
     } catch (e: any) { setError(e.message) }
     finally { setLoading(false) }
   }, [cityFilter, eventFilter])
 
+  // Fetch city chart data when event status filter changes
+  const fetchCityChartData = useCallback(async (status: string) => {
+    if (status === "all") {
+      // "All" uses the main data
+      setCityChartData(data?.revenueByCity || null)
+      return
+    }
+    setCityChartLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.set("event_status", status)
+      if (cityFilter !== "all") params.set("city_id", cityFilter)
+      const res = await fetch(`/api/reports?${params.toString()}`)
+      if (!res.ok) throw new Error("Failed")
+      const json = await res.json()
+      if (json.success) {
+        setCityChartData(json.data.revenueByCity)
+      }
+    } catch {
+      // fallback to main data
+      setCityChartData(data?.revenueByCity || null)
+    } finally {
+      setCityChartLoading(false)
+    }
+  }, [cityFilter, data])
+
   useEffect(() => { fetchReports() }, [fetchReports])
+
+  // When cityEventStatus changes, refetch city chart
+  useEffect(() => {
+    if (data) fetchCityChartData(cityEventStatus)
+  }, [cityEventStatus, data, fetchCityChartData])
 
   const ov = data?.overview
   const cKey = chartType === "revenue" ? "revenue" : "bookings"
   const cLabel = chartType === "revenue" ? "Revenue" : "Bookings"
+
+  const selectedStatusLabel = EVENT_STATUS_OPTIONS.find(o => o.value === cityEventStatus)?.label || "All Events"
 
   return (
     <div className="space-y-6">
@@ -188,27 +236,79 @@ export default function ReportsPage() {
         </Button>
       </div>
 
-      {/* ===== ROW 1: City Bar + Payment Pie ===== */}
+      {/* ===== ROW 1: City Bar (with event status dropdown) + Payment Pie ===== */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-indigo-500"/> City-wise {cLabel}</CardTitle>
-            <CardDescription>Includes children &amp; game booking counts</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <MapPin className="h-4 w-4 text-indigo-500"/> City-wise {cLabel}
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  Filter by event status • Includes children &amp; game booking counts
+                </CardDescription>
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <Select value={cityEventStatus} onValueChange={setCityEventStatus}>
+                  <SelectTrigger className="w-[180px] h-8 text-xs">
+                    <Filter className="h-3 w-3 mr-1 text-muted-foreground" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EVENT_STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-[11px] text-muted-foreground">
+                  {cityEventStatus === "active" && `🟢 ${data?.activeEvents ?? 0} active events`}
+                  {cityEventStatus === "completed" && `🔴 ${data?.completedEvents ?? 0} completed events`}
+                  {cityEventStatus === "all" && `📊 All events`}
+                </span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {loading ? <ChartSkeleton/> : (
+            {cityChartLoading ? (
+              <div className="flex items-center justify-center h-[320px]">
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={data?.revenueByCity||[]} margin={{top:5,right:20,left:10,bottom:5}}>
+                <BarChart data={cityChartData||[]} margin={{top:5,right:20,left:10,bottom:5}}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3}/>
                   <XAxis dataKey="name" tick={{fontSize:11}} angle={-20} textAnchor="end" height={60}/>
                   <YAxis tickFormatter={chartType==="revenue"?(v)=>`₹${(v/1000).toFixed(0)}k`:undefined} tick={{fontSize:11}}/>
                   <Tooltip content={<CustomTooltip/>}/>
                   <Legend/>
                   <Bar dataKey={cKey} name={cLabel} radius={[6,6,0,0]}>
-                    {(data?.revenueByCity||[]).map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}
+                    {(cityChartData||[]).map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+            )}
+            {/* Summary pills below chart */}
+            {cityChartData && cityChartData.length > 0 && !cityChartLoading && (
+              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full font-medium">
+                  {cityChartData.reduce((s,c)=>s+(c.bookings||0),0)} bookings
+                </span>
+                <span className="text-xs bg-pink-50 text-pink-700 px-2 py-1 rounded-full font-medium">
+                  {cityChartData.reduce((s,c)=>s+(c.children||0),0)} children
+                </span>
+                <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full font-medium">
+                  {cityChartData.reduce((s,c)=>s+(c.gameBookings||0),0)} games
+                </span>
+                <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full font-medium">
+                  {fmt(cityChartData.reduce((s,c)=>s+(c.revenue||0),0))} total
+                </span>
+              </div>
+            )}
+            {(!cityChartData || cityChartData.length === 0) && !cityChartLoading && (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                No data for {selectedStatusLabel.toLowerCase()}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -359,7 +459,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {/* ===== ROW 5: Booking Status Pie + City Summary Table ===== */}
+      {/* ===== ROW 5: Booking Status Pie + City Summary Table (with event status filter) ===== */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -385,11 +485,21 @@ export default function ReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Calendar className="h-4 w-4 text-rose-500"/> City Performance Summary</CardTitle>
-            <CardDescription>Bookings, children, games &amp; revenue per city</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base"><Calendar className="h-4 w-4 text-rose-500"/> City Performance Summary</CardTitle>
+                <CardDescription>Bookings, children, games &amp; revenue per city</CardDescription>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Filter className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[11px] text-muted-foreground font-medium">{selectedStatusLabel}</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {loading ? <ChartSkeleton/> : (
+            {cityChartLoading ? (
+              <div className="flex items-center justify-center h-[320px]"><RefreshCw className="h-6 w-6 animate-spin text-muted-foreground"/></div>
+            ) : (
               <div className="overflow-auto max-h-[320px]">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-background">
@@ -402,7 +512,7 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(data?.revenueByCity||[]).map((c,i)=>(
+                    {(cityChartData||[]).map((c,i)=>(
                       <tr key={i} className="border-b hover:bg-muted/50 transition-colors">
                         <td className="py-2 px-2 font-medium">{c.name}</td>
                         <td className="text-right py-2 px-2">{fmtNum(c.bookings||0)}</td>
@@ -411,8 +521,18 @@ export default function ReportsPage() {
                         <td className="text-right py-2 px-2 text-green-600 font-semibold">{fmt(c.revenue||0)}</td>
                       </tr>
                     ))}
-                    {(!data?.revenueByCity?.length) && (
-                      <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">No data available</td></tr>
+                    {(!cityChartData || cityChartData.length === 0) && (
+                      <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">No data for {selectedStatusLabel.toLowerCase()}</td></tr>
+                    )}
+                    {/* Totals row */}
+                    {cityChartData && cityChartData.length > 0 && (
+                      <tr className="border-t-2 border-muted font-bold bg-muted/30">
+                        <td className="py-2 px-2">TOTAL</td>
+                        <td className="text-right py-2 px-2">{fmtNum(cityChartData.reduce((s,c)=>s+(c.bookings||0),0))}</td>
+                        <td className="text-right py-2 px-2 text-pink-600">{fmtNum(cityChartData.reduce((s,c)=>s+(c.children||0),0))}</td>
+                        <td className="text-right py-2 px-2 text-purple-600">{fmtNum(cityChartData.reduce((s,c)=>s+(c.gameBookings||0),0))}</td>
+                        <td className="text-right py-2 px-2 text-green-600">{fmt(cityChartData.reduce((s,c)=>s+(c.revenue||0),0))}</td>
+                      </tr>
                     )}
                   </tbody>
                 </table>

@@ -9,6 +9,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const cityFilterParam = searchParams.get('city_id') || '';
     const eventId = searchParams.get('event_id') || '';
+    const eventStatusFilter = searchParams.get('event_status') || ''; // active, completed, all
 
     const bookingsUrl = `${BACKEND_URL}/api/bookings/all`;
     const response = await fetch(bookingsUrl, {
@@ -24,13 +25,30 @@ export async function GET(request: Request) {
     const result = await response.json();
     const bookings = result.data || result || [];
 
-    // Filter by city/event if provided
+    // Helper: determine if an event is active or completed
+    const isEventActive = (b: any): boolean | null => {
+      const eventDate = b.event?.date;
+      if (!eventDate) return null;
+      const d = new Date(eventDate);
+      const now = new Date();
+      // Event is active/upcoming if event_date >= today
+      return d >= new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    };
+
+    // Filter by city/event/event_status if provided
     const filtered = bookings.filter((b: any) => {
       if (cityFilterParam) {
         const city = b.event?.venue?.city || b.city_name || '';
         if (city !== cityFilterParam) return false;
       }
       if (eventId && String(b.event?.id || b.event_id || '') !== eventId) return false;
+      if (eventStatusFilter === 'active') {
+        const active = isEventActive(b);
+        if (active !== true) return false;
+      } else if (eventStatusFilter === 'completed') {
+        const active = isEventActive(b);
+        if (active !== false) return false;
+      }
       return true;
     });
 
@@ -200,6 +218,10 @@ export async function GET(request: Request) {
       childAgeGroupDist: Object.entries(childAgeGroupDist).filter(([_, v]) => v > 0).map(([name, value]) => ({ name, value })),
       cities: Array.from(citySet.entries()).map(([id, name]) => ({ id, name })),
       events: Array.from(eventSet.entries()).map(([id, name]) => ({ id, name })),
+      activeEvents: bookings.filter((b: any) => isEventActive(b) === true)
+        .reduce((set: Set<string>, b: any) => { const eid = String(b.event?.id||''); if(eid) set.add(eid); return set; }, new Set()).size,
+      completedEvents: bookings.filter((b: any) => isEventActive(b) === false)
+        .reduce((set: Set<string>, b: any) => { const eid = String(b.event?.id||''); if(eid) set.add(eid); return set; }, new Set()).size,
     };
 
     return NextResponse.json({ success: true, data });
