@@ -9,27 +9,35 @@ export const revalidate = 0;
 import { promises as fs } from 'fs'
 import path from 'path'
 
+// Timeout wrapper for fetch calls
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 15000): Promise<Response> {
+  return Promise.race([
+    fetch(url, options),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Fetch timed out after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
 export async function GET() {
   try {
     const candidates = [process.env.NEXT_PUBLIC_BACKEND_URL, process.env.BACKEND_URL, "http://localhost:3004"].filter(Boolean);
-    console.log('[booking-info route] Backend candidates:', candidates);
 
     // Try each candidate in order until we get a response with events
     for (const baseUrl of candidates) {
       try {
-        console.log('[booking-info route] Trying backend URL:', baseUrl);
-        const backendRes = await fetch(`${baseUrl.replace(/\/$/, '')}/api/city/booking-info/list`, {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-          }
-        });
-
-        console.log('[booking-info route] Response status from', baseUrl, ':', backendRes.status);
+        const backendRes = await fetchWithTimeout(
+          `${baseUrl.replace(/\/$/, '')}/api/city/booking-info/list`,
+          {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            },
+          },
+          15000 // 15 second timeout
+        );
 
         if (!backendRes.ok) {
-          const errorText = await backendRes.text().catch(() => '<no-body>');
-          console.warn('[booking-info route] Backend returned non-ok response from', baseUrl, errorText);
           continue; // try next candidate
         }
 
@@ -38,13 +46,11 @@ export async function GET() {
         try {
           parsed = JSON.parse(text);
         } catch (e) {
-          console.warn('[booking-info route] Failed to parse JSON from', baseUrl, e);
           continue;
         }
 
         // If backend returns success, use it (even if empty - that's valid!)
         if (parsed.success && Array.isArray(parsed?.data)) {
-          console.log('[booking-info route] Using backend data from', baseUrl, 'with', parsed.data.length, 'cities');
           return new Response(text, {
             status: 200,
             headers: {
@@ -58,14 +64,11 @@ export async function GET() {
           });
         }
 
-        console.warn('[booking-info route] Backend at', baseUrl, 'returned unexpected structure. Trying next candidate.');
+        // Backend returned unexpected structure - try next
       } catch (e) {
-        console.warn('[booking-info route] Error fetching from candidate', e);
         continue; // try next candidate
       }
     }
-
-    console.warn('No working backend candidates returned event data, will try local fallback');
 
     // Fallback: try to read local sample data for dev/testing
     try {
@@ -73,7 +76,6 @@ export async function GET() {
       const fixedPath = path.join(process.cwd(), 'booking_info_clean_fixed.json');
       try {
         const fixedContent = await fs.readFile(fixedPath, 'utf-8');
-        console.log('Serving local fixed fallback booking_info_clean_fixed.json');
         return new Response(fixedContent, {
           status: 200,
           headers: { 
@@ -87,20 +89,16 @@ export async function GET() {
         });
       } catch (fixedErr) {
         // Fixed fallback not present, proceed to try original file
-        console.log('Fixed fallback not found, trying original file');
       }
 
       const filePath = path.join(process.cwd(), 'booking_info_clean.json');
-      console.log('Attempting to read fallback file at', filePath, 'process.cwd()', process.cwd());
       const content = await fs.readFile(filePath, 'utf-8');
 
-      // Try to sanitize and parse the content in a tolerant way (strip comments/trailing commas and extract braces)
+      // Try to sanitize and parse the content in a tolerant way
       try {
         let sanitized = content.trim();
-        // Remove JS comments
         sanitized = sanitized.replace(/\/\/.*$/gm, '');
         sanitized = sanitized.replace(/\/\*[\s\S]*?\*\//g, '');
-        // Remove trailing commas before ] or }
         sanitized = sanitized.replace(/,\s*([}\]])/g, '$1');
 
         const firstBrace = sanitized.indexOf('{');
@@ -110,11 +108,6 @@ export async function GET() {
         }
 
         const parsed = JSON.parse(sanitized);
-        console.log('Fallback parsed: cities=', Array.isArray(parsed.data) ? parsed.data.length : 'N/A');
-        if (Array.isArray(parsed.data) && parsed.data[0]) {
-          console.log('First city events length:', Array.isArray(parsed.data[0].events) ? parsed.data[0].events.length : 'N/A');
-        }
-        // Return sanitized JSON
         return new Response(JSON.stringify(parsed), {
           status: 200,
           headers: { 
@@ -125,8 +118,6 @@ export async function GET() {
           },
         });
       } catch (e) {
-        console.warn('Failed to parse fallback file as JSON (sanitized attempt failed):', e);
-        console.log('Serving raw local fallback booking_info_clean.json');
         return new Response(content, {
           status: 200,
           headers: { 
@@ -138,7 +129,6 @@ export async function GET() {
         });
       }
     } catch (fileErr: any) {
-      console.error('Local fallback failed:', fileErr);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -150,7 +140,6 @@ export async function GET() {
     }
     
   } catch (error: any) {
-    console.error("Error fetching booking info:", error);
     return new Response(
       JSON.stringify({
         success: false,

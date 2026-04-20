@@ -279,47 +279,47 @@ export interface BookingGameSlot {
  * Get all cities with booking information (events, games, slots, availability)
  * @returns Promise with array of cities with booking details
  */
-export const getCitiesWithBookingInfo = async (): Promise<BookingCity[]> => {
-  try {
-    console.log('[cityService] Fetching cities with booking info from /api/city/booking-info/list');
-    
-    // Add multiple cache-busting strategies
-    const timestamp = new Date().getTime();
-    const random = Math.random().toString(36).substring(7);
-    const response = await fetch(`/api/city/booking-info/list?_t=${timestamp}&_r=${random}&nocache=1`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
-        "Pragma": "no-cache",
-        "Expires": "0",
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      cache: 'no-store',
-      // Add credentials to prevent caching
-      credentials: 'same-origin'
-    });
+export const getCitiesWithBookingInfo = async (retries: number = 2): Promise<BookingCity[]> => {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      // Add cache-busting
+      const timestamp = new Date().getTime();
+      const random = Math.random().toString(36).substring(7);
+      const response = await fetch(`/api/city/booking-info/list?_t=${timestamp}&_r=${random}&nocache=1`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          "Pragma": "no-cache",
+          "Expires": "0",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        cache: 'no-store',
+        credentials: 'same-origin'
+      });
 
-    console.log('[cityService] Response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error fetching booking info: ${response.status} - ${errorText}`);
+      }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[cityService] Error response:', errorText);
-      throw new Error(`Error fetching booking info: ${response.status} - ${errorText}`);
+      const result = await response.json();
+
+      if (!result.success || !Array.isArray(result.data)) {
+        throw new Error('Invalid response format from booking info API');
+      }
+
+      return result.data;
+    } catch (error: any) {
+      lastError = error;
+      if (attempt < retries) {
+        // Wait a bit before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      }
     }
-
-    const result = await response.json();
-    console.log('[cityService] Response data:', result);
-
-    if (!result.success || !Array.isArray(result.data)) {
-      console.error('[cityService] Invalid response format:', result);
-      throw new Error('Invalid response format from booking info API');
-    }
-
-    console.log('[cityService] Successfully loaded', result.data.length, 'cities with booking info');
-    return result.data;
-  } catch (error: any) {
-    console.error(`[cityService] Fetch failed:`, error);
-    throw error;
   }
+  
+  throw lastError || new Error('Failed to fetch booking info after retries');
 };

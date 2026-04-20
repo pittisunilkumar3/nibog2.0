@@ -352,7 +352,7 @@ export default function RegisterEventClientPage() {
 
       // Check if we got any events
       if (!eventsData || eventsData.length === 0) {
-        setEventError("No events currently available for this city. Please check back later or try another city.");
+        setEventError("No upcoming events in this city right now. Please try a different city!");
         setEligibleEvents([]);
         setAvailableDates([]);
         setApiEvents([]);
@@ -506,13 +506,13 @@ export default function RegisterEventClientPage() {
         // Clear any previous errors on success
         setEventError(null);
       } else {
-        setEventError("No events currently available for this city. Please check back later or try another city.");
+        setEventError("No upcoming events in this city right now. Please try a different city!");
         setEligibleEvents([]);
         setAvailableDates([]);
       }
     } catch (error: any) {
       console.error(`Failed to fetch events for city ID ${cityId}:`, error);
-      setEventError("Failed to load events. Please try again.");
+      setEventError("Could not load events. Please check your connection and try again.");
 
       // Clear events on error
       setEligibleEvents([]);
@@ -564,7 +564,7 @@ export default function RegisterEventClientPage() {
           setCities(formattedCities);
         } catch (fetchError) {
           console.error('[handleCityChange] Failed to fetch cities:', fetchError);
-          setEventError("Failed to load cities. Please refresh the page.");
+          setEventError("Could not load cities. Please refresh the page and try again.");
           return;
         }
       }
@@ -576,7 +576,7 @@ export default function RegisterEventClientPage() {
       if (!cityData) {
         console.error('[handleCityChange] No city data found for:', city);
         console.log('[handleCityChange] Available city names:', bookingCities.map(c => c.city_name));
-        setEventError("No events currently available for this city. Please try another city.");
+        setEventError("Events in this city are coming soon! Please try a different city below.");
         setApiEvents([]);
         return;
       }
@@ -629,11 +629,11 @@ export default function RegisterEventClientPage() {
         console.log('[handleCityChange] cityData.events type:', typeof cityData.events);
         console.log('[handleCityChange] cityData.events is array?', Array.isArray(cityData.events));
         setApiEvents([]);
-        setEventError("No events currently available for this city. Please check back later or try another city.");
+        setEventError("No upcoming events in this city right now. Please try a different city!");
       }
     } catch (error: any) {
       console.error('[handleCityChange] Error processing city change:', error);
-      setEventError("Failed to load events. Please try again.");
+      setEventError("Could not load events. Please check your connection and try again.");
       setApiEvents([]);
     } finally {
       setIsLoadingEvents(false);
@@ -1512,37 +1512,16 @@ export default function RegisterEventClientPage() {
       setIsLoadingCities(true)
       setCityError(null)
 
-      // Clear existing state to force fresh data
-      setBookingCities([])
-      setCities([])
+      // NOTE: Do NOT clear session/local storage here.
+      // Session restore depends on this data persisting across page navigations (e.g. after login redirect).
+      // Only clear transient UI state, not persisted registration data.
       setApiEvents([])
       setEligibleEvents([])
       setEligibleGames([])
       setSelectedGames([])
       setSelectedEventType("")
-      setSelectedEventId(null) // FIX: Reset event ID
+      setSelectedEventId(null)
       setSelectedEvent("")
-      
-      // Clear ALL storage caches
-      sessionStorage.removeItem('registrationData')
-      sessionStorage.removeItem('selectedAddOns')
-      sessionStorage.removeItem('eligibleGames')
-      sessionStorage.removeItem('nibog_restored_city')
-      sessionStorage.removeItem('nibog_restored_eventType')
-      sessionStorage.removeItem('nibog_restored_childAgeMonths')
-      localStorage.removeItem('nibog_booking_data')
-      
-      // Clear any other NIBOG-related items from localStorage/sessionStorage
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('nibog_') || key.startsWith('registration_')) {
-          localStorage.removeItem(key);
-        }
-      });
-      Object.keys(sessionStorage).forEach(key => {
-        if (key.startsWith('nibog_') || key.startsWith('registration_')) {
-          sessionStorage.removeItem(key);
-        }
-      });
 
       const bookingData = await getCitiesWithBookingInfo()
       console.log('[fetchCitiesData] Received booking data:', bookingData);
@@ -1556,9 +1535,14 @@ export default function RegisterEventClientPage() {
 
       console.log('[fetchCitiesData] Formatted cities:', formattedCities);
       setCities(formattedCities)
+
+      // If no cities with events, show a helpful message
+      if (formattedCities.length === 0) {
+        setCityError("No events are currently available. Please check back soon for upcoming events!")
+      }
     } catch (error: any) {
       console.error("[fetchCitiesData] Failed to fetch cities:", error)
-      setCityError("Failed to load cities. Please try again.")
+      setCityError("Failed to load cities. Please check your internet connection and try again.")
     } finally {
       setIsLoadingCities(false)
       console.log('[fetchCitiesData] Finished loading cities');
@@ -1875,6 +1859,26 @@ export default function RegisterEventClientPage() {
           </div>
         </CardHeader>
 
+        {/* Available Cities Info Banner */}
+        {!selectedCity && !isLoadingCities && cities.length > 0 && step === 1 && (
+          <div className="mx-6 mb-4 p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 dark:from-green-950 dark:to-emerald-950 dark:border-green-800">
+            <div className="flex items-start gap-2">
+              <div className="bg-green-100 dark:bg-green-900 p-1 rounded-full flex-shrink-0 mt-0.5">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="text-sm">
+                <span className="font-medium text-green-800 dark:text-green-200">🎉 Events are available!</span>
+                <p className="text-green-700 dark:text-green-300 mt-1">
+                  Select your city below to register. Currently available in:{' '}
+                  <span className="font-semibold">
+                    {cities.map(c => c.name).join(', ')}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Authentication Status Indicator */}
         {!isAuthenticated ? (
           <div className="mx-6 mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950 dark:border-blue-800">
@@ -1999,8 +2003,13 @@ export default function RegisterEventClientPage() {
                       </div>
                     ) : cityError ? (
                       <div className="flex flex-col gap-2">
-                        <div className="flex h-10 items-center rounded-md border border-destructive px-3 py-2 text-sm text-destructive">
-                          {cityError}
+                        <div className="rounded-lg bg-gradient-to-r from-yellow-50 to-amber-50 p-3 dark:from-yellow-950 dark:to-amber-950 border border-yellow-200 dark:border-yellow-900">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="font-medium text-yellow-800 dark:text-yellow-300">{cityError}</p>
+                            </div>
+                          </div>
                         </div>
                         <Button
                           type="button"
@@ -2012,7 +2021,7 @@ export default function RegisterEventClientPage() {
                           <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
-                          Retry Loading Cities
+                          Try Again
                         </Button>
                       </div>
                     ) : (
@@ -2051,8 +2060,16 @@ export default function RegisterEventClientPage() {
                           <span className="text-muted-foreground">Loading events...</span>
                         </div>
                       ) : eventError ? (
-                        <div className="flex h-10 items-center rounded-md border border-destructive px-3 py-2 text-sm text-destructive">
-                          {eventError}
+                        <div className="rounded-lg bg-gradient-to-r from-yellow-50 to-amber-50 p-3 dark:from-yellow-950 dark:to-amber-950 border border-yellow-200 dark:border-yellow-900">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="font-medium text-yellow-800 dark:text-yellow-300">{eventError}</p>
+                              <p className="text-yellow-700 dark:text-yellow-400 mt-1">
+                                Try selecting a different city to find available events.
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       ) : getUniqueEventTypes().length > 0 ? (
                         <Select
@@ -2078,8 +2095,21 @@ export default function RegisterEventClientPage() {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <div className="flex h-10 items-center rounded-md border border-destructive px-3 py-2 text-sm text-destructive">
-                          No events found for this city
+                        <div className="rounded-lg bg-gradient-to-r from-yellow-50 to-amber-50 p-3 dark:from-yellow-950 dark:to-amber-950 border border-yellow-200 dark:border-yellow-900">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="font-medium text-yellow-800 dark:text-yellow-300">No upcoming events in {selectedCity}</p>
+                              <p className="text-yellow-700 dark:text-yellow-400 mt-1">
+                                Events are coming soon! Try selecting a different city above.
+                              </p>
+                              {cities.filter(c => c.name !== selectedCity).length > 0 && (
+                                <p className="text-yellow-600 dark:text-yellow-500 mt-1 text-xs">
+                                  Available cities: {cities.filter(c => c.name !== selectedCity).map(c => c.name).join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -2114,7 +2144,7 @@ export default function RegisterEventClientPage() {
                             </div>
                             <div className="ml-3">
                               <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
-                                No event details available
+                                Event details loading...
                               </h3>
                               <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-400">
                                 <p>
@@ -2377,7 +2407,7 @@ export default function RegisterEventClientPage() {
                           </div>
                           <div className="ml-4">
                             <h3 className="text-base font-bold text-neutral-charcoal dark:text-white">
-                              ⚠️ Error loading games
+                              ⚠️ No games available for this age
                             </h3>
                             <div className="mt-2 text-sm text-neutral-charcoal/70 dark:text-white/70 font-medium">
                               <p>{gameError}</p>
