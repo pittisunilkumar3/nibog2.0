@@ -149,7 +149,7 @@ export async function GET(request: Request) {
       });
     });
 
-    // ---- MONTHLY TREND ----
+    // ---- MONTHLY TREND (default, kept for backward compat) ----
     const monthlyTrend: Record<string, { bookings: number; revenue: number; children: number; gameBookings: number }> = {};
     filtered.forEach((b: any) => {
       const dateStr = b.booking_date || b.created_at || b.updated_at;
@@ -166,6 +166,100 @@ export async function GET(request: Request) {
         });
       }
     });
+
+    // ---- DETAILED TREND (today / weekly / monthly / yearly) ----
+    const trendPeriod = searchParams.get('trend_period') || 'monthly';
+    let trendData: { label: string; bookings: number; revenue: number; children: number; gameBookings: number }[] = [];
+
+    if (trendPeriod === 'today') {
+      // 24 hours: 12am, 1am ... 11pm
+      const hourMap: Record<number, { bookings: number; revenue: number; children: number; gameBookings: number }> = {};
+      for (let h = 0; h < 24; h++) hourMap[h] = { bookings: 0, revenue: 0, children: 0, gameBookings: 0 };
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      filtered.forEach((b: any) => {
+        const dateStr = b.booking_date || b.created_at || b.updated_at;
+        if (!dateStr) return;
+        const d = new Date(dateStr);
+        if (d >= todayStart) {
+          const h = d.getHours();
+          hourMap[h].bookings++;
+          hourMap[h].revenue += parseFloat(b.total_amount) || 0;
+          const kids = b.children || [];
+          hourMap[h].children += kids.length;
+          kids.forEach((child: any) => { hourMap[h].gameBookings += (child.booking_games || []).length; });
+        }
+      });
+      trendData = Object.entries(hourMap).map(([h, d]) => ({
+        label: `${Number(h) === 0 ? '12' : Number(h) > 12 ? Number(h) - 12 : Number(h)}${Number(h) < 12 ? 'am' : 'pm'}`,
+        ...d
+      }));
+    } else if (trendPeriod === 'weekly') {
+      // Mon-Sun of current week
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0=Sun
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+      const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const dayMap: Record<string, { bookings: number; revenue: number; children: number; gameBookings: number }> = {};
+      dayNames.forEach(d => dayMap[d] = { bookings: 0, revenue: 0, children: 0, gameBookings: 0 });
+      filtered.forEach((b: any) => {
+        const dateStr = b.booking_date || b.created_at || b.updated_at;
+        if (!dateStr) return;
+        const d = new Date(dateStr);
+        if (d >= weekStart) {
+          let jsDay = d.getDay(); // 0=Sun
+          let idx = jsDay === 0 ? 6 : jsDay - 1; // convert to Mon=0
+          const name = dayNames[idx];
+          dayMap[name].bookings++;
+          dayMap[name].revenue += parseFloat(b.total_amount) || 0;
+          const kids = b.children || [];
+          dayMap[name].children += kids.length;
+          kids.forEach((child: any) => { dayMap[name].gameBookings += (child.booking_games || []).length; });
+        }
+      });
+      trendData = dayNames.map(name => ({ label: name, ...dayMap[name] }));
+    } else if (trendPeriod === 'monthly') {
+      // Days 1-31 of current month
+      const now = new Date();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const dayMap: Record<number, { bookings: number; revenue: number; children: number; gameBookings: number }> = {};
+      for (let i = 1; i <= daysInMonth; i++) dayMap[i] = { bookings: 0, revenue: 0, children: 0, gameBookings: 0 };
+      filtered.forEach((b: any) => {
+        const dateStr = b.booking_date || b.created_at || b.updated_at;
+        if (!dateStr) return;
+        const d = new Date(dateStr);
+        if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+          const day = d.getDate();
+          dayMap[day].bookings++;
+          dayMap[day].revenue += parseFloat(b.total_amount) || 0;
+          const kids = b.children || [];
+          dayMap[day].children += kids.length;
+          kids.forEach((child: any) => { dayMap[day].gameBookings += (child.booking_games || []).length; });
+        }
+      });
+      trendData = Object.entries(dayMap).map(([day, d]) => ({ label: `${day}`, ...d }));
+    } else if (trendPeriod === 'yearly') {
+      // Jan-Dec of current year
+      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const now = new Date();
+      const moMap: Record<number, { bookings: number; revenue: number; children: number; gameBookings: number }> = {};
+      for (let i = 0; i < 12; i++) moMap[i] = { bookings: 0, revenue: 0, children: 0, gameBookings: 0 };
+      filtered.forEach((b: any) => {
+        const dateStr = b.booking_date || b.created_at || b.updated_at;
+        if (!dateStr) return;
+        const d = new Date(dateStr);
+        if (d.getFullYear() === now.getFullYear()) {
+          const mo = d.getMonth();
+          moMap[mo].bookings++;
+          moMap[mo].revenue += parseFloat(b.total_amount) || 0;
+          const kids = b.children || [];
+          moMap[mo].children += kids.length;
+          kids.forEach((child: any) => { moMap[mo].gameBookings += (child.booking_games || []).length; });
+        }
+      });
+      trendData = Object.entries(moMap).map(([mo, d]) => ({ label: monthNames[Number(mo)], ...d }));
+    }
 
     // ---- PAYMENT STATUS DISTRIBUTION ----
     const paymentStatusDist: Record<string, number> = {};
@@ -216,6 +310,7 @@ export async function GET(request: Request) {
       bookingStatusDist: Object.entries(bookingStatusDist).map(([name, value]) => ({ name, value })),
       childGenderDist: Object.entries(childGenderDist).map(([name, value]) => ({ name, value })),
       childAgeGroupDist: Object.entries(childAgeGroupDist).filter(([_, v]) => v > 0).map(([name, value]) => ({ name, value })),
+      trend: trendData,
       cities: Array.from(citySet.entries()).map(([id, name]) => ({ id, name })),
       events: Array.from(eventSet.entries()).map(([id, name]) => ({ id, name })),
       activeEvents: bookings.filter((b: any) => isEventActive(b) === true)

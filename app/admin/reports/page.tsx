@@ -8,11 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   BarChart3, TrendingUp, IndianRupee, Users, Calendar,
   Gamepad2, RefreshCw, MapPin, Building2, CreditCard,
-  PieChart as PieChartIcon, Baby, UserCheck, Trophy, Filter
+  PieChart as PieChartIcon, Baby, UserCheck, Trophy, Filter, Clock
 } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, Area, AreaChart
+  PieChart, Pie, Cell
 } from "recharts"
 
 // ---------- types ----------
@@ -37,6 +37,11 @@ interface ReportsData {
   events: { id: string; name: string }[]
   activeEvents: number
   completedEvents: number
+  trend: TrendItem[]
+}
+
+interface TrendItem {
+  label: string; bookings: number; revenue: number; children: number; gameBookings: number;
 }
 
 const COLORS = ["#6366f1","#f59e0b","#10b981","#ef4444","#3b82f6","#ec4899","#8b5cf6","#14b8a6","#f97316","#06b6d4"]
@@ -96,6 +101,11 @@ export default function ReportsPage() {
   const [eventFilter, setEventFilter] = useState("all")
   const [chartType, setChartType] = useState<"revenue"|"bookings">("revenue")
 
+  // Trend chart-specific period filter
+  const [trendPeriod, setTrendPeriod] = useState<string>("monthly")
+  const [trendData, setTrendData] = useState<TrendItem[] | null>(null)
+  const [trendLoading, setTrendLoading] = useState(false)
+
   // City chart-specific event status filter
   const [cityEventStatus, setCityEventStatus] = useState<string>("all")
   const [cityChartData, setCityChartData] = useState<NameVal[] | null>(null)
@@ -150,6 +160,31 @@ export default function ReportsPage() {
   useEffect(() => {
     if (data) fetchCityChartData(cityEventStatus)
   }, [cityEventStatus, data, fetchCityChartData])
+
+  // Fetch trend data when period changes
+  const fetchTrendData = useCallback(async (period: string) => {
+    setTrendLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.set("trend_period", period)
+      if (cityFilter !== "all") params.set("city_id", cityFilter)
+      if (eventFilter !== "all") params.set("event_id", eventFilter)
+      const res = await fetch(`/api/reports?${params.toString()}`)
+      if (!res.ok) throw new Error("Failed")
+      const json = await res.json()
+      if (json.success) {
+        setTrendData(json.data.trend)
+      }
+    } catch {
+      setTrendData(data?.trend || null)
+    } finally {
+      setTrendLoading(false)
+    }
+  }, [cityFilter, eventFilter, data])
+
+  useEffect(() => {
+    if (data) fetchTrendData(trendPeriod)
+  }, [trendPeriod, data, fetchTrendData])
 
   const ov = data?.overview
   const cKey = chartType === "revenue" ? "revenue" : "bookings"
@@ -336,31 +371,107 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {/* ===== ROW 2: Monthly Trend + Game Popularity ===== */}
+      {/* ===== ROW 2: Revenue Trend + Game Popularity ===== */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><TrendingUp className="h-4 w-4 text-amber-500"/> Monthly Trend</CardTitle>
-            <CardDescription>Bookings, revenue, children &amp; game bookings over time</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <TrendingUp className="h-4 w-4 text-amber-500"/>
+                  {trendPeriod === "today" && "Today's Revenue"}
+                  {trendPeriod === "weekly" && "This Week's Revenue"}
+                  {trendPeriod === "monthly" && "This Month's Revenue"}
+                  {trendPeriod === "yearly" && "Yearly Revenue"}
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  {trendPeriod === "today" && "Hourly breakdown for today"}
+                  {trendPeriod === "weekly" && "Daily breakdown this week (Mon-Sun)"}
+                  {trendPeriod === "monthly" && "Day-by-day breakdown this month"}
+                  {trendPeriod === "yearly" && "Month-by-month breakdown this year"}
+                </CardDescription>
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <Select value={trendPeriod} onValueChange={setTrendPeriod}>
+                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                    <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="weekly">This Week</SelectItem>
+                    <SelectItem value="monthly">This Month</SelectItem>
+                    <SelectItem value="yearly">This Year</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-[11px] text-muted-foreground">
+                  {trendData && trendData.length > 0 && !trendLoading && (
+                    <>₹{trendData.reduce((s,d)=>s+(d.revenue||0),0).toLocaleString("en-IN")} total</>
+                  )}
+                </span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {loading ? <ChartSkeleton/> : (
+            {trendLoading ? (
+              <div className="flex items-center justify-center h-[320px]">
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height={320}>
-                <AreaChart data={data?.monthlyTrend||[]} margin={{top:5,right:20,left:10,bottom:5}}>
-                  <defs>
-                    <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
-                    <linearGradient id="gBk" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/><stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/></linearGradient>
-                  </defs>
+                <BarChart data={trendData||[]} margin={{top:5,right:20,left:10,bottom:5}}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3}/>
-                  <XAxis dataKey="month" tick={{fontSize:11}}/>
-                  <YAxis yAxisId="left" tickFormatter={(v)=>`₹${(v/1000).toFixed(0)}k`} tick={{fontSize:11}}/>
-                  <YAxis yAxisId="right" orientation="right" tick={{fontSize:11}}/>
-                  <Tooltip content={<CustomTooltip/>}/>
-                  <Legend/>
-                  <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="#6366f1" fill="url(#gRev)" name="Revenue"/>
-                  <Area yAxisId="right" type="monotone" dataKey="bookings" stroke="#f59e0b" fill="url(#gBk)" name="Bookings"/>
-                </AreaChart>
+                  <XAxis
+                    dataKey="label"
+                    tick={{fontSize: trendPeriod === "monthly" ? 9 : 11}}
+                    angle={trendPeriod === "monthly" ? -45 : 0}
+                    textAnchor={trendPeriod === "monthly" ? "end" : "middle"}
+                    height={trendPeriod === "monthly" ? 60 : 40}
+                    interval={trendPeriod === "today" ? 1 : 0}
+                  />
+                  <YAxis
+                    tickFormatter={(v)=>`₹${(v/1000).toFixed(0)}k`}
+                    tick={{fontSize:11}}
+                  />
+                  <Tooltip
+                    formatter={(value: number, name: string) => {
+                      if (name.toLowerCase().includes("revenue")) return fmt(value)
+                      return fmtNum(value)
+                    }}
+                    labelFormatter={(l) => {
+                      const prefix = trendPeriod === "today" ? "Hour" : trendPeriod === "weekly" ? "Day" : trendPeriod === "monthly" ? "Date" : "Month"
+                      return `${prefix}: ${l}`
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="revenue" name="Revenue" radius={[4,4,0,0]}>
+                    {(trendData||[]).map((entry: any, i: number) => {
+                      // Color based on value intensity
+                      const maxRev = Math.max(...(trendData||[]).map((d: any) => d.revenue || 0), 1)
+                      const intensity = (entry.revenue || 0) / maxRev
+                      const opacity = Math.max(0.3, intensity)
+                      return <Cell key={i} fill={`rgba(99,102,241,${opacity})`} />
+                    })}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
+            )}
+            {/* Summary pills */}
+            {trendData && trendData.length > 0 && !trendLoading && (
+              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                <span className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full font-medium">
+                  ₹{trendData.reduce((s,d)=>s+(d.revenue||0),0).toLocaleString("en-IN")} revenue
+                </span>
+                <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full font-medium">
+                  {trendData.reduce((s,d)=>s+(d.bookings||0),0)} bookings
+                </span>
+                <span className="text-xs bg-pink-50 text-pink-700 px-2 py-1 rounded-full font-medium">
+                  {trendData.reduce((s,d)=>s+(d.children||0),0)} children
+                </span>
+                <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full font-medium">
+                  {trendData.reduce((s,d)=>s+(d.gameBookings||0),0)} games
+                </span>
+              </div>
             )}
           </CardContent>
         </Card>
