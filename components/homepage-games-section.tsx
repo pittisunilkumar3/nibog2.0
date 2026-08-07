@@ -1,280 +1,200 @@
-'use client';
+'use client'
 
-import { useState, useEffect, memo } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ArrowRight, Baby, Footprints, Goal } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
 
 interface Game {
-  id: number;
-  name: string;
-  description: string;
-  minAge: number;
-  maxAge: number;
-  duration: number;
-  categories: string[];
-  imageUrl: string;
-  imagePriority: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  id: number
+  name: string
+  description: string
+  minAge: number
+  maxAge: number
+  categories: string[]
+  imageUrl: string
 }
 
-function HomepageGamesSectionComponent() {
-  const [games, setGames] = useState<Game[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+type GameCard = {
+  key: string
+  name: string
+  description: string
+  age: string
+  image: string
+  href: string
+  isExample?: boolean
+}
 
-  const fetchGames = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+const fallbackGames: GameCard[] = [
+  {
+    key: 'crawling',
+    name: 'Crawling adventures',
+    description: 'A cheerful first race for babies finding their rhythm.',
+    age: 'For early movers',
+    image: '/images/baby-crawling.jpg',
+    href: '/baby-olympics',
+    isExample: true,
+  },
+  {
+    key: 'walker',
+    name: 'Baby walker fun',
+    description: 'Supported movement, happy cheering and lots of little wins.',
+    age: 'For growing walkers',
+    image: '/images/baby-walker.jpg',
+    href: '/baby-olympics',
+    isExample: true,
+  },
+  {
+    key: 'running',
+    name: 'Running races',
+    description: 'Short, exciting tracks for confident little runners.',
+    age: 'For active explorers',
+    image: '/images/running-race.jpg',
+    href: '/baby-olympics',
+    isExample: true,
+  },
+]
 
-      // Add timestamp to bust cache
-      const timestamp = Date.now();
-      const response = await fetch(`/api/games-with-images?t=${timestamp}`, {
-        method: 'GET',
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-        },
-      });
+function formatAgeRange(minAge: number, maxAge: number) {
+  if (minAge < 12 && maxAge < 12) return `${minAge}–${maxAge} months`
+  if (minAge < 12) return `${minAge} months–${Math.floor(maxAge / 12)} years`
+  return `${Math.floor(minAge / 12)}–${Math.floor(maxAge / 12)} years`
+}
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!Array.isArray(data) || data.length === 0) {
-        setGames([]);
-        setIsLoading(false);
-        return;
-      }
-
-      setGames(data);
-
-    } catch (error) {
-      console.error('❌ Homepage: Error fetching games:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load games');
-      setGames([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+export default function HomepageGamesSection() {
+  const [games, setGames] = useState<Game[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchGames();
+    let isMounted = true
 
-    // Refresh games every 10 minutes instead of 2 minutes
-    const interval = setInterval(fetchGames, 10 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    const fetchGames = async () => {
+      try {
+        const response = await fetch(`/api/games-with-images?t=${Date.now()}`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+          },
+        })
 
-  // Helper function to format age range
-  const formatAgeRange = (minAge: number, maxAge: number) => {
-    const minMonths = minAge;
-    const maxMonths = maxAge;
-
-    if (minMonths < 12 && maxMonths < 12) {
-      return `${minMonths}-${maxMonths} months`;
-    } else if (minMonths < 12) {
-      const maxYears = Math.floor(maxMonths / 12);
-      return `${minMonths} months - ${maxYears} years`;
-    } else {
-      const minYears = Math.floor(minMonths / 12);
-      const maxYears = Math.floor(maxMonths / 12);
-      return `${minYears}-${maxYears} years`;
+        if (!response.ok) return
+        const payload = await response.json()
+        if (isMounted && Array.isArray(payload)) setGames(payload.slice(0, 4))
+      } catch {
+        // Curated local cards keep discovery useful when the live source is unavailable.
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
     }
-  };
 
-  // Helper function to get game emoji based on categories
-  const getGameEmoji = (categories: string[], gameName: string) => {
-    const name = gameName.toLowerCase();
-    const cats = categories.map(c => c.toLowerCase());
+    fetchGames()
+    const interval = window.setInterval(fetchGames, 10 * 60 * 1000)
+    return () => {
+      isMounted = false
+      window.clearInterval(interval)
+    }
+  }, [])
 
-    if (name.includes('crawling') || cats.includes('crawling')) return '🍼';
-    if (name.includes('walker') || cats.includes('walker')) return '🚶‍♀️';
-    if (name.includes('running') || name.includes('race') || cats.includes('race')) return '🏃‍♂️';
-    if (name.includes('jumping') || cats.includes('jumping') || cats.includes('jump')) return '🦘';
-    if (name.includes('ball') || cats.includes('ball')) return '⚽';
-    if (name.includes('ring') || cats.includes('ring')) return '💍';
-    if (name.includes('shot put') || cats.includes('shot put')) return '🏋️‍♀️';
-    if (name.includes('high jump') || cats.includes('high')) return '🤸‍♀️';
-    if (name.includes('hurdle') || name.includes('toddle')) return '🏃‍♀️';
-
-    return '🎮'; // Default game emoji
-  };
-
-  // Helper function to get gradient colors for game cards
-  const getGradientColors = (index: number) => {
-    const colors = [
-      'from-sunshine-500/80 via-sunshine-300/40 to-transparent',
-      'from-coral-500/80 via-coral-300/40 to-transparent',
-      'from-mint-500/80 via-mint-300/40 to-transparent',
-      'from-lavender-500/80 via-lavender-300/40 to-transparent',
-    ];
-
-    return colors[index % colors.length];
-  };
-
-
-  // Debug output for API data and errors
-  if (isLoading) {
-    return (
-      <section className="relative py-20 bg-gradient-to-br from-lavender-100 via-mint-50 to-coral-50 dark:from-lavender-900/20 dark:via-mint-900/20 dark:to-coral-900/20 overflow-hidden">
-        <div className="container relative z-10">
-          <div className="flex flex-col gap-12 text-center">
-            <div className="space-y-4">
-              <Badge className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-sunshine-400 to-coral-400 text-neutral-charcoal rounded-full">
-                🎯 Age Groups
-              </Badge>
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-sunshine-600 via-coral-600 to-mint-600">
-                  NIBOG Games by Age Group
-                </span>
-              </h2>
-              <p className="mt-4 text-lg text-neutral-charcoal/70 dark:text-white/70 max-w-2xl mx-auto">
-                Loading exciting games for your little champions...
-              </p>
-            </div>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="card-baby-gradient overflow-hidden h-full animate-pulse">
-                  <div className="relative h-48 bg-gray-300 dark:bg-gray-700"></div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (error || games.length === 0) {
-    return (
-      <section className="relative py-20 bg-gradient-to-br from-lavender-100 via-mint-50 to-coral-50 dark:from-lavender-900/20 dark:via-mint-900/20 dark:to-coral-900/20 overflow-hidden">
-        <div className="container relative z-10">
-          <div className="flex flex-col gap-12 text-center">
-            <div className="space-y-4">
-              <Badge className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-sunshine-400 to-coral-400 text-neutral-charcoal rounded-full">
-                🎯 Age Groups
-              </Badge>
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-sunshine-600 via-coral-600 to-mint-600">
-                  NIBOG Games by Age Group
-                </span>
-              </h2>
-              <p className="mt-4 text-lg text-neutral-charcoal/70 dark:text-white/70 max-w-2xl mx-auto">
-                {error ? 'Unable to load games at the moment' : 'No games available'}
-              </p>
-            </div>
-            <div className="mt-8">
-              <Button
-                size="lg"
-                className="btn-baby-primary text-lg px-8 py-4"
-                asChild
-              >
-                <Link href="/baby-olympics">
-                  🎮 Explore All Games
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const cards: GameCard[] = games.length
+    ? games.map((game) => ({
+        key: String(game.id),
+        name: game.name,
+        description: game.description,
+        age: formatAgeRange(game.minAge, game.maxAge),
+        image: game.imageUrl || '/images/baby-crawling.jpg',
+        href: '/events',
+      }))
+    : fallbackGames
 
   return (
-    <section className="relative py-20 bg-gradient-to-br from-lavender-100 via-mint-50 to-coral-50 dark:from-lavender-900/20 dark:via-mint-900/20 dark:to-coral-900/20 overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-32 h-32 bg-sunshine-300 rounded-full opacity-10 animate-float"></div>
-      <div className="absolute bottom-0 right-0 w-40 h-40 bg-coral-300 rounded-full opacity-10 animate-float-delayed"></div>
-      <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-mint-300 rounded-full opacity-10 animate-bounce-gentle"></div>
-
-      <div className="container relative z-10">
-        <div className="flex flex-col gap-12 text-center">
-          <div className="space-y-4">
-            <Badge className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-sunshine-400 to-coral-400 text-neutral-charcoal rounded-full">
-              🎯 Featured Games
-            </Badge>
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-sunshine-600 via-coral-600 to-mint-600">
-                NIBOG Games by Age Group
-              </span>
-            </h2>
-            <p className="mt-4 text-lg text-neutral-charcoal/70 dark:text-white/70 max-w-2xl mx-auto">
-              Featured {games.length} games designed for every stage of your little champion's development
-            </p>
+    <section className="bg-[#edf9f4] py-12 dark:bg-emerald-950/20 sm:py-16" aria-labelledby="games-heading">
+      <div className="container px-4">
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
+            <Baby className="h-5 w-5" aria-hidden="true" />
           </div>
+          <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
+            Made for every stage
+          </p>
+          <h2 id="games-heading" className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl dark:text-white">
+            Find a game that feels just right
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base dark:text-slate-300">
+            From first crawls to confident runs, there is a joyful challenge waiting.
+          </p>
+        </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {games.map((game, index) => (
-              <Link key={game.id} href={`/events?gameId=${game.id}`} className="group">
-                <Card className="card-baby-gradient overflow-hidden h-full">
-                  <div className="relative h-48">
-                    <Image
-                      src={game.imageUrl || '/images/default-game.jpg'}
-                      alt={game.name}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-cover transition-transform group-hover:scale-110 duration-500"
-                      onError={(e) => {
-                        // Fallback to a default image if the game image fails to load
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/images/default-game.jpg';
-                      }}
-                    />
-                    <div className={`absolute inset-0 bg-gradient-to-t ${getGradientColors(index)}`} />
-                    <div className="absolute top-4 right-4">
-                      <div className="bg-white/90 rounded-full p-2 text-2xl animate-bounce-gentle">
-                        {getGameEmoji(game.categories, game.name)}
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h3 className="text-xl font-bold text-white mb-1">{game.name}</h3>
-                      <p className="text-white/90 font-semibold">{formatAgeRange(game.minAge, game.maxAge)}</p>
-                      <p className="text-white/80 text-sm mt-2 line-clamp-2">
-                        {game.description.length > 80
-                          ? `${game.description.substring(0, 80)}...`
-                          : game.description
-                        }
-                      </p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {game.categories.slice(0, 2).map((category) => (
-                          <Badge key={category} className="bg-white/20 text-white text-xs">
-                            {category}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
+        {isLoading ? (
+          <div className="-mx-4 mt-8 flex gap-4 overflow-hidden px-4" role="status" aria-label="Loading games">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="min-w-[82vw] overflow-hidden rounded-3xl bg-white sm:min-w-0 sm:flex-1 dark:bg-slate-900">
+                <div className="aspect-[4/3] animate-pulse bg-emerald-100 dark:bg-slate-800" />
+                <div className="space-y-3 p-5">
+                  <div className="h-5 w-2/3 animate-pulse rounded bg-emerald-100 dark:bg-slate-800" />
+                  <div className="h-4 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+                </div>
+              </div>
             ))}
           </div>
-
-          <div className="mt-8">
-            <Button
-              size="lg"
-              className="btn-baby-primary text-lg px-8 py-4"
-              asChild
-            >
-              <Link href="/baby-olympics">
-                🎮 Explore All Games
-              </Link>
-            </Button>
+        ) : (
+          <>
+          {!games.length && (
+            <p className="mx-auto mt-6 max-w-xl rounded-2xl bg-white/80 px-4 py-3 text-center text-sm font-semibold text-emerald-900 dark:bg-white/5 dark:text-emerald-100">
+              A preview of typical NIBOG activities. Browse events to see what is currently available near you.
+            </p>
+          )}
+          <div className="-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
+            {cards.slice(0, 3).map((game, index) => {
+              const Icon = index === 0 ? Footprints : index === 1 ? Baby : Goal
+              return (
+                <Link
+                  key={game.key}
+                  href={game.href}
+                  className="group min-w-[82vw] snap-center overflow-hidden rounded-3xl bg-white shadow-[0_18px_45px_-30px_rgba(21,80,57,0.55)] transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:min-w-0 dark:bg-slate-900"
+                >
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <Image
+                      src={game.image}
+                      alt={game.name}
+                      fill
+                      sizes="(max-width: 639px) 82vw, (max-width: 1023px) 50vw, 33vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
+                    {game.isExample && (
+                      <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-emerald-900">
+                        Example activity
+                      </span>
+                    )}
+                    <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-slate-950/55 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-sm">
+                      <Icon className="h-4 w-4 text-amber-300" aria-hidden="true" />
+                      {game.age}
+                    </span>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-xl font-black text-slate-950 dark:text-white">{game.name}</h3>
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{game.description}</p>
+                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-emerald-700 dark:text-emerald-300">
+                      {game.isExample ? 'Learn about the games' : 'Browse upcoming events'} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    </span>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
+          </>
+        )}
+
+        <div className="mt-6 text-center">
+          <Button asChild variant="outline" size="lg" className="h-12 rounded-full border-emerald-200 bg-white px-7 font-black text-emerald-800 hover:bg-emerald-50 dark:border-emerald-400/20 dark:bg-white/5 dark:text-emerald-200 dark:hover:bg-white/10">
+            <Link href="/baby-olympics">See all NIBOG games <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></Link>
+          </Button>
         </div>
       </div>
     </section>
-  );
+  )
 }
-
-// Export without memo to ensure updates are always reflected
-export default HomepageGamesSectionComponent;

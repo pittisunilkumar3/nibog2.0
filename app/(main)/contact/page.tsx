@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client"
 
 import Image from "next/image"
@@ -195,7 +196,7 @@ export default function ContactPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg sm:text-xl font-bold text-neutral-charcoal dark:text-white">📞 Phone</h3>
-                      <p className="text-base sm:text-lg font-semibold text-sunshine-700 mt-1 sm:mt-2 break-all">+91-8977939614/15</p>
+                      <a href="tel:+918977939614" className="flex min-h-11 items-center text-base font-semibold text-sunshine-700 underline-offset-4 hover:underline sm:text-lg">+91-8977939614/15</a>
                       <p className="text-neutral-charcoal/70 dark:text-white/70 text-xs sm:text-sm mt-1">Call us for immediate assistance</p>
                     </div>
                   </div>
@@ -208,7 +209,7 @@ export default function ContactPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg sm:text-xl font-bold text-neutral-charcoal dark:text-white">📧 Email</h3>
-                      <p className="text-base sm:text-lg font-semibold text-coral-700 mt-1 sm:mt-2 break-all">newindiababyolympics@gmail.com</p>
+                      <a href="mailto:newindiababyolympics@gmail.com" className="flex min-h-11 items-center break-all text-base font-semibold text-coral-700 underline-offset-4 hover:underline sm:text-lg">newindiababyolympics@gmail.com</a>
                       <p className="text-neutral-charcoal/70 dark:text-white/70 text-xs sm:text-sm mt-1">Send us your queries anytime</p>
                     </div>
                   </div>

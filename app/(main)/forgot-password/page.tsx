@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client'
 
 import { useState } from 'react'
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
 
@@ -72,7 +73,7 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
+            <h1 className="text-2xl font-black">Check your email</h1>
             <CardDescription>
               We've sent password reset instructions to <strong>{email}</strong>
             </CardDescription>
@@ -115,7 +116,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Forgot Password?</CardTitle>
+          <h1 className="text-2xl font-black">Forgot your password?</h1>
           <CardDescription>
             Enter your email address and we'll send you instructions to reset your password
           </CardDescription>

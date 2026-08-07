@@ -77,28 +77,30 @@ export function ImageSlideshow({
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-2 text-white backdrop-blur-sm transition-all hover:bg-black/50"
+        className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-all hover:bg-black/60"
         aria-label="Previous slide"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-2 text-white backdrop-blur-sm transition-all hover:bg-black/50"
+        className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-all hover:bg-black/60"
         aria-label="Next slide"
       >
         <ChevronRight className="h-6 w-6" />
       </button>
 
       {/* Dots Indicator */}
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 space-x-2">
+      <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2">
         {images.map((_, index) => (
           <button
             key={index}
             onClick={() => goToSlide(index)}
-            className={`h-2 w-2 rounded-full transition-all ${currentIndex === index ? 'w-6 bg-white' : 'w-2 bg-white/50'}`}
+            className="flex h-11 w-11 items-center justify-center rounded-full"
             aria-label={`Go to slide ${index + 1}`}
-          />
+          >
+            <span className={`h-2 rounded-full transition-all ${currentIndex === index ? 'w-6 bg-white' : 'w-2 bg-white/50'}`} />
+          </button>
         ))}
       </div>
     </div>

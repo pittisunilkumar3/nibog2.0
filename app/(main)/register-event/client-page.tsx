@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client"
 
 import dynamic from "next/dynamic"
@@ -1698,8 +1699,8 @@ export default function RegisterEventClientPage() {
           // User is authenticated and wants to go to payment
           setStep(3)
         } else if (stepParam === 'addons' || (data.step && data.step >= 2)) {
-          // Go to add-ons step
-          setStep(2)
+          // The add-ons screen is not enabled; return safely to registration details.
+          setStep(1)
         } else {
           // Stay on registration step
           setStep(1)
@@ -1818,7 +1819,7 @@ export default function RegisterEventClientPage() {
         <div className="absolute top-1/2 left-1/4 w-10 h-10 bg-skyblue-300 rounded-full opacity-25 animate-float-delayed" style={{animationDelay: '0.5s'}}></div>
       </div>
 
-      <Card className="mx-auto w-full max-w-4xl relative overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-300 border-0 bg-white/90 backdrop-blur-sm dark:bg-gray-800/90 rounded-3xl">
+      <Card className="mx-auto w-full max-w-4xl relative overflow-hidden shadow-2xl transition-all duration-300 border-0 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95 rounded-3xl">
         {/* Homepage-style top gradient accent */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-skyblue-400 via-coral-400 to-mint-400"></div>
 
@@ -1827,16 +1828,12 @@ export default function RegisterEventClientPage() {
         <div className="absolute -left-8 -bottom-8 w-24 h-24 rounded-full bg-mint-100 opacity-50 dark:bg-mint-900/50"></div>
 
         <CardHeader className="space-y-6 relative pb-8">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
             <div className="bg-gradient-to-br from-skyblue-400/20 to-coral-400/20 p-3 rounded-2xl shadow-lg border-2 border-skyblue-400/30">
               <CalendarIcon className="h-8 w-8 text-skyblue-600" />
             </div>
             <div className="flex-1">
-              <CardTitle className="text-3xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-skyblue-600 via-coral-600 to-mint-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-rainbow-shift">
-                  🎯 Register for NIBOG Event 🎯
-                </span>
-              </CardTitle>
+              <h1 className="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Register for a NIBOG event</h1>
               <CardDescription className="text-base mt-2 text-neutral-charcoal/70 dark:text-white/70">
                 {selectedCity
                   ? `Register your child for exciting baby games in ${selectedCity}`
@@ -1848,13 +1845,12 @@ export default function RegisterEventClientPage() {
           {/* Homepage-style progress indicator */}
           <div className="flex items-center justify-center space-x-3 pt-4">
             <div className={`w-10 h-3 rounded-full transition-all duration-300 ${step >= 1 ? 'bg-gradient-to-r from-skyblue-400 to-coral-400' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-            <div className={`w-10 h-3 rounded-full transition-all duration-300 ${step >= 2 ? 'bg-gradient-to-r from-coral-400 to-mint-400' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-            <div className={`w-10 h-3 rounded-full transition-all duration-300 ${step >= 3 ? 'bg-gradient-to-r from-mint-400 to-lavender-400' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+            <div className={`w-10 h-3 rounded-full transition-all duration-300 ${step === 3 ? 'bg-gradient-to-r from-coral-400 to-mint-400' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
           </div>
 
           <div className="text-center">
             <p className="text-sm text-neutral-charcoal/70 dark:text-white/70 font-semibold">
-              Step {step} of 2: {step === 1 ? '📝 Registration Details' : '💳 Payment & Confirmation'}
+              Step {step === 1 ? 1 : 2} of 2: {step === 1 ? 'Registration details' : 'Payment & confirmation'}
             </p>
           </div>
         </CardHeader>
@@ -1912,7 +1908,7 @@ export default function RegisterEventClientPage() {
 
         {/* Step Indicator */}
         <div className="mx-6 mb-4">
-          <div className="flex items-center justify-center space-x-4">
+          <div className="flex items-center justify-center gap-2 sm:gap-4">
             <div className={cn(
               "flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium transition-all",
               step === 1 ? "bg-primary text-white" : step > 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
@@ -1923,30 +1919,12 @@ export default function RegisterEventClientPage() {
               )}>
                 {step > 1 ? "✓" : "1"}
               </span>
-              <span>Registration</span>
+              <span>Details</span>
             </div>
 
             <div className={cn(
               "w-8 h-0.5 transition-all",
               step > 1 ? "bg-green-500" : "bg-gray-300"
-            )}></div>
-
-            <div className={cn(
-              "flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium transition-all",
-              step === 2 ? "bg-primary text-white" : step > 2 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-            )}>
-              <span className={cn(
-                "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold",
-                step === 2 ? "bg-white text-primary" : step > 2 ? "bg-green-500 text-white" : "bg-gray-300 text-gray-600"
-              )}>
-                {step > 2 ? "✓" : "2"}
-              </span>
-              <span>Add-ons</span>
-            </div>
-
-            <div className={cn(
-              "w-8 h-0.5 transition-all",
-              step > 2 ? "bg-green-500" : "bg-gray-300"
             )}></div>
 
             <div className={cn(
@@ -1957,7 +1935,7 @@ export default function RegisterEventClientPage() {
                 "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold",
                 step === 3 ? "bg-white text-primary" : "bg-gray-300 text-gray-600"
               )}>
-                3
+                2
               </span>
               <span>Payment</span>
             </div>
@@ -3134,7 +3112,7 @@ export default function RegisterEventClientPage() {
                   <Button
                     variant="outline"
                     className="w-full h-12 sm:h-10 text-base sm:text-sm touch-manipulation"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(1)}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back
                   </Button>

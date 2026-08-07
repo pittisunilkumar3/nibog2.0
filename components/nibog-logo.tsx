@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from 'react';
 import Image from 'next/image';
 import { Badge } from "./ui/badge";
@@ -19,7 +20,7 @@ export function NibogLogo({ className }: NibogLogoProps) {
         />
       </div>
 
-      <Badge variant="outline" className="ml-3 hidden md:inline-flex border-primary text-xs">
+      <Badge variant="outline" className="ml-3 hidden xl:inline-flex border-primary text-xs">
         India's Biggest Baby Games
       </Badge>
     </div>

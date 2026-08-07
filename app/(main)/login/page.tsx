@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client"
 
 import Link from "next/link"
@@ -6,10 +7,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Eye, EyeOff, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { NibogLogo } from "@/components/nibog-logo"
@@ -21,7 +21,7 @@ import { Separator } from "@/components/ui/separator"
 function ImageSlideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const images = [
-    '/images/ball-throw.jpg',
+    '/images/about/children/children-2.jpg',
     '/images/cycle-race.jpg',
     '/images/running-race.jpg',
     '/images/hurdle-toddle.jpg',
@@ -47,14 +47,14 @@ function ImageSlideshow() {
             src={image} 
             alt={`NIBOG Games Activity ${index + 1}`}
             fill
-            priority={index === 0}
+            loading="lazy"
             className="object-cover object-center"
             sizes="(max-width: 768px) 0vw, 50vw"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent">
             <div className="absolute bottom-8 left-8 right-8 text-white">
               <h3 className="text-2xl font-bold mb-2 drop-shadow-md">
-                {index === 0 && "Ball Throwing Competition"}
+                {index === 0 && "A joyful NIBOG event moment"}
                 {index === 1 && "Exciting Cycle Race"}
                 {index === 2 && "Fun Running Race"}
                 {index === 3 && "Hurdle Toddle Challenge"}
@@ -90,23 +90,26 @@ function LoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("")
   const [error, setError] = useState("")
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState("")
 
   // Get the callback URL from the query parameters
-  const callbackUrl = searchParams.get("callbackUrl") || "/"
-  const returnUrl = searchParams.get("returnUrl") || "/"
+  const requestedDestination = searchParams.get("callbackUrl") ?? searchParams.get("returnUrl")
+  const destination = requestedDestination?.startsWith("/") && !requestedDestination.startsWith("//")
+    ? requestedDestination
+    : "/"
   const reason = searchParams.get("reason")
 
   // Show message if redirected due to expired session
   useEffect(() => {
-    if (reason === 'expired') {
-      setSessionExpiredMessage("Your session has expired. Please log in again to continue.")
+    if (destination.startsWith('/register-event')) {
+      setSessionExpiredMessage("Sign in to continue your child’s event registration.")
+    } else if (reason === 'expired') {
+      setSessionExpiredMessage("Please sign in again to continue securely.")
     }
-  }, [reason])
+  }, [destination, reason])
 
   // Handle Google login success
   const handleGoogleSuccess = async (credentialResponse: any) => {
@@ -167,7 +170,7 @@ function LoginContent() {
       setLoadingMessage("Redirecting...")
       login(userDataForStorage, token)
       await new Promise(resolve => setTimeout(resolve, 300))
-      window.location.href = callbackUrl || returnUrl
+      window.location.href = destination
 
     } catch (error: any) {
       setError(error.message || 'Google authentication failed')
@@ -191,9 +194,9 @@ function LoginContent() {
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       // User is already logged in, redirect to callback URL or home
-      router.push(callbackUrl)
+      router.push(destination)
     }
-  }, [authLoading, isAuthenticated, callbackUrl, router])
+  }, [authLoading, destination, isAuthenticated, router])
 
   // Handle login form submission
   const handleLogin = async (e: React.FormEvent) => {
@@ -309,7 +312,7 @@ function LoginContent() {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Use window.location.href for hard navigation to ensure middleware runs fresh
-      window.location.href = callbackUrl || returnUrl;
+      window.location.href = destination;
 
     } catch (error: any) {
       setError(error.message || 'An error occurred during login')
@@ -332,10 +335,10 @@ function LoginContent() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 dark:from-blue-800/70 dark:via-purple-800/70 dark:to-pink-800/70 py-0 md:py-8 px-0 md:px-4">
+    <div className="relative min-h-[calc(100svh-4.75rem)] w-full overflow-visible bg-[radial-gradient(circle_at_10%_10%,rgba(251,191,36,.22),transparent_30%),linear-gradient(145deg,#fffaf3,#f8f1ff)] px-4 py-8 dark:bg-none dark:bg-slate-950 md:px-6 md:py-10">
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="status" aria-live="polite">
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-2xl max-w-sm w-full mx-4 border-2 border-pink-300 dark:border-pink-700">
             <div className="flex flex-col items-center space-y-4">
               <div className="relative">
@@ -365,7 +368,7 @@ function LoginContent() {
         <div className="animate-spin-slow absolute top-1/2 right-1/3 w-16 h-16 bg-green-200 dark:bg-green-400 rotate-45"></div>
       </div>
       
-      <div className="container relative z-10 mx-auto flex flex-col md:flex-row h-[calc(100vh-4rem)] items-center justify-between max-w-6xl">
+      <div className="container relative z-10 mx-auto flex min-h-[calc(100svh-9rem)] max-w-6xl flex-col items-center justify-center md:flex-row">
         {/* Left side with slideshow - visible only on md and up */}
         <div className="hidden md:block md:w-1/2 relative h-full">
           <div className="absolute inset-0 rounded-2xl overflow-hidden m-4 bg-gradient-to-br from-blue-300 via-purple-300 to-pink-300 dark:from-blue-700 dark:via-purple-700 dark:to-pink-700">
@@ -378,17 +381,16 @@ function LoginContent() {
         
         {/* Right side with login card */}
         <div className="w-full md:w-1/2 flex justify-center items-center py-8 md:py-0 md:px-8 md:h-full">
-          <div className="w-full max-w-md p-2 rounded-2xl" style={{animation: 'pulse-slow 3s ease-in-out infinite'}}>
-            <Card className="w-full rounded-xl shadow-xl bg-white/90 dark:bg-gray-900/90 border-2 border-pink-300 dark:border-pink-700 overflow-hidden transition-all hover:shadow-inner transform hover:-translate-y-1">
+          <div className="w-full max-w-md rounded-3xl">
+            <Card className="w-full overflow-hidden rounded-3xl border border-orange-100 bg-white/95 shadow-[0_24px_60px_-38px_rgba(55,34,20,.6)] dark:border-white/10 dark:bg-slate-900/95">
               <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500"></div>
             
             <CardHeader className="space-y-1 pb-4">
               <div className="flex justify-center">
                 <NibogLogo className="h-16 w-auto transform transition-transform hover:scale-105" />
               </div>
-              <CardDescription className="text-center text-blue-600 dark:text-blue-300 mt-4 text-2xl font-bold tracking-wider">
-                Login
-              </CardDescription>
+              <h1 className="mt-3 text-center text-3xl font-black tracking-tight text-slate-950 dark:text-white">Welcome back</h1>
+              <CardDescription className="text-center text-sm text-slate-600 dark:text-slate-300">Sign in to manage bookings and continue registration.</CardDescription>
             </CardHeader>
             
             <CardContent className="space-y-4 px-6">
@@ -399,7 +401,7 @@ function LoginContent() {
                 </div>
               )}
               {error && (
-                <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-500 dark:bg-red-950/50 dark:text-red-400 border border-red-200 dark:border-red-800 animate-pulse">
+                <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-800" role="alert" aria-live="assertive">
                   <span className="mr-2">⚠️</span> {error}
                 </div>
               )}
@@ -415,7 +417,8 @@ function LoginContent() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
-                    className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-invalid={Boolean(error)}
+                    className="h-12 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 
@@ -434,13 +437,14 @@ function LoginContent() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-invalid={Boolean(error)}
+                      className="h-12 rounded-xl border border-slate-200 pr-12 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-gray-500 hover:bg-slate-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-gray-200 disabled:opacity-50"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -448,24 +452,8 @@ function LoginContent() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    disabled={isLoading}
-                    className="data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <Label
-                    htmlFor="remember"
-                    className="text-sm font-normal leading-none text-blue-700 dark:text-blue-300 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Remember me
-                  </Label>
-                </div>
-
                 <Button 
-                  className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium py-2 px-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg" 
+                  className="h-12 w-full rounded-full bg-[#ef5f52] px-4 font-black text-white hover:bg-[#dc4e43]"
                   type="submit" 
                   disabled={isLoading}
                 >
@@ -501,7 +489,7 @@ function LoginContent() {
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
                   useOneTap={false}
-                  width="350"
+                  width="280"
                 />
               </div>
             </CardContent>
@@ -509,12 +497,12 @@ function LoginContent() {
             <CardFooter className="flex flex-col space-y-2 pb-6 border-t border-purple-100 dark:border-purple-900 pt-4">
               <div className="text-center text-sm text-purple-600 dark:text-purple-400">
                 Don&apos;t have an account?{" "}
-                <Link href="/register" className="text-pink-600 dark:text-pink-400 font-medium underline-offset-4 hover:underline hover:text-pink-700 dark:hover:text-pink-300 transition-colors">
+                <Link href={`/register?returnUrl=${encodeURIComponent(destination)}`} className="inline-flex min-h-11 items-center px-1 text-pink-600 dark:text-pink-400 font-medium underline-offset-4 hover:underline hover:text-pink-700 dark:hover:text-pink-300 transition-colors">
                   Sign up
                 </Link>
               </div>
 
-              {returnUrl && returnUrl !== "/" && (
+              {destination !== "/" && (
                 <div className="mt-2 text-center text-xs text-blue-600 dark:text-blue-400">
                   You'll be redirected back to complete your journey after login.
                 </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { getRefundPolicy } from "@/services/refundPolicyService"
+import Link from "next/link"
 
 export default function RefundPolicyPage() {
   const [refundContent, setRefundContent] = useState<string>("")
@@ -26,30 +27,9 @@ export default function RefundPolicyPage() {
         }
       } catch (error) {
         console.error("Failed to load refund policy:", error)
-        setError("Failed to load refund policy content. Please try again later.")
-        // Fallback content
-        setRefundContent(`
-          <h2>1. Refund Policy Overview</h2>
-          <p>At NIBOG (New India Baby Olympic Games), we strive to provide the best experience for all participants. This Refund Policy outlines the conditions under which refunds may be requested and processed.</p>
-          <p>Please read this policy carefully before registering for any events. By registering, you acknowledge and agree to these terms.</p>
-          
-          <h2>2. Cancellation & Refund Eligibility</h2>
-          <p>Refund eligibility depends on when the cancellation request is made:</p>
-          <ul>
-            <li><strong>More than 7 days before event:</strong> Full refund (100% of registration fee)</li>
-            <li><strong>3-7 days before event:</strong> Partial refund (50% of registration fee)</li>
-            <li><strong>Less than 3 days before event:</strong> No refund available</li>
-            <li><strong>Event day or after:</strong> No refund available</li>
-          </ul>
-          
-          <h2>3. Contact Information</h2>
-          <p>For refund requests or questions, please contact us:</p>
-          <ul>
-            <li>Email: newindiababyolympics@gmail.com</li>
-            <li>Phone: +91-8977939614/15</li>
-          </ul>
-        `)
-        setLastUpdated(new Date().toISOString())
+        setError("The official refund policy is temporarily unavailable.")
+        setRefundContent("")
+        setLastUpdated("")
       } finally {
         setIsLoading(false)
       }
@@ -111,21 +91,25 @@ export default function RefundPolicyPage() {
       <div className="mx-auto max-w-3xl space-y-8">
         {/* Header */}
         <div className="space-y-2">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-700">Booking support</p>
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Refund Policy</h1>
+          {lastUpdated && <p className="text-sm text-muted-foreground">Last updated {formatDate(lastUpdated)}</p>}
           {error && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-sm text-yellow-800 mt-4">
-              {error}
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+              <p className="font-bold">{error}</p>
+              <p className="mt-1">Please <Link href="/contact" className="font-bold underline">contact NIBOG</Link> before cancelling or relying on any refund amount.</p>
             </div>
           )}
         </div>
 
         {/* Content */}
         <div className="space-y-6">
-          <div
+          {refundContent && <div
             className="refund-policy-content"
             dangerouslySetInnerHTML={{
               __html: refundContent
             }}
-          />
+          />}
         </div>
 
         {/* Custom styles to match reference design */}

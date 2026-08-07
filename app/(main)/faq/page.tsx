@@ -86,7 +86,11 @@ export default function FAQPage() {
             </p>
           </div>
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No FAQs available at the moment. Please check back later.</p>
+            <p className="text-muted-foreground">The FAQ list is temporarily unavailable. You can still reach our team directly.</p>
+            <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+              <Button asChild className="h-12 rounded-full px-6"><Link href="/contact">Contact NIBOG</Link></Button>
+              <Button asChild variant="outline" className="h-12 rounded-full px-6"><Link href="/terms">View policies</Link></Button>
+            </div>
           </div>
         </div>
       </div>

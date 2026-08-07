@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client"
 
 import Link from "next/link"
@@ -6,7 +7,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -20,7 +21,7 @@ import { useAuth } from "@/contexts/auth-context"
 function ImageSlideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const images = [
-    '/images/ball-throw.jpg',
+    '/images/about/children/children-2.jpg',
     '/images/cycle-race.jpg',
     '/images/running-race.jpg',
     '/images/hurdle-toddle.jpg',
@@ -46,14 +47,14 @@ function ImageSlideshow() {
             src={image} 
             alt={`NIBOG Games Activity ${index + 1}`}
             fill
-            priority={index === 0}
+            loading="lazy"
             className="object-cover object-center"
             sizes="(max-width: 768px) 0vw, 50vw"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent">
             <div className="absolute bottom-8 left-8 right-8 text-white">
               <h3 className="text-2xl font-bold mb-2 drop-shadow-md">
-                {index === 0 && "Ball Throwing Competition"}
+                {index === 0 && "A joyful NIBOG event moment"}
                 {index === 1 && "Exciting Cycle Race"}
                 {index === 2 && "Fun Running Race"}
                 {index === 3 && "Hurdle Toddle Challenge"}
@@ -94,6 +95,12 @@ export default function RegisterPage() {
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [destination, setDestination] = useState("/")
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("returnUrl")
+    if (requested?.startsWith("/") && !requested.startsWith("//")) setDestination(requested)
+  }, [])
 
   // Field-specific validation errors
   const [emailError, setEmailError] = useState("")
@@ -157,7 +164,7 @@ export default function RegisterPage() {
 
       login(userDataForStorage, token)
       await new Promise(resolve => setTimeout(resolve, 300))
-      window.location.href = '/'
+      window.location.href = destination
 
     } catch (error: any) {
       setError(error.message || 'Google authentication failed')
@@ -306,7 +313,7 @@ export default function RegisterPage() {
       })
 
       // Redirect to login page
-      router.push('/login')
+      router.push(`/login?returnUrl=${encodeURIComponent(destination)}`)
 
     } catch (error: any) {
       setError(error.message || 'An error occurred during registration')
@@ -316,7 +323,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 dark:from-blue-800/70 dark:via-purple-800/70 dark:to-pink-800/70 py-0 md:py-8 px-0 md:px-4">
+    <div className="min-h-[calc(100svh-4.75rem)] w-full overflow-visible bg-[radial-gradient(circle_at_10%_10%,rgba(251,191,36,.22),transparent_30%),linear-gradient(145deg,#fffaf3,#f8f1ff)] px-4 py-8 dark:bg-none dark:bg-slate-950 md:px-6 md:py-10">
       {/* Add animated shapes in the background - visible only on mobile */}
       <div className="absolute inset-0 overflow-hidden z-0 opacity-20 md:hidden">
         <div className="animate-float absolute top-1/4 left-1/5 w-24 h-24 rounded-full bg-yellow-200 dark:bg-yellow-400"></div>
@@ -325,7 +332,7 @@ export default function RegisterPage() {
         <div className="animate-spin-slow absolute top-1/2 right-1/3 w-16 h-16 bg-green-200 dark:bg-green-400 rotate-45"></div>
       </div>
       
-      <div className="container relative z-10 mx-auto flex flex-col md:flex-row h-[calc(100vh-4rem)] items-center justify-center max-w-6xl">
+      <div className="container relative z-10 mx-auto flex min-h-[calc(100svh-9rem)] max-w-6xl flex-col items-center justify-center md:flex-row">
         {/* Left side with slideshow - visible only on md and up */}
         <div className="hidden md:block md:w-1/2 relative h-full">
           <div className="absolute inset-0 rounded-2xl overflow-hidden m-4 bg-gradient-to-br from-blue-300 via-purple-300 to-pink-300 dark:from-blue-700 dark:via-purple-700 dark:to-pink-700">
@@ -338,20 +345,19 @@ export default function RegisterPage() {
         
         {/* Right side with signup card */}
         <div className="w-full md:w-1/2 flex justify-center items-center py-8 md:py-0 md:px-8 md:h-full">
-          <div className="w-full max-w-md p-2 rounded-2xl" style={{animation: 'pulse-slow 3s ease-in-out infinite'}}>
-            <Card className="w-full rounded-xl shadow-xl bg-white/90 dark:bg-gray-900/90 border-2 border-pink-300 dark:border-pink-700 overflow-hidden transition-all hover:shadow-inner transform hover:-translate-y-1">
+          <div className="w-full max-w-md rounded-3xl">
+            <Card className="w-full overflow-hidden rounded-3xl border border-orange-100 bg-white/95 shadow-[0_24px_60px_-38px_rgba(55,34,20,.6)] dark:border-white/10 dark:bg-slate-900/95">
               <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500"></div>
         <CardHeader className="space-y-1 pb-4">
           <div className="flex justify-center">
             <NibogLogo className="h-16 w-auto transform transition-transform hover:scale-105" />
           </div>
-          <CardDescription className="text-center text-blue-600 dark:text-blue-300 mt-4 text-2xl font-bold tracking-wider">
-            Create an Account
-          </CardDescription>
+          <h1 className="mt-3 text-center text-3xl font-black tracking-tight text-slate-950 dark:text-white">Create your parent account</h1>
+          <CardDescription className="text-center text-sm text-slate-600 dark:text-slate-300">Save children’s details and manage NIBOG registrations.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
-            <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-500 dark:bg-red-950/50 dark:text-red-400 border border-red-200 dark:border-red-800 animate-pulse">
+            <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-800" role="alert" aria-live="assertive">
               <span className="mr-2">⚠️</span> {error}
             </div>
           )}
@@ -365,7 +371,7 @@ export default function RegisterPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="rounded-xl border-2 border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600 transition-all"
+                className="h-12 rounded-xl border border-slate-200 dark:border-slate-700"
               />
             </div>
             <div className="space-y-2">
@@ -377,7 +383,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => handleEmailChange(e.target.value)}
                 required
-                className={`rounded-xl border-2 transition-all ${emailError ? 'border-red-400 dark:border-red-600 focus:border-red-500 dark:focus:border-red-500' : 'border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600'}`}
+                className={`h-12 rounded-xl border transition-all ${emailError ? 'border-red-400 dark:border-red-600' : 'border-slate-200 dark:border-slate-700'}`}
               />
               {emailError && (
                 <p className="text-xs text-red-500 dark:text-red-400 mt-1">{emailError}</p>
@@ -396,7 +402,7 @@ export default function RegisterPage() {
                 onChange={(e) => handlePhoneChange(e.target.value)}
                 required
                 maxLength={10}
-                className={`rounded-xl border-2 transition-all ${phoneError ? 'border-red-400 dark:border-red-600 focus:border-red-500 dark:focus:border-red-500' : 'border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600'}`}
+                className={`h-12 rounded-xl border transition-all ${phoneError ? 'border-red-400 dark:border-red-600' : 'border-slate-200 dark:border-slate-700'}`}
               />
               {phoneError && (
                 <p className="text-xs text-red-500 dark:text-red-400 mt-1">{phoneError}</p>
@@ -414,7 +420,7 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => handlePasswordChange(e.target.value)}
                   required
-                  className={`rounded-xl border-2 transition-all pr-10 ${passwordError ? 'border-red-400 dark:border-red-600 focus:border-red-500 dark:focus:border-red-500' : 'border-blue-200 dark:border-blue-800 focus:border-purple-400 dark:focus:border-purple-600'}`}
+                  className={`h-12 rounded-xl border pr-12 transition-all ${passwordError ? 'border-red-400 dark:border-red-600' : 'border-slate-200 dark:border-slate-700'}`}
                 />
                 {passwordError && (
                   <p className="text-xs text-red-500 dark:text-red-400 mt-1">{passwordError}</p>
@@ -425,7 +431,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                  className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-gray-500 hover:bg-slate-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/10"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -455,7 +461,7 @@ export default function RegisterPage() {
               </Label>
             </div>
             <Button 
-              className="w-full mt-4 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium py-2 px-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg" 
+              className="mt-4 h-12 w-full rounded-full bg-[#ef5f52] px-4 font-black text-white hover:bg-[#dc4e43]"
               type="submit" 
               disabled={isLoading}
             >
@@ -487,14 +493,14 @@ export default function RegisterPage() {
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
               useOneTap={false}
-              width="350"
+              width="280"
             />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2 pt-4 border-t border-gray-200 dark:border-gray-800">
           <div className="text-center text-sm text-blue-700 dark:text-blue-300">
             Already have an account?{" "}
-            <Link href="/login" className="text-pink-600 dark:text-pink-400 font-medium hover:underline">
+            <Link href={`/login?returnUrl=${encodeURIComponent(destination)}`} className="inline-flex min-h-11 items-center text-pink-600 dark:text-pink-400 font-medium hover:underline">
               Login here
             </Link>
           </div>

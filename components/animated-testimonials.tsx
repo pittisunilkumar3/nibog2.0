@@ -1,7 +1,7 @@
 "use client";
 
-import { IconArrowLeft, IconArrowRight } from "@tabler/icons-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { IconArrowLeft, IconArrowRight, IconQuote } from "@tabler/icons-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -24,147 +24,142 @@ export const AnimatedTestimonials = ({
   className?: string;
 }) => {
   const [active, setActive] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+  const hasMultipleTestimonials = testimonials.length > 1;
 
   const handleNext = () => {
-    setActive((prev) => (prev + 1) % testimonials.length);
+    setActive((previous) => (previous + 1) % testimonials.length);
   };
 
   const handlePrev = () => {
-    setActive((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  };
-
-  const isActive = (index: number) => {
-    return index === active;
+    setActive((previous) =>
+      (previous - 1 + testimonials.length) % testimonials.length,
+    );
   };
 
   useEffect(() => {
-    if (autoplay) {
-      const interval = setInterval(handleNext, 5000);
-      return () => clearInterval(interval);
+    if (
+      !autoplay ||
+      !hasMultipleTestimonials ||
+      isPaused ||
+      shouldReduceMotion
+    ) {
+      return;
     }
-  }, [autoplay]);
 
-  // Use fixed rotation values instead of random ones to avoid hydration mismatch
-  const rotationValues = [-8, -5, -2, 2, 5, 8];
+    const interval = window.setInterval(() => {
+      setActive((previous) => (previous + 1) % testimonials.length);
+    }, 7000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    autoplay,
+    hasMultipleTestimonials,
+    isPaused,
+    shouldReduceMotion,
+    testimonials.length,
+  ]);
+
+  useEffect(() => {
+    if (active >= testimonials.length) {
+      setActive(0);
+    }
+  }, [active, testimonials.length]);
+
+  if (testimonials.length === 0) {
+    return null;
+  }
+
+  const testimonial = testimonials[active];
+  const transition = shouldReduceMotion
+    ? { duration: 0 }
+    : { duration: 0.32, ease: "easeOut" as const };
 
   return (
-    <div className={cn("max-w-sm md:max-w-4xl mx-auto px-4 md:px-8 lg:px-12 py-20", className)}>
-      <div className="relative grid grid-cols-1 md:grid-cols-2 gap-20">
-        <div>
-          <div className="relative h-80 w-full">
-            <AnimatePresence>
-              {testimonials.map((testimonial, index) => (
-                <motion.div
-                  key={testimonial.src}
-                  initial={{
-                    opacity: 0,
-                    scale: 0.9,
-                    z: -100,
-                    rotate: rotationValues[index % rotationValues.length],
-                  }}
-                  animate={{
-                    opacity: isActive(index) ? 1 : 0.7,
-                    scale: isActive(index) ? 1 : 0.95,
-                    z: isActive(index) ? 0 : -100,
-                    rotate: isActive(index) ? 0 : rotationValues[index % rotationValues.length],
-                    zIndex: isActive(index)
-                      ? 999
-                      : testimonials.length + 2 - index,
-                    y: isActive(index) ? [0, -80, 0] : 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.9,
-                    z: 100,
-                    rotate: rotationValues[index % rotationValues.length],
-                  }}
-                  transition={{
-                    duration: 0.4,
-                    ease: "easeInOut",
-                  }}
-                  className="absolute inset-0 origin-bottom"
-                >
-                  <Image
-                    src={testimonial.src}
-                    alt={testimonial.name}
-                    width={500}
-                    height={500}
-                    draggable={false}
-                    className="h-full w-full rounded-3xl object-cover object-center"
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
-        <div className="flex justify-between flex-col py-4">
-          <motion.div
-            key={active}
-            initial={{
-              y: 20,
-              opacity: 0,
-            }}
-            animate={{
-              y: 0,
-              opacity: 1,
-            }}
-            exit={{
-              y: -20,
-              opacity: 0,
-            }}
-            transition={{
-              duration: 0.2,
-              ease: "easeInOut",
-            }}
+    <div
+      className={cn("mx-auto w-full max-w-5xl", className)}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsPaused(false);
+        }
+      }}
+    >
+      <div className="overflow-hidden rounded-[1.75rem] border border-amber-200/70 bg-white shadow-[0_20px_60px_-32px_rgba(69,42,12,0.45)] dark:border-amber-400/20 dark:bg-slate-950">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.article
+            key={`${testimonial.name}-${active}`}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={shouldReduceMotion ? undefined : { opacity: 0, y: -10 }}
+            transition={transition}
+            className="grid md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
+            aria-live="polite"
           >
-            <h3 className="text-2xl font-bold text-foreground">
-              {testimonials[active].name}
-            </h3>
-            <p className="text-sm text-yellow-500 font-medium">
-              {testimonials[active].location}
-            </p>
-            <motion.p className="text-lg text-slate-700 dark:text-gray-500 mt-8 font-medium">
-              {testimonials[active].quote.split(" ").map((word, index) => (
-                <motion.span
-                  key={index}
-                  initial={{
-                    filter: "blur(10px)",
-                    opacity: 0,
-                    y: 5,
-                  }}
-                  animate={{
-                    filter: "blur(0px)",
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.2,
-                    ease: "easeInOut",
-                    delay: 0.02 * index,
-                  }}
-                  className="inline-block"
-                >
-                  {word}&nbsp;
-                </motion.span>
-              ))}
-            </motion.p>
-            <p className="mt-4 text-sm font-medium text-yellow-500">Event: {testimonials[active].event}</p>
-          </motion.div>
-          <div className="flex gap-4 pt-12 md:pt-0">
-            <button
-              onClick={handlePrev}
-              className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center group/button hover:bg-yellow-500/20 transition-colors duration-300"
-            >
-              <IconArrowLeft className="h-5 w-5 text-yellow-500 group-hover/button:rotate-12 transition-transform duration-300" />
-            </button>
-            <button
-              onClick={handleNext}
-              className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center group/button hover:bg-yellow-500/20 transition-colors duration-300"
-            >
-              <IconArrowRight className="h-5 w-5 text-yellow-500 group-hover/button:-rotate-12 transition-transform duration-300" />
-            </button>
-          </div>
-        </div>
+            <div className="relative min-h-[230px] overflow-hidden sm:min-h-[280px] md:min-h-[360px]">
+              <Image
+                src={testimonial.src}
+                alt={`NIBOG event shared by ${testimonial.name}`}
+                fill
+                sizes="(max-width: 767px) 100vw, 45vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/55 to-transparent md:hidden" />
+              <div className="absolute bottom-4 left-4 rounded-full border border-white/30 bg-slate-950/55 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm md:hidden">
+                A real NIBOG family story
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-between p-5 sm:p-7 md:p-9">
+              <div>
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
+                  <IconQuote className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <blockquote className="text-base font-medium leading-7 text-slate-800 sm:text-lg sm:leading-8 dark:text-slate-100">
+                  “{testimonial.quote}”
+                </blockquote>
+                <footer className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                  <p className="font-bold text-slate-950 dark:text-white">
+                    {testimonial.name}
+                  </p>
+                  <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
+                    Parent from {testimonial.location}
+                    {testimonial.event ? ` · ${testimonial.event}` : ""}
+                  </p>
+                </footer>
+              </div>
+
+              {hasMultipleTestimonials && (
+                <div className="mt-6 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    {active + 1} of {testimonials.length}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      aria-label="Show previous parent story"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 transition-colors hover:border-amber-400 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+                    >
+                      <IconArrowLeft className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      aria-label="Show next parent story"
+                      className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-500 text-slate-950 transition-colors hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+                    >
+                      <IconArrowRight className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.article>
+        </AnimatePresence>
       </div>
     </div>
   );

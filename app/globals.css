@@ -711,6 +711,99 @@
   box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
 }
 
+/* Respect the visitor's system motion preference.
+   Keep layout-affecting display rules intact while removing decorative motion. */
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  /* A completed marquee keyframe is translated off screen. Pin these tracks at
+     their readable starting position rather than letting the shortened animation
+     finish on its final frame. */
+  .animate-slide-slow,
+  .animate-slide-slow-1,
+  .animate-slide-slow-2,
+  .animate-slide-slow-3,
+  .animate-slide-slow-4,
+  .animate-slide-slow-5,
+  .animate-slide-slow-6 {
+    animation: none !important;
+    transform: translateX(0) !important;
+    will-change: auto;
+  }
+
+  /* Decorative infinite effects add no state information. */
+  .animate-gradient,
+  .animate-gradient-shift,
+  .animate-rainbow-shift,
+  .animate-shine::before,
+  .animate-float,
+  .animate-float-delayed,
+  .animate-float-slow,
+  .animate-spin-slow,
+  .animate-wiggle,
+  .animate-bounce-gentle,
+  .animate-sparkle,
+  .animate-medal-shine,
+  .animate-ping,
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce {
+    animation: none !important;
+  }
+}
+
+/* Customer-facing mobile ergonomics. Scoped away from admin tooling. */
+@media (max-width: 767px) {
+  .nibog-public .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .nibog-public input:not([type="checkbox"]):not([type="radio"]),
+  .nibog-public select,
+  .nibog-public textarea {
+    min-height: 3rem;
+    font-size: 1rem;
+  }
+
+  .nibog-public form button,
+  .nibog-public [role="tab"],
+  .nibog-public [role="menuitem"] {
+    min-height: 2.75rem;
+    touch-action: manipulation;
+  }
+
+  .nibog-public [role="tablist"] {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .nibog-public table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nibog-public h1 {
+    overflow-wrap: anywhere;
+  }
+}
+
 /* Print styles for ticket */
 @media print {
   /* Hide non-printable elements */

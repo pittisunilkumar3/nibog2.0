@@ -24,6 +24,8 @@ export function AboutGallerySection() {
         fetchImages()
     }, [])
 
+    if (!loading && images.length === 0) return null
+
     return (
         <section className="py-16 md:py-24">
             <div className="container">
@@ -55,12 +57,7 @@ export function AboutGallerySection() {
                                 />
                             </div>
                         ))
-                    ) : (
-                        <div className="col-span-full text-center py-12 text-muted-foreground">
-                            {/* Fallback to static if no dynamic images? Or just show message? User implied replacement. I will show message if empty or fallback to static if user prefers, currently just empty message. */}
-                            No images in gallery yet.
-                        </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
         </section>

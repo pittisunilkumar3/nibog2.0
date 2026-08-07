@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Loader2, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { convertBookingRefFormat } from "@/services/bookingService"
@@ -386,10 +386,10 @@ function PaymentCallbackContent() {
   }, [searchParams, router])
 
   return (
-    <div className="container max-w-md mx-auto py-10">
-      <Card className="border-2 shadow-lg">
+    <div className="container mx-auto max-w-md px-4 py-10">
+      <Card className="rounded-[2rem] border border-orange-100 shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Payment {getStatusText()}</CardTitle>
+          <h1 className="text-3xl font-black tracking-tight">Payment {getStatusText()}</h1>
           <CardDescription>
             {isLoading ? "Processing your payment..." : getStatusDescription()}
           </CardDescription>
@@ -437,8 +437,8 @@ function PaymentCallbackContent() {
               {bookingRef && (
                 <>
                   {bookingRef && (
-                    <p className="text-sm text-muted-foreground">
-                      Booking Reference: <span className="font-medium">{bookingRef}</span>
+                    <p className="max-w-full text-sm text-muted-foreground">
+                      Booking Reference: <span className="break-all font-mono font-bold">{bookingRef}</span>
                     </p>
                   )}
                   {bookingRef && (
@@ -455,28 +455,25 @@ function PaymentCallbackContent() {
               )}
 
               {transactionId && (
-                <p className="text-sm text-muted-foreground">
-                  Transaction ID: <span className="font-medium">{transactionId}</span>
+                <p className="max-w-full text-center text-sm text-muted-foreground">
+                  Transaction ID: <span className="break-all font-mono font-bold">{transactionId}</span>
                 </p>
               )}
 
-              {error && (
-                <p className="text-sm text-red-500 mt-2">{error}</p>
-              )}
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex flex-col justify-center gap-2">
           {paymentStatus === 'SUCCESS' ? (
             <Button
-              className="w-full"
+              className="h-12 w-full rounded-full"
               onClick={() => bookingRef && router.push(`/booking-confirmation?ref=${encodeURIComponent(bookingRef)}`)}
             >
               View Booking Details
             </Button>
           ) : paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED' ? (
             <Button
-              className="w-full"
+              className="h-12 w-full rounded-full"
               variant="outline"
               onClick={() => router.push('/register-event')}
             >
@@ -485,7 +482,7 @@ function PaymentCallbackContent() {
           ) : paymentStatus === 'PENDING' && !isRetrying ? (
             <div className="w-full space-y-2">
               <Button
-                className="w-full"
+                className="h-12 w-full rounded-full"
                 variant="outline"
                 onClick={() => window.location.reload()}
               >
@@ -496,6 +493,7 @@ function PaymentCallbackContent() {
               </p>
             </div>
           ) : null}
+          <Button asChild variant="ghost" className="h-12 w-full rounded-full"><Link href="/contact">Contact support</Link></Button>
         </CardFooter>
       </Card>
     </div>
@@ -513,7 +511,7 @@ function PaymentCallbackContent() {
   }
 
   function getStatusDescription() {
-    if (error) return error;
+    if (error) return "We couldn’t verify this payment yet. No additional payment should be attempted until you confirm the status.";
 
     switch (paymentStatus) {
       case 'SUCCESS':

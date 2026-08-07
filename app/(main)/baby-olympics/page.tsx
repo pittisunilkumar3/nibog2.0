@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client"
 
 import Link from "next/link"
@@ -76,7 +77,7 @@ export default function BabyOlympicsPage() {
 
       } catch (err: any) {
         console.error("Failed to fetch games:", err)
-        setError(err.message || "Failed to load games")
+        setError("Games are temporarily unavailable")
       } finally {
         setIsLoading(false)
       }
@@ -99,7 +100,7 @@ export default function BabyOlympicsPage() {
               className="object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-100 via-amber-100 to-yellow-50 opacity-40" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/75 to-[#fffaf3]/95 dark:from-slate-950/90 dark:via-slate-950/75 dark:to-slate-950/95" />
           </div>
           <div className="container relative flex flex-col items-center justify-center gap-6 sm:gap-8 py-16 sm:py-20 md:py-28 lg:py-36 text-center px-4 sm:px-6">
             {/* Floating decorative elements - hidden on mobile for better performance */}
@@ -107,47 +108,31 @@ export default function BabyOlympicsPage() {
             <div className="hidden sm:block absolute top-20 right-20 w-10 sm:w-12 h-10 sm:h-12 bg-coral-400 rounded-full opacity-40 animate-float-delayed"></div>
             <div className="hidden sm:block absolute bottom-20 left-20 w-16 sm:w-20 h-16 sm:h-20 bg-mint-400 rounded-full opacity-35 animate-float-slow"></div>
 
-            <Badge className="px-4 sm:px-8 py-3 sm:py-4 text-lg sm:text-xl font-bold bg-gradient-to-r from-sunshine-400 to-coral-400 text-neutral-charcoal rounded-full shadow-xl animate-bounce-gentle border-2 sm:border-4 border-white/50">
-              <span className="hidden sm:inline">🏆 New India Baby Olympics Games 🏆</span>
-              <span className="sm:hidden">🏆 NIBOG Games 🏆</span>
+            <Badge className="rounded-full border border-orange-200 bg-white/85 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-orange-800 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-orange-200">
+              <span>Made for little champions</span>
             </Badge>
 
             <div className="space-y-4 sm:space-y-6">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight">
-                <span className="block text-neutral-charcoal dark:text-white font-extrabold mb-2 sm:mb-4">
-                  NIBOG
-                </span>
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-sunshine-500 via-coral-500 to-mint-500 bg-[length:200%_auto] animate-rainbow-shift">
-                  Game of Baby Thrones
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#ef5f52] via-[#e9a31b] to-[#25845f]">
+                  Joyful games for every little stage
                 </span>
               </h1>
-
-              {/* Fun emoji decorations */}
-              <div className="flex justify-center gap-3 sm:gap-6 text-2xl sm:text-4xl">
-                <span className="animate-bounce-gentle">👑</span>
-                <span className="animate-bounce-gentle" style={{ animationDelay: '0.5s' }}>👶</span>
-                <span className="animate-bounce-gentle" style={{ animationDelay: '1s' }}>🏆</span>
-                <span className="animate-bounce-gentle" style={{ animationDelay: '1.5s' }}>⚔️</span>
-              </div>
             </div>
 
             <p className="max-w-[800px] text-base sm:text-lg md:text-xl text-neutral-charcoal/80 dark:text-white/80 leading-relaxed px-4 sm:px-0">
-              Step into the World of Baby Games and watch while they <span className="font-bold text-sunshine-600">Kick</span>,
-              <span className="font-bold text-coral-600"> Crawl</span>,
-              <span className="font-bold text-mint-600"> Conquer</span>.
-              India's biggest baby Olympic games in <span className="font-bold text-sunshine-600">21 cities</span>.
+              From first crawls to confident runs, explore age-matched activities designed to make movement encouraging, playful and memorable.
             </p>
 
             <div className="w-full max-w-lg space-y-4 sm:space-y-6 px-4 sm:px-0">
               <div className="flex flex-col gap-3 sm:gap-4">
                 <Button
                   size="lg"
-                  className="w-full py-6 sm:py-8 text-lg sm:text-xl font-bold bg-gradient-to-r from-sunshine-400 via-coral-400 to-mint-400 hover:from-sunshine-500 hover:via-coral-500 hover:to-mint-500 text-neutral-charcoal shadow-2xl transform transition-all hover:scale-105 sm:hover:scale-110 rounded-2xl sm:rounded-3xl border-2 sm:border-4 border-white/50 animate-medal-shine touch-manipulation"
+                  className="h-14 w-full rounded-full bg-[#ef5f52] px-6 text-base font-black text-white shadow-[0_14px_30px_-14px_rgba(239,95,82,.8)] hover:bg-[#dc4e43] touch-manipulation"
                   asChild
                 >
                   <Link href="/register-event">
-                    <span className="hidden sm:inline">👑 Claim Your Baby's Throne - Register Now!</span>
-                    <span className="sm:hidden">👑 Register Now!</span>
+                    <span>Register your child</span>
                   </Link>
                 </Button>
 
@@ -155,21 +140,21 @@ export default function BabyOlympicsPage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="flex-1 py-3 sm:py-4 text-base sm:text-lg font-semibold bg-white/80 hover:bg-white border-2 border-sunshine-400 text-sunshine-700 hover:text-sunshine-800 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all touch-manipulation"
+                    className="h-12 flex-1 rounded-full border-slate-300 bg-white/85 text-sm font-bold text-slate-900 hover:bg-white touch-manipulation"
                     asChild
                   >
                     <Link href="/events">
-                      📅 View Events
+                      View events
                     </Link>
                   </Button>
                   <Button
                     variant="outline"
                     size="lg"
-                    className="flex-1 py-3 sm:py-4 text-base sm:text-lg font-semibold bg-white/80 hover:bg-white border-2 border-coral-400 text-coral-700 hover:text-coral-800 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all touch-manipulation"
+                    className="h-12 flex-1 rounded-full border-slate-300 bg-white/85 text-sm font-bold text-slate-900 hover:bg-white touch-manipulation"
                     asChild
                   >
                     <Link href="/about">
-                      📖 Learn More
+                      Learn more
                     </Link>
                   </Button>
                 </div>
@@ -198,7 +183,7 @@ export default function BabyOlympicsPage() {
                     </span>
                   </h2>
                   <p className="text-lg text-neutral-charcoal/70 dark:text-white/70 leading-relaxed">
-                    NIBOG (New India Baby Olympics Games) is India's biggest baby Olympic games platform, executing in 21 cities across India. Our games are designed to encourage physical development, confidence, and social interaction in a fun, competitive environment for babies and young children.
+                    NIBOG (New India Baby Olympics Games) creates age-appropriate activities that encourage movement, confidence and social interaction in a cheerful environment for babies and young children.
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -217,8 +202,8 @@ export default function BabyOlympicsPage() {
                       <Medal className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-neutral-charcoal dark:text-white">🏙️ 21 Cities Across India</h3>
-                      <p className="text-neutral-charcoal/70 dark:text-white/70 leading-relaxed">NIBOG events are held in 21 cities across India, making it accessible to families nationwide</p>
+                      <h3 className="text-xl font-bold text-neutral-charcoal dark:text-white">📍 Events in multiple cities</h3>
+                      <p className="text-neutral-charcoal/70 dark:text-white/70 leading-relaxed">Browse the live event calendar to find current dates and venues near your family.</p>
                     </div>
                   </div>
 
@@ -297,18 +282,15 @@ export default function BabyOlympicsPage() {
               {/* Error State */}
               {error && (
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <div className="text-6xl">😔</div>
-                  <h3 className="text-xl font-semibold text-neutral-charcoal">Failed to Load Games</h3>
+                  <Trophy className="h-10 w-10 text-amber-600" aria-hidden="true" />
+                  <h3 className="text-xl font-semibold text-neutral-charcoal">We couldn’t load the live games</h3>
                   <p className="text-muted-foreground text-center max-w-md">
-                    {error}. Please try refreshing the page.
+                    Our games service is temporarily unavailable. Try again or browse upcoming events for the latest activities.
                   </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.location.reload()}
-                    className="mt-4"
-                  >
-                    Try Again
-                  </Button>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button variant="outline" onClick={() => window.location.reload()} className="h-12 rounded-full px-6">Try Again</Button>
+                    <Button asChild className="h-12 rounded-full bg-[#ef5f52] px-6 text-white"><Link href="/events">Browse events</Link></Button>
+                  </div>
                 </div>
               )}
 
@@ -336,11 +318,6 @@ export default function BabyOlympicsPage() {
                           <div className="bg-white/90 rounded-full p-2 text-2xl animate-bounce-gentle">
                             {getGameEmoji(game.categories, game.name)}
                           </div>
-                        </div>
-                        <div className="absolute top-4 left-4">
-                          <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white font-bold border-0">
-                            Priority {game.imagePriority}
-                          </Badge>
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-4">
                           <h3 className="text-lg font-bold text-white mb-1 line-clamp-1">{game.name}</h3>
@@ -374,10 +351,7 @@ export default function BabyOlympicsPage() {
                       </CardContent>
                       <div className="flex items-center justify-between border-t bg-gradient-to-r from-yellow-50 to-orange-50 p-4">
                         <div className="text-xs">
-                          <span className="text-green-600 font-medium flex items-center gap-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            Available
-                          </span>
+                          <span className="text-slate-600 font-medium">Check event availability</span>
                         </div>
                         <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold shadow-lg" asChild>
                           <Link href="/events">Find Events</Link>

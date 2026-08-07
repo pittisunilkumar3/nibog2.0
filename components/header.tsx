@@ -1,292 +1,166 @@
 "use client"
 
+import { ArrowRight, CalendarDays, LogOut, Menu, UserRound } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, User, Baby, Calendar, LogOut } from "lucide-react"
+
+import { useAuth } from "@/contexts/auth-context"
 import { cn } from "@/lib/utils"
 import { ModeToggle } from "./mode-toggle"
-import { UserNav } from "./user-nav"
-import { Badge } from "./ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { useAuth } from "@/contexts/auth-context"
-import { useToast } from "./ui/use-toast"
 import { NibogLogo } from "./nibog-logo"
+import { Button } from "./ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet"
+
+const routes = [
+  { href: "/", label: "Home" },
+  { href: "/events", label: "Events" },
+  { href: "/baby-olympics", label: "NIBOG Games" },
+  { href: "/register-event", label: "Register Event" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
+]
+
+function isRouteActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/"
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
-  const { user, isAuthenticated, logout } = useAuth()
-  const { toast } = useToast()
+  const { isAuthenticated, logout } = useAuth()
 
-  // For now, we'll consider any user as a regular user
-  const isAdmin = false
-
+  const closeMenu = () => setIsOpen(false)
   const handleLogout = () => {
-    setIsOpen(false)
-    toast({
-      title: "Logging out...",
-      description: "Please wait while we log you out.",
-    })
-    
-    // Small delay to ensure toast is visible and menu closes
-    setTimeout(() => {
-      logout()
-    }, 300)
+    closeMenu()
+    logout()
   }
 
-  const routes = [
-    {
-      href: "/",
-      label: "Home",
-      active: pathname === "/",
-    },
-    {
-      href: "/events",
-      label: "Events",
-      active: pathname === "/events",
-    },
-    {
-      href: "/baby-olympics",
-      label: "NIBOG Games",
-      active: pathname === "/baby-olympics",
-    },
-    {
-      href: "/register-event",
-      label: "Register Event",
-      active: pathname === "/register-event",
-    },
-    {
-      href: "/about",
-      label: "About",
-      active: pathname === "/about",
-    },
-    {
-      href: "/contact",
-      label: "Contact",
-      active: pathname === "/contact",
-    },
-  ]
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b-4 border-sunshine-300/50 dark:border-sunshine-600/50 bg-gradient-to-r from-sunshine-100/95 via-coral-100/95 to-mint-100/95 dark:from-sunshine-900/95 dark:via-coral-900/95 dark:to-mint-900/95 backdrop-blur-lg supports-[backdrop-filter]:bg-transparent shadow-2xl transition-all duration-300 hover:shadow-3xl">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_50%,rgba(255,215,0,0.3),transparent_70%),radial-gradient(circle_at_85%_30%,rgba(255,127,127,0.3),transparent_70%),radial-gradient(circle_at_50%_80%,rgba(152,251,152,0.2),transparent_70%)] animate-rainbow-shift pointer-events-none" />
-      <div className="container flex h-20 md:h-24 items-center justify-between relative z-10">
-        <div className="flex items-center gap-6 md:gap-10">
-          <Link href="/" className="flex items-center h-full py-2">
-            <NibogLogo className="h-full w-auto" />
-          </Link>
-          <nav className="hidden gap-5 md:flex">
-            {routes.map((route) => (
+    <header className="sticky top-0 z-50 w-full border-b border-orange-100/90 bg-[#fffaf3]/95 shadow-[0_8px_30px_-24px_rgba(51,32,20,0.55)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/92">
+      <div className="container flex h-[4.75rem] items-center justify-between px-4 sm:px-6 xl:h-[5.5rem]">
+        <Link
+          href="/"
+          className="flex min-h-11 items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+          aria-label="NIBOG home"
+        >
+          <NibogLogo className="h-14 w-auto" />
+        </Link>
+
+        <nav className="hidden items-center gap-1 xl:flex" aria-label="Primary navigation">
+          {routes.map((route) => {
+            const active = isRouteActive(pathname, route.href)
+            return (
               <Link
                 key={route.href}
                 href={route.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative px-6 py-3 text-sm font-semibold rounded-2xl transition-all duration-300 group overflow-hidden",
-                  "hover:bg-white/40 dark:hover:bg-white/20 hover:scale-110 hover:shadow-xl hover:shadow-sunshine-200/50 dark:hover:shadow-sunshine-800/30",
-                  route.active
-                    ? [
-                        "text-neutral-charcoal font-bold shadow-xl",
-                        "bg-gradient-to-r from-sunshine-400 via-coral-400 to-mint-400",
-                        "bg-[length:200%_auto] animate-rainbow-shift",
-                        "shadow-sunshine-400/50 dark:shadow-sunshine-600/50",
-                        "border-2 border-white/50",
-                        "before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/30 before:via-white/0 before:to-white/30 before:animate-shine"
-                      ].join(' ')
-                    : "text-neutral-charcoal dark:text-white hover:text-sunshine-700 dark:hover:text-sunshine-300 font-medium",
+                  "flex min-h-11 items-center rounded-full px-3.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
+                  active
+                    ? "bg-[#ef5f52] text-white shadow-sm"
+                    : "text-slate-700 hover:bg-orange-50 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white",
                 )}
               >
-                <span className="relative z-10 flex items-center gap-2">
-                  {route.label}
-                  {route.active && (
-                    <span className="absolute -right-1 -top-1 flex items-center justify-center">
-                      <span className="absolute h-2 w-2 animate-ping rounded-full bg-white/90"></span>
-                      <span className="relative h-1.5 w-1.5 rounded-full bg-white"></span>
-                    </span>
-                  )}
-                </span>
-                {!route.active && (
-                  <span className={cn(
-                    "absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-purple-500/15 to-purple-500/0",
-                    "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  )}></span>
-                )}
+                {route.label}
               </Link>
-            ))}
-            {isAdmin && (
-              <Link 
-                href="/admin" 
-                className="relative px-3 py-2 text-sm font-medium rounded-full transition-all duration-300 text-rose-600 dark:text-rose-400 hover:bg-rose-100/30 dark:hover:bg-rose-900/20 hover:scale-105"
-              >
-                Admin Panel
-              </Link>
-            )}
-          </nav>
-        </div>
-        <div className="flex items-center gap-2 relative z-20">
-          <div className="hidden md:flex md:items-center md:gap-3">
+            )
+          })}
+        </nav>
+
+        <div className="flex items-center gap-1.5">
+          <div className="hidden items-center gap-2 xl:flex">
             <ModeToggle />
             {isAuthenticated ? (
-              <UserNav />
+              <Button asChild variant="outline" className="h-11 rounded-full px-5 font-bold">
+                <Link href="/dashboard">My account</Link>
+              </Button>
             ) : (
               <>
-                <Button 
-                  variant="ghost" 
-                  className="rounded-full px-4 font-medium text-blue-600 dark:text-blue-300 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-200 transition-all duration-300 hover:scale-105 relative z-10"
-                  asChild
-                >
-                  <Link href="/login" onClick={async (e) => { e.preventDefault(); try { await router.push('/login'); } catch (err) { console.error('router.push failed - falling back to hard navigation', err); window.location.href = '/login'; } }}>Login</Link>
+                <Button asChild variant="ghost" className="h-11 rounded-full px-4 font-bold">
+                  <Link href="/login">Login</Link>
                 </Button>
-                <Button 
-                  className="rounded-full px-5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 border-0 font-medium shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 relative z-10"
-                  asChild
-                >
+                <Button asChild className="h-11 rounded-full bg-[#ef5f52] px-5 font-black text-white hover:bg-[#dc4e43]">
                   <Link href="/register">Sign up</Link>
                 </Button>
               </>
             )}
           </div>
+
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                className="px-3 py-2 md:hidden rounded-xl hover:bg-white/30 dark:hover:bg-white/10 transition-all duration-300 group" 
-                aria-label="Toggle Menu"
+              <Button
+                variant="ghost"
+                className="h-11 w-11 touch-manipulation rounded-xl p-0 xl:hidden"
+                aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={isOpen}
               >
-                <Menu className="h-5 w-5 text-blue-700 dark:text-blue-300 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors" />
+                <Menu className="h-5 w-5 text-slate-800 dark:text-white" aria-hidden="true" />
               </Button>
             </SheetTrigger>
-            <SheetContent 
-              side="right" 
-              className="pr-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/90 dark:via-purple-950/90 dark:to-pink-950/90 border-l-pink-200 dark:border-l-purple-800">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(120,190,255,0.2),transparent_70%),radial-gradient(circle_at_30%_70%,rgba(255,182,193,0.2),transparent_70%)] z-0"></div>
-              <div className="flex flex-col h-full relative z-10">
-                <div className="flex-1">
-                  <nav className="flex flex-col gap-3 mt-6 px-2">
-                    {routes.map((route) => (
+            <SheetContent
+              side="right"
+              className="w-[min(22rem,92vw)] overflow-y-auto overscroll-contain border-l-orange-100 bg-[#fffaf3] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16 dark:border-white/10 dark:bg-slate-950"
+            >
+              <div className="flex min-h-full flex-col">
+                <div className="rounded-3xl bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 p-5 dark:from-amber-400/10 dark:via-orange-400/5 dark:to-rose-400/10">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-700 dark:text-orange-300">For proud little moments</p>
+                  <p className="mt-2 text-lg font-black leading-snug text-slate-950 dark:text-white">Find the right event for your little champion.</p>
+                  <Button asChild className="mt-4 h-12 w-full rounded-full bg-[#ef5f52] font-black text-white hover:bg-[#dc4e43]">
+                    <Link href="/events" onClick={closeMenu}>
+                      Browse events <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </Button>
+                </div>
+
+                <nav className="mt-5 flex flex-col gap-1" aria-label="Mobile navigation">
+                  {routes.map((route) => {
+                    const active = isRouteActive(pathname, route.href)
+                    return (
                       <Link
                         key={route.href}
                         href={route.href}
+                        aria-current={active ? "page" : undefined}
                         className={cn(
-                          "px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300",
-                          "hover:bg-white/40 dark:hover:bg-white/10",
-                          route.active 
-                            ? "text-purple-700 dark:text-purple-300 font-semibold bg-white/30 dark:bg-white/10 shadow-sm" 
-                            : "text-blue-700 dark:text-blue-300",
+                          "flex min-h-12 items-center justify-between rounded-2xl px-4 text-base font-bold touch-manipulation",
+                          active
+                            ? "bg-white text-[#d94f43] shadow-sm dark:bg-white/10 dark:text-orange-200"
+                            : "text-slate-700 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-white/5",
                         )}
-                        onClick={() => setIsOpen(false)}
+                        onClick={closeMenu}
                       >
-                        <div className="flex items-center">
-                          <span>{route.label}</span>
-                          {route.active && (
-                            <span className="ml-2 h-2 w-2 rounded-full bg-gradient-to-r from-pink-400 to-purple-400"></span>
-                          )}
-                        </div>
+                        {route.label}
+                        {route.href === "/register-event" && <CalendarDays className="h-4 w-4" aria-hidden="true" />}
                       </Link>
-                    ))}
-                    {isAdmin && (
-                      <Link
-                        href="/admin"
-                        className="px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 text-rose-600 dark:text-rose-400 hover:bg-rose-100/50 dark:hover:bg-rose-900/20"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Admin Panel
-                      </Link>
-                    )}
-                  </nav>
-                </div>
+                    )
+                  })}
+                </nav>
 
-                <div className="border-t border-pink-200 dark:border-purple-800/50 py-4 mt-6">
+                <div className="mt-auto border-t border-orange-100 pt-4 dark:border-white/10">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Appearance</span>
+                    <ModeToggle />
+                  </div>
                   {isAuthenticated ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4 px-4 py-3 mx-2 rounded-xl bg-white/30 dark:bg-white/5 shadow-sm">
-                        <Avatar className="border-2 border-pink-200 dark:border-purple-700">
-                          <AvatarImage
-                            src={`https://ui-avatars.com/api/?name=${user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}&background=random&color=fff`}
-                          />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white">
-                            {user?.full_name
-                              ? user.full_name
-                                  .split(' ')
-                                  .map(name => name[0])
-                                  .join('')
-                                  .toUpperCase()
-                                  .substring(0, 2)
-                              : 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{user?.full_name || 'User'}</p>
-                          <p className="text-xs text-blue-600 dark:text-blue-400">{user?.email || 'No email'}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 px-2">
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start rounded-xl px-4 py-3 text-blue-700 dark:text-blue-300 hover:bg-white/40 dark:hover:bg-white/10 transition-all duration-300" 
-                          asChild
-                        >
-                          <Link href="/dashboard" onClick={() => setIsOpen(false)}>
-                            <User className="mr-3 h-4 w-4" />
-                            My Profile
-                          </Link>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start rounded-xl px-4 py-3 text-blue-700 dark:text-blue-300 hover:bg-white/40 dark:hover:bg-white/10 transition-all duration-300" 
-                          asChild
-                        >
-                          <Link href="/dashboard/bookings" onClick={() => setIsOpen(false)}>
-                            <Calendar className="mr-3 h-4 w-4" />
-                            My Bookings
-                          </Link>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start rounded-xl px-4 py-3 text-blue-700 dark:text-blue-300 hover:bg-white/40 dark:hover:bg-white/10 transition-all duration-300" 
-                          asChild
-                        >
-                          <Link href="/dashboard/children" onClick={() => setIsOpen(false)}>
-                            <Baby className="mr-3 h-4 w-4" />
-                            My Children
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start rounded-xl px-4 py-3 text-red-500 hover:text-red-600 hover:bg-red-100/50 dark:hover:bg-red-900/20 transition-all duration-300"
-                          onClick={handleLogout}
-                        >
-                          <LogOut className="mr-3 h-4 w-4" />
-                          Logout
-                        </Button>
-                      </div>
+                    <div className="mt-4 grid gap-2">
+                      <Button asChild variant="outline" className="h-12 rounded-full font-bold">
+                        <Link href="/dashboard" onClick={closeMenu}><UserRound className="mr-2 h-4 w-4" />My account</Link>
+                      </Button>
+                      <Button variant="ghost" onClick={handleLogout} className="h-12 rounded-full font-bold text-rose-700 dark:text-rose-300">
+                        <LogOut className="mr-2 h-4 w-4" />Logout
+                      </Button>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-3 px-4 py-2">
-                      <Button 
-                        className="w-full rounded-xl py-5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 border-0 font-medium shadow-md hover:shadow-lg transition-all duration-300" 
-                        onClick={() => setIsOpen(false)} 
-                        asChild
-                      >
-                        <Link href="/register">Signup</Link>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <Button asChild variant="outline" className="h-12 rounded-full font-bold">
+                        <Link href="/login" onClick={closeMenu}>Login</Link>
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full rounded-xl py-5 border-2 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-300 hover:bg-blue-100/30 dark:hover:bg-blue-900/30 transition-all duration-300" 
-                        onClick={() => setIsOpen(false)} 
-                        asChild
-                      >
-                        <Link href="/login" onClick={async (e) => { e.preventDefault(); try { await router.push('/login'); } catch (err) { console.error('router.push failed - falling back to hard navigation', err); window.location.href = '/login'; } }}>Login</Link>
+                      <Button asChild className="h-12 rounded-full bg-slate-950 font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">
+                        <Link href="/register" onClick={closeMenu}>Sign up</Link>
                       </Button>
                     </div>
                   )}
-                  <div className="mt-6 flex justify-center">
-                    <ModeToggle />
-                  </div>
                 </div>
               </div>
             </SheetContent>

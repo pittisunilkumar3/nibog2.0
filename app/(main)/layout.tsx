@@ -12,9 +12,12 @@ export default function MainLayout({
   children: React.ReactNode
 }>) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="nibog-public flex min-h-screen flex-col">
+      <a href="#main-content" className="sr-only z-[100] rounded-md bg-white px-4 py-3 font-bold text-slate-950 focus:not-sr-only focus:fixed focus:left-3 focus:top-3">
+        Skip to main content
+      </a>
       <Header />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
       <Footer />
     </div>
   )

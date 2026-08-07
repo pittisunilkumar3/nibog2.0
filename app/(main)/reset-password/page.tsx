@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, CheckCircle, Loader2, AlertCircle } from 'lucide-react'
 
@@ -157,7 +157,7 @@ function ResetPasswordContent() {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Password Reset Complete</CardTitle>
+            <h1 className="text-2xl font-black">Password reset complete</h1>
             <CardDescription>
               Your password has been successfully reset
             </CardDescription>
@@ -173,7 +173,7 @@ function ResetPasswordContent() {
           <CardFooter>
             <Button
               onClick={() => router.push('/login')}
-              className="w-full"
+              className="h-12 w-full rounded-full"
             >
               Continue to Login
             </Button>
@@ -192,7 +192,7 @@ function ResetPasswordContent() {
             <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
               <AlertCircle className="w-10 h-10 text-red-600" />
             </div>
-            <CardTitle className="text-2xl">Invalid Reset Link</CardTitle>
+            <h1 className="text-2xl font-black">Invalid reset link</h1>
             <CardDescription>
               This password reset link is invalid or has expired
             </CardDescription>
@@ -208,7 +208,7 @@ function ResetPasswordContent() {
           <CardFooter className="flex flex-col gap-2">
             <Button
               onClick={() => router.push('/forgot-password')}
-              className="w-full"
+              className="h-12 w-full rounded-full"
             >
               Request New Reset Link
             </Button>
@@ -230,7 +230,7 @@ function ResetPasswordContent() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+          <h1 className="text-2xl font-black">Reset your password</h1>
           <CardDescription>
             {userEmail && `for ${userEmail}`}
           </CardDescription>
@@ -261,8 +261,9 @@ function ResetPasswordContent() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                  className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
                   disabled={isLoading}
+                  aria-label={showPassword ? "Hide new password" : "Show new password"}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -293,8 +294,9 @@ function ResetPasswordContent() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                  className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
                   disabled={isLoading}
+                  aria-label={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-4 w-4" />

@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import Image from "next/image"
 import Link from "next/link"
 import dynamic from "next/dynamic"
@@ -32,7 +33,7 @@ const AboutTestimonialsSection = dynamic(
 
 export const metadata: Metadata = {
   title: "About NIBOG | New India Baby Olympic Games",
-  description: "Learn about NIBOG - India's biggest baby Olympic games, our mission, vision, and the team behind it.",
+  description: "Learn how NIBOG creates joyful, age-matched baby games and proud family moments.",
 }
 
 export default function AboutPage() {
@@ -59,7 +60,7 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-xl md:text-2xl text-neutral-charcoal/80 dark:text-white/80 leading-relaxed max-w-3xl mx-auto">
-              India's biggest baby Olympic games, celebrating the <span className="font-bold text-sunshine-600">joy of childhood</span> through
+              A joyful baby games experience, celebrating the <span className="font-bold text-sunshine-600">wonder of childhood</span> through
               <span className="font-bold text-coral-600"> play</span> and
               <span className="font-bold text-mint-600"> competition</span> ✨
             </p>
@@ -172,9 +173,8 @@ export default function AboutPage() {
             </div>
             <h2 className="mt-4 text-3xl font-bold tracking-tight">The NIBOG Journey</h2>
             <p className="mt-4 text-muted-foreground">
-              NIBOG was founded with a simple idea: to create a platform where children can showcase their
-              natural abilities in a fun, supportive environment. What started as a small event in one city
-              has now grown into India's largest baby Olympic games.
+              NIBOG began with a simple idea: give babies and young children a welcoming place to move,
+              play and feel celebrated. Every event is designed to turn a small milestone into a proud family memory.
             </p>
           </div>
 
@@ -184,9 +184,9 @@ export default function AboutPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
                   <Calendar className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold">Founded in 2018</h3>
+                <h3 className="text-xl font-bold">Designed around childhood</h3>
                 <p className="mt-2 text-muted-foreground">
-                  NIBOG was established with our first event in Hyderabad, featuring just 100 participants.
+                  Games are matched to children’s age and stage, with encouragement at the centre of the experience.
                 </p>
               </CardContent>
             </Card>
@@ -195,9 +195,9 @@ export default function AboutPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                   <MapPin className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold">21 Cities and Growing</h3>
+                <h3 className="text-xl font-bold">Made for families</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Today, NIBOG events are held in 21 cities across India, bringing joy to thousands of families.
+                  Clear event details and simple registration help parents plan the day with confidence.
                 </p>
               </CardContent>
             </Card>
@@ -206,9 +206,9 @@ export default function AboutPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
                   <Users className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold">50,000+ Participants</h3>
+                <h3 className="text-xl font-bold">Every finish matters</h3>
                 <p className="mt-2 text-muted-foreground">
-                  We've welcomed over 50,000 young participants to our events, creating countless memories.
+                  Children are cheered for taking part, building confidence and creating a moment worth remembering.
                 </p>
               </CardContent>
             </Card>
@@ -248,7 +248,7 @@ export default function AboutPage() {
               Join the NIBOG Family
             </h2>
             <p className="mt-4 text-xl text-blue-100">
-              Register your child for our upcoming events and be part of India's biggest baby Olympic games
+              Find an upcoming event and give your child a joyful first finish worth celebrating.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
               <Button size="lg" asChild>

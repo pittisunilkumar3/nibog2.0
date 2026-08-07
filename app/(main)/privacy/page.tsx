@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { getPrivacyPolicy } from "@/services/privacyPolicyService"
+import Link from "next/link"
 
 export default function PrivacyPolicyPage() {
   const [privacyContent, setPrivacyContent] = useState<string>("")
@@ -27,14 +28,9 @@ export default function PrivacyPolicyPage() {
         }
       } catch (error) {
         console.error("Failed to load privacy policy:", error)
-        setError("Failed to load privacy policy content. Please try again later.")
-        // Fallback content
-        setPrivacyContent(`
-          <h2>1. Introduction</h2>
-          <p>NIBOG (New India Baby Olympic Games) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or participate in our events.</p>
-          <p>Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site or register for our events.</p>
-        `)
-        setLastUpdated(new Date().toISOString())
+        setError("The official privacy policy is temporarily unavailable.")
+        setPrivacyContent("")
+        setLastUpdated("")
       } finally {
         setIsLoading(false)
       }
@@ -96,21 +92,25 @@ export default function PrivacyPolicyPage() {
       <div className="mx-auto max-w-3xl space-y-8">
         {/* Header */}
         <div className="space-y-2">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-700">Your information</p>
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Privacy Policy</h1>
+          {lastUpdated && <p className="text-sm text-muted-foreground">Last updated {formatDate(lastUpdated)}</p>}
           {error && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-sm text-yellow-800 mt-4">
-              {error}
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+              <p className="font-bold">{error}</p>
+              <p className="mt-1">Please try again later or <Link href="/contact" className="font-bold underline">contact NIBOG</Link> with a privacy question.</p>
             </div>
           )}
         </div>
 
         {/* Content */}
         <div className="space-y-6">
-          <div
+          {privacyContent && <div
             className="privacy-policy-content"
             dangerouslySetInnerHTML={{
               __html: privacyContent
             }}
-          />
+          />}
         </div>
 
         {/* Custom styles to match reference design */}

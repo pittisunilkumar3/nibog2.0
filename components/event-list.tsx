@@ -1,385 +1,157 @@
 "use client"
 
-import Link from "next/link"
+import { AlertCircle, Baby, Calendar, Clock, MapPin, RefreshCw } from "lucide-react"
 import Image from "next/image"
-import { memo, useMemo, useState, useCallback, useEffect } from "react"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Calendar, Clock, MapPin, Heart } from "lucide-react"
+import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
+
+import { Button } from "@/components/ui/button"
 import { useEvents } from "@/lib/swr-hooks"
 import { formatDateShort } from "@/lib/utils"
+import type { EventListItem } from "@/types"
 
-// Import EventListItem type for proper typing
-import { EventListItem } from "@/types"
+const ITEMS_PER_PAGE = 8
 
-// Memoized EventCard component to prevent unnecessary re-renders
-const EventCard = memo(({ event }: { event: EventListItem }) => {
-  // Use dynamic age range from event data, with fallback defaults
-  const minAgeMonths = event.minAgeMonths ?? 6;
-  const maxAgeMonths = event.maxAgeMonths ?? 84;
-
-  // Check if event is in the past
-  const isEventComplete = useMemo(() => {
-    // Parse date as local date to avoid timezone issues
-    const parts = event.date.split('-');
-    const eventDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-    return eventDate < today;
-  }, [event.date]);
-
-  // Get age-appropriate emoji and colors
-  const getAgeTheme = (minAge: number, maxAge: number) => {
-    if (maxAge <= 13) {
-      return {
-        emoji: "🍼",
-        gradient: "from-sunshine-400 to-coral-400",
-        bgGradient: "from-sunshine-50 to-coral-50",
-        borderColor: "border-sunshine-300",
-        textColor: "text-sunshine-700"
-      }
-    } else if (minAge >= 13 && maxAge <= 36) {
-      return {
-        emoji: "🚶‍♀️",
-        gradient: "from-coral-400 to-mint-400",
-        bgGradient: "from-coral-50 to-mint-50",
-        borderColor: "border-coral-300",
-        textColor: "text-coral-700"
-      }
-    } else {
-      return {
-        emoji: "🏃‍♂️",
-        gradient: "from-mint-400 to-lavender-400",
-        bgGradient: "from-mint-50 to-lavender-50",
-        borderColor: "border-mint-300",
-        textColor: "text-mint-700"
-      }
-    }
-  }
-
-  const theme = getAgeTheme(minAgeMonths, maxAgeMonths)
+function EventCard({ event }: { event: EventListItem }) {
+  const eventDate = new Date(`${event.date}T00:00:00`)
+  const isComplete = eventDate < new Date(new Date().setHours(0, 0, 0, 0))
 
   return (
-    <Card className={`group overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] sm:hover:scale-105 rounded-3xl bg-gradient-to-br ${theme.bgGradient} border-2 ${theme.borderColor} hover:border-sunshine-400`}>
-      <div className="relative h-48 sm:h-52 md:h-56">
+    <article className="group overflow-hidden rounded-[1.75rem] border border-emerald-100 bg-white shadow-[0_18px_45px_-32px_rgba(25,72,56,0.5)] dark:border-white/10 dark:bg-slate-900">
+      <div className="relative aspect-[4/3] overflow-hidden bg-emerald-50">
         <Image
           src={event.image || "/images/baby-crawling.jpg"}
           alt={event.title}
           fill
-          className="object-cover transition-transform group-hover:scale-110 duration-500 rounded-t-3xl"
-          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw"
-          loading="lazy"
-          placeholder="blur"
-          blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxvYWRpbmcuLi48L3RleHQ+PC9zdmc+"
-          onError={(e) => {
-            // Fallback to default image if the API image fails to load
-            const target = e.target as HTMLImageElement;
-            target.src = "/images/baby-crawling.jpg";
-          }}
+          sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent rounded-t-3xl`} />
-
-        {/* Floating decorative elements */}
-        <div className="absolute top-3 left-3">
-          <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 text-2xl animate-bounce-gentle shadow-lg">
-            {theme.emoji}
-          </div>
-        </div>
-
-        <div className="absolute top-3 right-3 space-y-2">
-          {/* Complete Event Status Indicator */}
-          {isEventComplete && (
-            <Badge className="bg-gradient-to-r from-gray-500 to-gray-600 text-white font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white/50">
-              ✅ Complete Event
-            </Badge>
-          )}
-
-          {/* Olympics/Regular Badge */}
-          <Badge className={`bg-gradient-to-r ${theme.gradient} text-white font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white/50`}>
-            {event.isOlympics ? "🏆 Olympics" : "🎮 Regular"}
-          </Badge>
-        </div>
-
-        <div className="absolute bottom-3 left-3 right-3">
-          <Badge className="bg-white/90 backdrop-blur-sm text-neutral-charcoal font-bold px-3 py-2 rounded-full shadow-lg">
-            👶 {minAgeMonths}-{maxAgeMonths} months
-            <span className="ml-1 text-xs text-neutral-charcoal/50 hidden sm:inline">
-              ({Math.floor(minAgeMonths/12) !== Math.floor(maxAgeMonths/12) ? `${Math.floor(minAgeMonths/12)}-${Math.floor(maxAgeMonths/12)}` : `${Math.floor(minAgeMonths/12)}`} yrs)
-            </span>
-          </Badge>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/30"
-          aria-label="Save event"
-        >
-          <Heart className="h-5 w-5 text-white" />
-        </Button>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+        <span className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-slate-950/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-sm">
+          {event.minAgeMonths}–{event.maxAgeMonths} months
+        </span>
+        {isComplete && (
+          <span className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-xs font-black text-slate-700">Completed</span>
+        )}
       </div>
 
-      <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-        <div className="space-y-3 sm:space-y-4">
-          <h3 className="text-lg sm:text-xl font-bold leading-tight tracking-tight text-neutral-charcoal group-hover:text-sunshine-700 transition-colors line-clamp-2">{event.title}</h3>
-          <p className="text-xs sm:text-sm text-neutral-charcoal/70 leading-relaxed line-clamp-3">{event.description}</p>
-        </div>
-      </CardContent>
+      <div className="p-5 sm:p-6">
+        <h2 className="text-xl font-black leading-tight text-slate-950 dark:text-white">{event.title}</h2>
+        {event.description && <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{event.description}</p>}
 
-      <CardFooter className="border-t-2 border-white/50 bg-white/80 backdrop-blur-sm p-4 sm:p-6 rounded-b-3xl">
-        <div className="w-full space-y-3 sm:space-y-4">
-          {/* Complete Event Details */}
-          <div className="space-y-2 sm:space-y-3 bg-gray-50 p-2 sm:p-3 rounded-lg">
-            <h4 className="text-xs sm:text-sm font-bold text-neutral-charcoal uppercase tracking-wide">Event Details</h4>
+        <dl className="mt-5 space-y-3 border-t border-slate-100 pt-4 text-sm dark:border-white/10">
+          <EventFact icon={Calendar} label="Date" value={formatDateShort(event.date)} />
+          <EventFact icon={Clock} label="Time" value={event.time || "To be announced"} />
+          <EventFact icon={MapPin} label="Venue" value={[event.venue, event.city].filter(Boolean).join(", ")} />
+          <EventFact icon={Baby} label="Age" value={`${event.minAgeMonths}–${event.maxAgeMonths} months`} />
+        </dl>
 
-            <div className="grid grid-cols-1 gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-charcoal/70">
-                <div className="bg-sunshine-100 rounded-full p-1 flex-shrink-0">
-                  <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-sunshine-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-neutral-charcoal">Date:</span>
-                  <span className="ml-1 truncate">
-                    {formatDateShort(event.date)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-charcoal/70">
-                <div className="bg-coral-100 rounded-full p-1 flex-shrink-0">
-                  <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-coral-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-neutral-charcoal">Time:</span>
-                  {event.time ? (
-                    <span className="ml-1 truncate">{event.time}</span>
-                  ) : (
-                    <span className="ml-1 text-amber-600 italic text-xs">Time will be updated soon</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-charcoal/70">
-                <div className="bg-mint-100 rounded-full p-1 flex-shrink-0">
-                  <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-mint-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-neutral-charcoal">Venue:</span>
-                  <span className={event.venue && /^venue will be/i.test(event.venue) ? "ml-1 text-amber-600 italic" : "ml-1 truncate"}>
-                    {event.venue}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-charcoal/70">
-                <div className="bg-lavender-100 rounded-full p-1 flex-shrink-0">
-                  <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-lavender-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-neutral-charcoal">City:</span>
-                  <span className="ml-1 truncate">{event.city}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-charcoal/70">
-                <div className="bg-sunshine-100 rounded-full p-1 flex-shrink-0">
-                  <span className="text-xs font-bold text-sunshine-600">👶</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-neutral-charcoal">Age:</span>
-                  <span className="ml-1">{minAgeMonths}-{maxAgeMonths} months</span>
-                  <span className="ml-1 text-xs text-neutral-charcoal/50 hidden sm:inline">
-                    ({Math.floor(minAgeMonths/12) !== Math.floor(maxAgeMonths/12) ? `${Math.floor(minAgeMonths/12)}-${Math.floor(maxAgeMonths/12)}` : `${Math.floor(minAgeMonths/12)}`} years)
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Register Button */}
-          <div className="pt-1 sm:pt-2">
-            {isEventComplete ? (
-              <Button
-                disabled
-                className="w-full bg-gray-400 text-white font-bold py-2 sm:py-3 text-sm sm:text-base rounded-full border-2 border-white/50 cursor-not-allowed opacity-60"
-              >
-                📅 Event Completed
-              </Button>
-            ) : (
-              <Button
-                className={`w-full bg-gradient-to-r ${theme.gradient} hover:shadow-lg text-white font-bold py-2 sm:py-3 text-sm sm:text-base rounded-full border-2 border-white/50 transform hover:scale-[1.02] sm:hover:scale-105 transition-all duration-300 touch-manipulation`}
-                asChild
-              >
-                <Link href={`/register-event?city=${event.city}`}>
-                  🎯 Register for Event
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardFooter>
-    </Card>
+        {isComplete ? (
+          <Button disabled className="mt-5 h-12 w-full rounded-full">Event completed</Button>
+        ) : (
+          <Button asChild className="mt-5 h-12 w-full rounded-full bg-[#ef5f52] font-black text-white hover:bg-[#dc4e43]">
+            <Link href={`/events/${event.id}`}>View event details</Link>
+          </Button>
+        )}
+      </div>
+    </article>
   )
-});
+}
 
-EventCard.displayName = 'EventCard';
+function EventFact({ icon: Icon, label, value }: { icon: typeof Calendar; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <dt className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</dt>
+        <dd className="break-words font-semibold text-slate-700 dark:text-slate-200">{value}</dd>
+      </div>
+    </div>
+  )
+}
 
 export default function EventList() {
-  const searchParams = useSearchParams();
-  const [page, setPage] = useState(1);
-  const ITEMS_PER_PAGE = 8;
+  const searchParams = useSearchParams()
+  const [page, setPage] = useState(1)
+  const { events, isLoading, isError, mutate } = useEvents()
 
-  // Use SWR hook to fetch events data with caching
-  const { events, isLoading, isError } = useEvents();
-  
-  // Filter and sort events based on URL params, with completed events at bottom
   const filteredEvents = useMemo(() => {
-    const city = searchParams.get('city');
-    const minAge = searchParams.get('minAge');
-    const maxAge = searchParams.get('maxAge');
-    const date = searchParams.get('date');
+    const city = searchParams.get("city")
+    const minAge = searchParams.get("minAge")
+    const maxAge = searchParams.get("maxAge")
+    const date = searchParams.get("date")
 
-    const filtered = events.filter((event) => {
-      // Use event's actual age range for filtering
-      const eventMinAge = event.minAgeMonths ?? 6;
-      const eventMaxAge = event.maxAgeMonths ?? 84;
+    return events
+      .filter((event) => {
+        if (city && event.city.toLowerCase() !== city.toLowerCase()) return false
+        if (minAge && event.minAgeMonths < Number.parseInt(minAge)) return false
+        if (maxAge && event.maxAgeMonths > Number.parseInt(maxAge)) return false
+        if (date && event.date !== date) return false
+        return true
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  }, [events, searchParams])
 
-      if (city && event.city.toLowerCase() !== city.toLowerCase()) return false;
-      if (minAge && eventMinAge < parseInt(minAge)) return false;
-      if (maxAge && eventMaxAge > parseInt(maxAge)) return false;
-      if (date && event.date !== date) return false;
-      return true;
-    });
+  useEffect(() => setPage(1), [searchParams])
 
-    // Sort events: upcoming events first, completed events at bottom
-    return filtered.sort((a, b) => {
-      // Parse dates as local dates to avoid timezone issues
-      const aParts = a.date.split('-');
-      const aDate = new Date(parseInt(aParts[0]), parseInt(aParts[1]) - 1, parseInt(aParts[2]));
-      const bParts = b.date.split('-');
-      const bDate = new Date(parseInt(bParts[0]), parseInt(bParts[1]) - 1, parseInt(bParts[2]));
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const aIsComplete = aDate < today;
-      const bIsComplete = bDate < today;
-      
-      // If one is complete and other is not, put complete at bottom
-      if (aIsComplete && !bIsComplete) return 1;
-      if (!aIsComplete && bIsComplete) return -1;
-      
-      // If both have same completion status, sort by date
-      // For upcoming events: earliest first
-      // For completed events: most recent first
-      if (!aIsComplete && !bIsComplete) {
-        return aDate.getTime() - bDate.getTime();
-      } else {
-        return bDate.getTime() - aDate.getTime();
-      }
-    });
-  }, [searchParams, events]);
-
-  // Get paginated events based on current page
-  const visibleEvents = useMemo(() => {
-    return filteredEvents.slice(0, page * ITEMS_PER_PAGE);
-  }, [filteredEvents, page]);
-
-  // Handler for load more button
-  const handleLoadMore = useCallback(() => {
-    setPage(prevPage => prevPage + 1);
-  }, []);
-  
-  // Reset pagination when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [searchParams]);
-
-  // Show loading state with responsive skeleton
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <div key={index} className="animate-pulse">
-            <div className="bg-gray-200 rounded-3xl h-48 sm:h-52 mb-4"></div>
-            <div className="space-y-2 px-2">
-              <div className="bg-gray-200 rounded h-4 w-3/4"></div>
-              <div className="bg-gray-200 rounded h-4 w-1/2"></div>
-              <div className="bg-gray-200 rounded h-4 w-2/3"></div>
-              <div className="bg-gray-200 rounded h-8 w-full mt-4"></div>
-            </div>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Loading events">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="overflow-hidden rounded-[1.75rem] bg-white dark:bg-slate-900">
+            <div className="aspect-[4/3] animate-pulse bg-emerald-100 dark:bg-slate-800" />
+            <div className="space-y-3 p-5"><div className="h-6 w-2/3 animate-pulse rounded bg-slate-100 dark:bg-slate-800" /><div className="h-4 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800" /></div>
           </div>
         ))}
       </div>
     )
   }
 
-  // Show error state
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <div className="text-6xl">😔</div>
-        <h3 className="text-xl font-semibold text-neutral-charcoal">Unable to Load Events</h3>
-        <p className="text-muted-foreground text-center max-w-md">
-          We're having trouble connecting to our servers. Please check your internet connection and try again.
-        </p>
-        <Button
-          variant="outline"
-          onClick={() => window.location.reload()}
-          className="mt-4"
-        >
-          Try Again
-        </Button>
+      <div className="mx-auto max-w-xl rounded-[2rem] border border-orange-100 bg-white p-6 text-center shadow-sm dark:border-white/10 dark:bg-slate-900 sm:p-10">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-700 dark:bg-orange-400/10 dark:text-orange-300"><AlertCircle className="h-6 w-6" /></span>
+        <h2 className="mt-4 text-2xl font-black">We couldn’t load the event calendar</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Your connection may be fine. Our event service is temporarily unavailable, so please try again in a moment.</p>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button onClick={() => mutate()} className="h-12 rounded-full bg-[#ef5f52] px-6 font-black text-white"><RefreshCw className="mr-2 h-4 w-4" />Try again</Button>
+          <Button asChild variant="outline" className="h-12 rounded-full px-6 font-bold"><Link href="/contact">Contact NIBOG</Link></Button>
+        </div>
       </div>
     )
   }
 
-  // Show no events state
   if (events.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <div className="text-6xl">🎮</div>
-        <h3 className="text-xl font-semibold text-neutral-charcoal">No Events Available</h3>
-        <p className="text-muted-foreground text-center max-w-md">
-          There are currently no baby games events scheduled. Check back soon for exciting new events!
-        </p>
-        <Button variant="outline" className="mt-4" asChild>
-          <Link href="/">Go Home</Link>
-        </Button>
-      </div>
-    )
+    return <EmptyEvents title="New dates are coming soon" copy="There are no scheduled events to show right now. Check back soon or contact NIBOG for the latest city updates." />
   }
 
+  if (filteredEvents.length === 0) {
+    return <EmptyEvents title="No events match those filters" copy="Clear the filters to see every currently available NIBOG event." clearFilters />
+  }
+
+  const visibleEvents = filteredEvents.slice(0, page * ITEMS_PER_PAGE)
   return (
     <div>
-      {/* Responsive grid with improved breakpoints */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-        {visibleEvents.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {visibleEvents.map((event) => <EventCard key={event.id} event={event} />)}
       </div>
-
       {visibleEvents.length < filteredEvents.length && (
-        <div className="mt-8 flex justify-center">
-          <Button onClick={handleLoadMore} variant="outline">
-            Load More Events
-          </Button>
-        </div>
+        <div className="mt-8 flex justify-center"><Button onClick={() => setPage((current) => current + 1)} variant="outline" className="h-12 rounded-full px-7 font-black">Load more events</Button></div>
       )}
+    </div>
+  )
+}
 
-      {filteredEvents.length === 0 && events.length > 0 && (
-        <div className="flex flex-col items-center justify-center py-12 space-y-4">
-          <div className="text-6xl">🔍</div>
-          <h3 className="text-xl font-semibold text-neutral-charcoal">No Matching Events</h3>
-          <p className="text-muted-foreground text-center max-w-md">
-            No events found matching your search criteria. Try adjusting your filters or search terms.
-          </p>
-          <Button variant="outline" className="mt-4" asChild>
-            <Link href="/events">Clear Filters</Link>
-          </Button>
-        </div>
-      )}
+function EmptyEvents({ title, copy, clearFilters = false }: { title: string; copy: string; clearFilters?: boolean }) {
+  return (
+    <div className="mx-auto max-w-xl rounded-[2rem] bg-white p-8 text-center shadow-sm dark:bg-slate-900">
+      <Baby className="mx-auto h-8 w-8 text-emerald-700 dark:text-emerald-300" />
+      <h2 className="mt-4 text-2xl font-black">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{copy}</p>
+      <Button asChild variant="outline" className="mt-5 h-12 rounded-full px-6 font-bold"><Link href={clearFilters ? "/events" : "/contact"}>{clearFilters ? "Clear filters" : "Contact NIBOG"}</Link></Button>
     </div>
   )
 }

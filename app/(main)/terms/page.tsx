@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 
 interface TermsConditionsData {
   id: number
@@ -42,13 +43,9 @@ export default function TermsPage() {
         }
       } catch (error) {
         console.error("Failed to load terms & conditions:", error)
-        setError("Failed to load terms & conditions content. Please try again later.")
-        // Fallback content
-        setTermsContent(`
-          <h2>1. Acceptance of Terms</h2>
-          <p>By accessing and using the NIBOG (New India Baby Olympic Games) website and services, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, please do not use our services.</p>
-        `)
-        setLastUpdated(new Date().toISOString())
+        setError("The official terms are temporarily unavailable.")
+        setTermsContent("")
+        setLastUpdated("")
       } finally {
         setIsLoading(false)
       }
@@ -110,22 +107,25 @@ export default function TermsPage() {
       <div className="mx-auto max-w-3xl space-y-8">
         {/* Header */}
         <div className="space-y-2">
-          
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-700">Legal information</p>
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Terms & Conditions</h1>
+          {lastUpdated && <p className="text-sm text-muted-foreground">Last updated {formatDate(lastUpdated)}</p>}
           {error && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-sm text-yellow-800 mt-4">
-              {error}
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+              <p className="font-bold">{error}</p>
+              <p className="mt-1">Please try again later or <Link href="/contact" className="font-bold underline">contact NIBOG</Link> before completing a registration.</p>
             </div>
           )}
         </div>
 
         {/* Content */}
         <div className="space-y-6">
-          <div
+          {termsContent && <div
             className="terms-conditions-content"
             dangerouslySetInnerHTML={{
               __html: termsContent
             }}
-          />
+          />}
         </div>
 
         {/* Custom styles to match reference design */}
