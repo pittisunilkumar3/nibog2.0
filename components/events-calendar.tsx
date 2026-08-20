@@ -100,6 +100,8 @@ export default function EventsCalendar() {
     const date = searchParams.get("date")
 
     return events.filter((event) => {
+      // Only upcoming events are shown (today and future)
+      if (!event.date || event.date < nowKey) return false
       if (city && event.city.toLowerCase() !== city.toLowerCase()) return false
       if (minAge && event.minAgeMonths < Number.parseInt(minAge)) return false
       if (maxAge && event.maxAgeMonths > Number.parseInt(maxAge)) return false

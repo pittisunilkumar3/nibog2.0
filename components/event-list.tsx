@@ -91,23 +91,21 @@ export default function EventList() {
 
     return events
       .filter((event) => {
+        // Only upcoming events are shown (today and future)
+        if (event.date < todayStr) return false
         if (city && event.city.toLowerCase() !== city.toLowerCase()) return false
         if (minAge && event.minAgeMonths < Number.parseInt(minAge)) return false
         if (maxAge && event.maxAgeMonths > Number.parseInt(maxAge)) return false
         if (date && event.date !== date) return false
         return true
       })
-      .sort((a, b) => {
-        // Upcoming events first, completed events last
-        const aPast = a.date < todayStr
-        const bPast = b.date < todayStr
-        if (aPast !== bPast) return aPast ? 1 : -1
-        // Both upcoming: soonest first
-        if (!aPast) return a.date < b.date ? -1 : a.date > b.date ? 1 : 0
-        // Both completed: most recently completed first
-        return a.date > b.date ? -1 : a.date < b.date ? 1 : 0
-      })
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
   }, [events, searchParams, todayStr])
+
+  const hasActiveFilters = useMemo(
+    () => Boolean(searchParams.get("city") || searchParams.get("minAge") || searchParams.get("maxAge") || searchParams.get("date")),
+    [searchParams]
+  )
 
   useEffect(() => setPage(1), [searchParams])
 
@@ -138,12 +136,10 @@ export default function EventList() {
     )
   }
 
-  if (events.length === 0) {
-    return <EmptyEvents title="New dates are coming soon" copy="There are no scheduled events to show right now. Check back soon or contact NIBOG for the latest city updates." />
-  }
-
   if (filteredEvents.length === 0) {
-    return <EmptyEvents title="No events match those filters" copy="Clear the filters to see every currently available NIBOG event." clearFilters />
+    return hasActiveFilters
+      ? <EmptyEvents title="No events match those filters" copy="Clear the filters to see every currently available NIBOG event." clearFilters />
+      : <EmptyEvents title="New dates are coming soon" copy="There are no upcoming events scheduled right now. Check back soon or contact NIBOG for the latest city updates." />
   }
 
   const visibleEvents = filteredEvents.slice(0, page * ITEMS_PER_PAGE)
