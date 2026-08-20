@@ -1,18 +1,29 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const footerData = await request.json();
-    
-    const apiUrl = 'http://localhost:3004/api/footer-settings';
+
+    // Get the backend URL from environment variable (fallback for local dev)
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
+    const apiUrl = `${backendUrl}/api/footer-settings`;
+
+    // Forward the authorization token from the incoming request
+    const authHeader = request.headers.get('authorization');
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
 
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(footerData),
       cache: "no-store",
     });
@@ -27,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    
+
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) {
     console.error("Server API route: Error creating footer settings:", error);
