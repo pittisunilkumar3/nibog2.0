@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 import { CalendarDays, ShieldCheck, Sparkles } from "lucide-react"
 
+import EventsCalendar from "@/components/events-calendar"
 import EventList from "@/components/event-list"
 import EventsHeaderWrapper from "@/components/events-header-wrapper"
 import EventsLoading from "./loading"
@@ -31,13 +32,7 @@ export default function EventsPage() {
         <Tabs defaultValue="grid" className="w-full">
           <Suspense fallback={<EventsLoading />}><EventsHeaderWrapper /></Suspense>
           <TabsContent value="grid" className="mt-6"><Suspense fallback={<EventsLoading />}><EventList /></Suspense></TabsContent>
-          <TabsContent value="calendar" className="mt-6">
-            <div className="rounded-[2rem] border border-dashed border-orange-200 bg-white p-8 text-center dark:border-white/15 dark:bg-slate-900 sm:p-12">
-              <CalendarDays className="mx-auto h-8 w-8 text-orange-600" />
-              <h2 className="mt-4 text-2xl font-black">Calendar view is coming soon</h2>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-300">Use the event cards for the latest available dates while we finish this view.</p>
-            </div>
-          </TabsContent>
+          <TabsContent value="calendar" className="mt-6"><Suspense fallback={<EventsLoading />}><EventsCalendar /></Suspense></TabsContent>
         </Tabs>
       </section>
     </div>
