@@ -78,6 +78,11 @@ export default function EventList() {
   const [page, setPage] = useState(1)
   const { events, isLoading, isError, mutate } = useEvents()
 
+  // Today as YYYY-MM-DD (local) — ISO date strings compare lexicographically == chronologically
+  const today = new Date()
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+
   const filteredEvents = useMemo(() => {
     const city = searchParams.get("city")
     const minAge = searchParams.get("minAge")
@@ -92,8 +97,17 @@ export default function EventList() {
         if (date && event.date !== date) return false
         return true
       })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  }, [events, searchParams])
+      .sort((a, b) => {
+        // Upcoming events first, completed events last
+        const aPast = a.date < todayStr
+        const bPast = b.date < todayStr
+        if (aPast !== bPast) return aPast ? 1 : -1
+        // Both upcoming: soonest first
+        if (!aPast) return a.date < b.date ? -1 : a.date > b.date ? 1 : 0
+        // Both completed: most recently completed first
+        return a.date > b.date ? -1 : a.date < b.date ? 1 : 0
+      })
+  }, [events, searchParams, todayStr])
 
   useEffect(() => setPage(1), [searchParams])
 
