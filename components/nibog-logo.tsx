@@ -10,12 +10,12 @@ interface NibogLogoProps {
 export function NibogLogo({ className }: NibogLogoProps) {
   return (
     <div className={cn("flex items-center", className)}>
-      <div className="relative h-12 w-auto" style={{ aspectRatio: '462/316' }}>
+      <div className="relative h-12 w-auto" style={{ aspectRatio: '1517/1037' }}>
         <Image
-          src="/noboggamelogo.svg"
+          src="/nibog-logo-2026.jpg"
           alt="NIBOG Logo"
           fill
-          className="object-contain"
+          className="object-contain rounded-md"
           priority
         />
       </div>
