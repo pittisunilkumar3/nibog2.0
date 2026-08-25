@@ -2,11 +2,12 @@
 
 import { useState, useRef } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, MapPin, Baby, Download, ArrowLeft, Loader2, Gamepad2 } from "lucide-react"
+import { Download, ArrowLeft, Loader2 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { formatDateShort } from "@/lib/utils"
 import html2canvas from "html2canvas"
@@ -19,6 +20,11 @@ type TicketClientProps = {
 
 export default function TicketClient({ bookingData, bookingId }: TicketClientProps) {
   const [isDownloading, setIsDownloading] = useState(false)
+  // When rendered under /admin (staff view), "Back" returns to the admin
+  // booking detail instead of the customer dashboard.
+  const pathname = typeof window !== "undefined" ? window.location.pathname : ""
+  const isAdminView = pathname.startsWith("/admin")
+  const backHref = isAdminView ? `/admin/bookings/${bookingId}` : "/dashboard/bookings"
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const ticketRef = useRef<HTMLDivElement>(null)
 
@@ -71,18 +77,22 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
       // Remove the clone
       document.body.removeChild(clone)
 
-      // Create PDF
+      // Create PDF — landscape "brochure" orientation when the ticket is wide
+      const isLandscape = canvas.width > canvas.height
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: isLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
         format: 'a4'
       })
 
       const imgData = canvas.toDataURL('image/png', 1.0)
       const pdfWidth = pdf.internal.pageSize.getWidth()
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width
-
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight)
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      // Fit the whole ticket on one page, centred vertically
+      const scale = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height)
+      const imgW = canvas.width * scale
+      const imgH = canvas.height * scale
+      pdf.addImage(imgData, 'PNG', (pdfWidth - imgW) / 2, (pdfHeight - imgH) / 2, imgW, imgH)
 
       // Generate filename — use the numeric booking id for consistency with admin
       const bookingRef = bookingData.booking_id || bookingId
@@ -106,7 +116,7 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
           <h2 className="text-2xl font-bold">Booking Not Found</h2>
           <p className="text-muted-foreground">The booking you're looking for doesn't exist or has been removed.</p>
           <Button className="mt-4" asChild>
-            <Link href="/dashboard/bookings">Back to Bookings</Link>
+            <Link href={backHref}>Back to Bookings</Link>
           </Button>
         </div>
       </div>
@@ -170,7 +180,7 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
       {/* Header */}
       <div className="mb-6 flex items-center gap-2">
         <Button variant="outline" size="icon" asChild>
-          <Link href="/dashboard/bookings">
+          <Link href={backHref}>
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Back</span>
           </Link>
@@ -183,7 +193,7 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-4xl">
         {/* Error message */}
         {downloadError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -192,171 +202,130 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
         )}
         
         {/* Ticket Card */}
-        <div ref={ticketRef} className="bg-white p-4">
-          <Card className="overflow-hidden border-2 shadow-lg">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-4 text-center text-white">
-              <h2 className="text-2xl font-bold tracking-wide">🎫 NIBOG EVENT TICKET</h2>
-            </div>
-            
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
-              <div>
-                <CardTitle className="text-2xl">{eventTitle}</CardTitle>
-                <p className="text-muted-foreground text-sm mt-1">Booking ID: {bookingRef}</p>
+<div ref={ticketRef} className="bg-white p-3">
+          <Card className="overflow-hidden rounded-2xl border-2 shadow-[0_20px_60px_-30px_rgba(147,51,234,0.45)]">
+            {/* ── Top brand band ─────────────────────────────── */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 px-5 py-3.5 text-white sm:px-7">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎫</span>
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-[0.18em] sm:text-xl">NIBOG Event Ticket</h2>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/80">Official Entry Pass</p>
+                </div>
               </div>
               <div className="text-right">
-                <p className="font-medium">
-                  Status: <span className={status === 'Confirmed' ? 'text-green-600' : 'text-orange-500'}>{status}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Booked on {formatDate(bookingData.booking_created_at || bookingData.created_at)}
-                </p>
+                <span className={`inline-block rounded-full px-3 py-1 text-[11px] font-black ${status === 'Confirmed' ? 'bg-emerald-300 text-emerald-950' : 'bg-amber-300 text-amber-950'}`}>
+                  {status === 'Confirmed' ? '✓ CONFIRMED' : status.toUpperCase()}
+                </span>
+                <p className="mt-1 text-[10px] text-white/85">Booked {formatDate(bookingData.booking_created_at || bookingData.created_at)}</p>
               </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-6 p-6">
-              <div className="flex flex-col gap-6 sm:flex-row">
-                <div className="flex-1 space-y-4">
-                  {/* Event Details Grid */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-lg">
-                        📅
-                      </div>
+            </div>
+
+            {/* ── Body: 3 columns (stacks on mobile) ─────────── */}
+            <CardContent className="p-0">
+              <div className="grid grid-cols-1 md:grid-cols-[1.15fr_1.15fr_0.85fr]">
+                {/* Column 1 — EVENT */}
+                <div className="space-y-3 border-b border-slate-100 p-5 sm:p-6 md:border-b-0 md:border-r">
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.22em] text-purple-600">Event</h3>
+                  <p className="text-lg font-black leading-snug text-slate-950 sm:text-xl">{eventTitle}</p>
+                  <div className="space-y-2.5 pt-1 text-sm">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-100 text-sm">📅</span>
                       <div>
-                        <p className="text-xs text-muted-foreground">Date</p>
-                        <p className="font-medium">{formatDate(eventDate)}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Date</p>
+                        <p className="font-bold text-slate-800">{formatDate(eventDate)}</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-lg">
-                        🕐
-                      </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm">🕐</span>
                       <div>
-                        <p className="text-xs text-muted-foreground">Time</p>
-                        <p className="font-medium">
-                          {startTime && endTime
-                            ? `${formatTime(startTime)} - ${formatTime(endTime)}`
-                            : startTime ? formatTime(startTime) : 'Time TBD'}
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time</p>
+                        <p className="font-bold text-slate-800">
+                          {startTime && endTime ? `${formatTime(startTime)} – ${formatTime(endTime)}` : startTime ? formatTime(startTime) : 'Time TBD'}
                         </p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-lg">
-                        📍
-                      </div>
+                    <div className="flex items-start gap-2.5">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm">📍</span>
                       <div>
-                        <p className="text-xs text-muted-foreground">Venue</p>
-                        <p className="font-medium">{venueName}</p>
-                        {bookingData.venue_address && (
-                          <p className="text-xs text-muted-foreground">{bookingData.venue_address}</p>
-                        )}
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Venue</p>
+                        <p className="font-bold leading-tight text-slate-800">{venueName}</p>
+                        {bookingData.venue_address && <p className="text-xs text-slate-500">{bookingData.venue_address}</p>}
                         {bookingData.city_name && (
-                          <p className="text-xs text-muted-foreground">{bookingData.city_name}{bookingData.city_state ? `, ${bookingData.city_state}` : ''}</p>
+                          <p className="text-xs text-slate-500">{bookingData.city_name}{bookingData.city_state ? `, ${bookingData.city_state}` : ''}</p>
                         )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 text-lg">
-                        👶
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Child</p>
-                        <p className="font-medium">{childName}</p>
-                        {bookingData.child_date_of_birth && (
-                          <p className="text-xs text-muted-foreground">DOB: {formatDate(bookingData.child_date_of_birth)}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Games Section */}
-                  {bookingGames.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-lg">🎮</span>
-                        <h3 className="font-semibold">Games Booked ({bookingGames.length})</h3>
-                      </div>
-                      <div className="space-y-2">
-                        {bookingGames.map((game: any, index: number) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                            <div className="flex-1">
-                              <p className="font-medium">{game.game_name}</p>
-                              {game.slot_start_time && game.slot_end_time && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                  <Clock className="h-3 w-3" />
-                                  {formatTime(game.slot_start_time)} - {formatTime(game.slot_end_time)}
-                                </p>
-                              )}
-                            </div>
-                            <Badge variant="outline" className="ml-2 font-semibold">
-                              ₹{game.game_price || '0'}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {bookingGames.length === 0 && bookingData.all_games && bookingData.all_games.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold mb-2">Games Booked</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {bookingData.all_games.map((game: string, index: number) => (
-                          <Badge key={index} variant="secondary">
-                            {game}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Payment Summary */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
-                    <h3 className="font-semibold mb-2 text-green-800">💰 Payment Summary</h3>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-2xl font-bold text-green-700">₹{bookingData.total_amount || '0'}</p>
-                        <p className="text-xs text-muted-foreground">Amount Paid</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-green-600">
-                          {bookingData.payment_status || 'Paid'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          via {bookingData.payment_method || 'Online'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Important Note */}
-                  <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded-lg">
-                    <p className="font-medium mb-1">⚠️ Important:</p>
-                    <p>Please arrive 15 minutes before the event starts. Parents must stay with their children throughout the event. Bring this ticket (printed or digital) for entry.</p>
                   </div>
                 </div>
 
-                {/* QR Code Section */}
-                <div className="flex flex-col items-center justify-center">
-                  <div className="bg-white p-3 rounded-xl border-2 border-gray-200 shadow-sm">
+                {/* Column 2 — PARTICIPANT + GAMES + PAYMENT */}
+                <div className="space-y-3 border-b border-slate-100 p-5 sm:p-6 md:border-b-0 md:border-r">
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.22em] text-pink-600">Participant</h3>
+                  <p className="text-lg font-black leading-snug text-slate-950">{childName}</p>
+                  <p className="-mt-2 text-xs text-slate-500">
+                    👶 DOB: {formatDate(bookingData.child_date_of_birth || '')}{bookingData.child_school_name ? ` · ${bookingData.child_school_name.trim()}` : ''}
+                  </p>
+
+                  <Separator className="my-1" />
+
+                  <div className="space-y-1.5">
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.22em] text-purple-600">Games ({bookingGames.length})</h3>
+                    {bookingGames.map((game: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between gap-2 text-sm">
+                        <div className="min-w-0">
+                          <p className="truncate font-bold text-slate-800">🎮 {game.game_name}</p>
+                          {game.slot_start_time && game.slot_end_time && (
+                            <p className="text-[11px] text-slate-500">{formatTime(game.slot_start_time)} – {formatTime(game.slot_end_time)}</p>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="shrink-0 font-bold">₹{game.game_price || '0'}</Badge>
+                      </div>
+                    ))}
+                    {bookingGames.length === 0 && bookingData.all_games && bookingData.all_games.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {bookingData.all_games.map((game: string, index: number) => (
+                          <Badge key={index} variant="secondary" className="text-xs">{game}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator className="my-1" />
+
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Amount Paid</p>
+                      <p className="text-2xl font-black text-emerald-700">₹{bookingData.total_amount || '0'}</p>
+                    </div>
+                    <div className="text-right text-[11px]">
+                      <p className="font-black text-emerald-600">{bookingData.payment_status || 'Paid'}</p>
+                      <p className="text-slate-500">via {bookingData.payment_method || 'Online'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 3 — QR (perforated stub) */}
+                <div className="relative flex flex-col items-center justify-center gap-2 bg-slate-50/60 p-5 md:border-l-2 md:border-dashed md:border-slate-300">
+                  <div className="rounded-xl border-2 border-slate-200 bg-white p-2.5 shadow-sm">
                     <QRCodeSVG
                       value={qrCodeData}
-                      size={140}
+                      size={128}
                       level="H"
                       includeMargin={false}
                     />
                   </div>
-                  <p className="mt-3 text-center text-xs text-muted-foreground">Scan at venue for entry</p>
-                  <p className="text-center text-sm font-bold mt-1 text-purple-600">
-                    {bookingRef}
-                  </p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Scan at venue</p>
+                  <p className="text-xl font-black tracking-tight text-purple-700">{bookingRef}</p>
+                  <p className="-mt-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-400">Booking ID</p>
                 </div>
+              </div>
+
+              {/* ── Footer strip ─────────────────────────────── */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1 bg-gradient-to-r from-purple-600 to-pink-500 px-5 py-2.5 text-[11px] font-semibold text-white sm:px-7">
+                <span>⚠️ Arrive 15 minutes early</span>
+                <span className="hidden sm:inline">👨‍👩‍👧 Parents must stay with children</span>
+                <span>🎟️ Bring printed or digital ticket</span>
               </div>
             </CardContent>
           </Card>
@@ -365,7 +334,7 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
         {/* Action Buttons */}
         <div className="mt-6 flex flex-col sm:flex-row justify-between gap-3">
           <Button variant="outline" asChild className="w-full sm:w-auto">
-            <Link href="/dashboard/bookings">
+            <Link href={backHref}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Bookings
             </Link>
