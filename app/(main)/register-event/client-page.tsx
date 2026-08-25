@@ -2739,7 +2739,7 @@ export default function RegisterEventClientPage() {
                     </>
                   ) : (
                     <>
-                      🎯 {isAuthenticated ? "Continue to Add-ons" : "Continue (Login Required)"} 🎯
+                      🎯 {isAuthenticated ? "Continue to Payment" : "Continue (Login Required)"} 🎯
                       <ChevronRight className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform duration-200" />
                     </>
                   )}
@@ -2940,85 +2940,6 @@ export default function RegisterEventClientPage() {
                       <span>Games Subtotal:</span>
                       <span>{formatPrice(calculateGamesTotal())}</span>
                     </div>
-                    {selectedAddOns.length > 0 ? (
-                    <>
-                      {selectedAddOns.map((item) => {
-                        // Debug the add-on and variant information
-
-                        
-                        // Start with the base add-on price
-                        let price = parseFloat(String(item.addOn.price || '0'))
-                        let variantName = ""
-
-                        // Check if this is a variant with a different price
-                        if (item.variantId && item.addOn.hasVariants && item.addOn.variants) {
-                          const variant = item.addOn.variants.find(v => v.id === item.variantId)
-
-                          
-                          if (variant) {
-                            // For variants, we need to use the base price + price_modifier
-                            // If variant has a direct price, use that, otherwise use base price + modifier
-                            if (variant.price) {
-                              price = parseFloat(String(variant.price));
-                            } else if (variant.price_modifier) {
-                              // Add the price modifier to the base price
-                              const modifier = parseFloat(String(variant.price_modifier || 0));
-                              price = parseFloat(String(item.addOn.price)) + modifier;
-                            }
-                            
-
-                            variantName = ` - ${variant.name}`
-                          }
-                        }
-
-                        // Apply bundle discount if applicable
-                        let discountedPrice = price
-                        let hasDiscount = false
-
-                        if (item.addOn.bundleDiscount && 
-                            item.quantity >= item.addOn.bundleDiscount.minQuantity && 
-                            item.addOn.bundleDiscount.discountPercentage > 0) { // Only apply if discount > 0%
-                          hasDiscount = true
-                          const discountMultiplier = 1 - (item.addOn.bundleDiscount.discountPercentage / 100)
-                          discountedPrice = price * discountMultiplier
-                        }
-
-                        return (
-                          <div key={item.addOn.id} className="flex justify-between">
-                            <div>
-                              <span>{item.addOn.name}{variantName} {item.quantity > 1 ? `(${item.quantity})` : ""}</span>
-                              {hasDiscount && (
-                                <Badge className="ml-2 bg-green-500 hover:bg-green-600 text-xs">
-                                  {item.addOn.bundleDiscount?.discountPercentage}% OFF
-                                </Badge>
-                              )}
-                            </div>
-                            <div>
-                              {hasDiscount ? (
-                                <div className="flex flex-col items-end">
-                                  <span className="text-xs line-through text-muted-foreground">
-                                    {formatPrice(price * item.quantity)}
-                                  </span>
-                                  <span>{formatPrice(discountedPrice * item.quantity)}</span>
-                                </div>
-                              ) : (
-                                <span>{formatPrice(price * item.quantity)}</span>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                      <div className="flex justify-between font-medium">
-                        <span>Add-ons Subtotal:</span>
-                        <span>₹{calculateAddOnsTotal()}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Add-ons:</span>
-                      <span>None selected</span>
-                    </div>
-                  )}
                   {appliedPromoCode && (
                     <div className="flex justify-between text-green-600">
                       <span>Promocode Discount:</span>
