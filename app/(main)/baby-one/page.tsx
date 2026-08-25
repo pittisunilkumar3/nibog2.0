@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, MapPin, Medal, Trophy, Award, Star, Loader2 } from "lucide-react"
+import { Medal, Trophy, Award, Star, Loader2 } from "lucide-react"
 
 import { AnimatedBackground } from "@/components/animated-background"
 import AgeSelector from "@/components/age-selector"
@@ -330,10 +330,6 @@ export default function BabyOnePage() {
                           <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">
                             {game.description || "Fun and exciting baby game designed for skill development and physical growth"}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>Duration: {game.duration} minutes</span>
-                          </div>
                           {game.categories && game.categories.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {game.categories.slice(0, 3).map((category, index) => (
