@@ -64,9 +64,6 @@ export default function BabyOnePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // The 8 core NIBOG baby games shown on this page
-  const BABY_GAME_IDS = [8, 9, 10, 11, 13, 14, 15, 23]
-
   // Fetch games from API
   useEffect(() => {
     const fetchGames = async () => {
@@ -76,8 +73,8 @@ export default function BabyOnePage() {
 
         // Get all active games with images for Baby Games page
         const gamesData = await getAllActiveGamesWithImages()
-        // Show only the 8 core NIBOG baby games on this page
-        setGames(gamesData.filter((g) => BABY_GAME_IDS.includes(Number(g.id))))
+        // Show only the games marked "Show on Frontend" from the admin dashboard
+        setGames(gamesData.filter((g) => g.showOnFrontend === true))
 
       } catch (err: any) {
         console.error("Failed to fetch games:", err)

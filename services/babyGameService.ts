@@ -11,6 +11,7 @@ export interface BabyGame {
   categories: string[] | string;
   priority?: number;
   is_active: boolean | number;
+  show_on_frontend?: boolean | number;
   created_at?: string;
   updated_at?: string;
 }
@@ -27,6 +28,7 @@ export interface GameWithImage {
   imageUrl: string;
   imagePriority: number;
   isActive: boolean;
+  showOnFrontend?: boolean;
   createdAt: string;
   updatedAt: string;
 }

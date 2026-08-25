@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
         imageUrl: imageUrl,
         imagePriority: game.priority || 0,
         isActive: game.is_active === true || game.is_active === 1,
+        showOnFrontend: game.show_on_frontend === true || game.show_on_frontend === 1,
         createdAt: game.created_at,
         updatedAt: game.updated_at
       };

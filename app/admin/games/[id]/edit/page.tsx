@@ -39,6 +39,7 @@ export default function EditGameTemplate({ params }: Props) {
   const [maxAge, setMaxAge] = useState(300) // Set default max age to 300
   const [duration, setDuration] = useState(60)
   const [isActive, setIsActive] = useState(true)
+  const [showOnFrontend, setShowOnFrontend] = useState(false)
   const [newCategory, setNewCategory] = useState("")
   const [categories, setCategories] = useState<string[]>([])
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
@@ -79,6 +80,7 @@ export default function EditGameTemplate({ params }: Props) {
         setDuration(gameData.duration_minutes || 60)
         // Normalize is_active to boolean (API may return 0/1 or boolean)
         setIsActive(Boolean(gameData.is_active))
+        setShowOnFrontend(Boolean(gameData.show_on_frontend))
 
         // Normalize categories to string[] — handle array, JSON string, or comma-separated string
         {
@@ -263,6 +265,7 @@ export default function EditGameTemplate({ params }: Props) {
         duration_minutes: duration,
         categories: JSON.stringify(categories), // Send as JSON string for backend
         is_active: isActive ? 1 : 0,
+        show_on_frontend: showOnFrontend ? 1 : 0,
         image_url: finalImageUrl,
         priority: parseInt(imagePriority) || 1
       }
@@ -581,6 +584,14 @@ export default function EditGameTemplate({ params }: Props) {
             <div className="flex items-center space-x-2">
               <Switch id="active" checked={isActive} onCheckedChange={setIsActive} />
               <Label htmlFor="active">Active</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch id="showOnFrontend" checked={showOnFrontend} onCheckedChange={setShowOnFrontend} />
+              <div>
+                <Label htmlFor="showOnFrontend">Show on Frontend</Label>
+                <p className="text-xs text-muted-foreground">Display this game on the public NIBOG Games page (/baby-one)</p>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">

@@ -24,6 +24,7 @@ export default function NewGameTemplate() {
   const [maxAge, setMaxAge] = useState(300) // Support games up to 90 months
   const [duration, setDuration] = useState(60)
   const [isActive, setIsActive] = useState(true)
+  const [showOnFrontend, setShowOnFrontend] = useState(false)
   const [newCategory, setNewCategory] = useState("")
   const [categories, setCategories] = useState<string[]>([])
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
@@ -122,6 +123,7 @@ export default function NewGameTemplate() {
         duration_minutes: duration,
         categories: JSON.stringify(categories), // Send as JSON string for backend
         is_active: isActive ? 1 : 0,
+        show_on_frontend: showOnFrontend ? 1 : 0,
         image_url: finalImageUrl,
         priority: parseInt(imagePriority) || 1
       }
@@ -397,6 +399,14 @@ export default function NewGameTemplate() {
             <div className="flex items-center space-x-2">
               <Switch id="active" checked={isActive} onCheckedChange={setIsActive} />
               <Label htmlFor="active">Active</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch id="showOnFrontend" checked={showOnFrontend} onCheckedChange={setShowOnFrontend} />
+              <div>
+                <Label htmlFor="showOnFrontend">Show on Frontend</Label>
+                <p className="text-xs text-muted-foreground">Display this game on the public NIBOG Games page (/baby-one)</p>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
