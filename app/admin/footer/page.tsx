@@ -70,7 +70,7 @@ interface FooterContent {
 // Default footer content based on current footer
 const defaultFooterContent: FooterContent = {
   companyName: "NIBOG",
-  companyDescription: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
+  companyDescription: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 6-72 months.",
   socialMediaLinks: [
     { id: "1", platform: "Facebook", url: "https://www.facebook.com/share/1K8H6SPtR5/", enabled: true },
     { id: "2", platform: "Instagram", url: "https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr", enabled: true },

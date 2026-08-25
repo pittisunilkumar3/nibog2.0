@@ -64,6 +64,9 @@ export default function BabyOnePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // The 8 core NIBOG baby games shown on this page
+  const BABY_GAME_IDS = [8, 9, 10, 11, 13, 14, 15, 23]
+
   // Fetch games from API
   useEffect(() => {
     const fetchGames = async () => {
@@ -73,7 +76,8 @@ export default function BabyOnePage() {
 
         // Get all active games with images for Baby Games page
         const gamesData = await getAllActiveGamesWithImages()
-        setGames(gamesData)
+        // Show only the 8 core NIBOG baby games on this page
+        setGames(gamesData.filter((g) => BABY_GAME_IDS.includes(Number(g.id))))
 
       } catch (err: any) {
         console.error("Failed to fetch games:", err)
@@ -192,8 +196,8 @@ export default function BabyOnePage() {
                       <Trophy className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-neutral-charcoal dark:text-white">🎮 {games.length || 'Multiple'} Different Games</h3>
-                      <p className="text-neutral-charcoal/70 dark:text-white/70 leading-relaxed">From crawling races to running races, we have games for all ages from 5-84 months</p>
+                      <h3 className="text-xl font-bold text-neutral-charcoal dark:text-white">🎮 {games.length || 8} Different Games</h3>
+                      <p className="text-neutral-charcoal/70 dark:text-white/70 leading-relaxed">From crawling races to running races, we have games for all ages from 6-72 months</p>
                     </div>
                   </div>
 
@@ -265,7 +269,7 @@ export default function BabyOnePage() {
                   </span>
                 </h2>
                 <p className="mx-auto max-w-[700px] text-lg text-muted-foreground dark:text-white leading-relaxed">
-                  Explore all {games.length} exciting NIBOG games available across India. Each game is designed for specific age groups to ensure safe, fun, and developmental play.
+                  Explore all {games.length || 8} exciting NIBOG games available across India. Each game is designed for specific age groups to ensure safe, fun, and developmental play.
                 </p>
               </div>
 

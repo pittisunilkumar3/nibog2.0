@@ -265,7 +265,7 @@ export async function getFooterSettingWithFallback(): Promise<FooterSetting> {
     // Return fallback values if no settings found
     return {
       company_name: "NIBOG",
-      company_description: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
+      company_description: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 6-72 months.",
       address: "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony,\nR.K Puram, Hyderabad - 500056.",
       phone: "+91-8977939614/15",
       email: "Nibog100@gmail.com",
@@ -282,7 +282,7 @@ export async function getFooterSettingWithFallback(): Promise<FooterSetting> {
     // Return fallback values on error
     return {
       company_name: "NIBOG",
-      company_description: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
+      company_description: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 6-72 months.",
       address: "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony,\nR.K Puram, Hyderabad - 500056.",
       phone: "+91-8977939614/15",
       email: "Nibog100@gmail.com",
