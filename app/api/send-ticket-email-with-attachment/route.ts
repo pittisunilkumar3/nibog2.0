@@ -540,16 +540,16 @@ function validateAndExtractTicketData(ticketDetails?: any[], bookingRef?: string
     result.slotTiming = `${result.startTime} - ${result.endTime}`;
   }
 
-  // Use booking_id as security code (to match booking confirmation page)
-  if (ticket.booking_id) {
-    // Use the numeric booking_id as security code
-    result.securityCode = ticket.booking_id.toString();
+  // SECURITY CODE must match the TICKET NO / Booking ID so parents see ONE
+  // consistent reference everywhere (PDF, email, dashboard, ticket page).
+  if (bookingRef) {
+    result.securityCode = bookingRef;
+  } else if (ticket.booking_id) {
+    // Use the numeric booking_id (prefixed for consistency)
+    result.securityCode = `PPT${ticket.booking_id}`;
   } else if (ticket.security_code) {
     // Fall back to security code from ticket if no booking_id
     result.securityCode = ticket.security_code.toString().trim();
-  } else if (bookingRef) {
-    // Last resort: use booking reference
-    result.securityCode = bookingRef;
   }
 
   result.hasCompleteData = missingFields.length === 0;

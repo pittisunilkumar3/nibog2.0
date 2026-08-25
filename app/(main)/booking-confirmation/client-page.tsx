@@ -1,15 +1,44 @@
 "use client"
 
-import { AlertCircle, ArrowRight, CheckCircle } from "lucide-react"
+import { AlertCircle, ArrowRight, CheckCircle, Download, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Suspense, useEffect } from "react"
+import { Suspense, useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
 function BookingConfirmationContent() {
   const bookingRef = useSearchParams().get("ref")?.trim()
+
+  // Resolve the numeric booking id from the reference so we can deep-link
+  // straight to the ticket page right after payment.
+  const [bookingId, setBookingId] = useState<string | null>(null)
+  const [resolving, setResolving] = useState(true)
+
+  useEffect(() => {
+    if (!bookingRef) { setResolving(false); return }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/bookings/get-by-ref", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ booking_ref_id: bookingRef }),
+        })
+        if (res.ok) {
+          const json = await res.json()
+          const id = json?.data?.booking_id ?? json?.data?.id ?? json?.booking_id ?? json?.id
+          if (!cancelled && id) setBookingId(String(id))
+        }
+      } catch {
+        // Ticket stays reachable from the bookings page if this fails
+      } finally {
+        if (!cancelled) setResolving(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [bookingRef])
 
   useEffect(() => {
     if (!bookingRef) return
@@ -53,6 +82,18 @@ function BookingConfirmationContent() {
             <p className="mt-2 break-all font-mono text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{bookingRef}</p>
           </div>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            {bookingId ? (
+              <Button asChild className="h-12 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-6 font-black text-white hover:from-purple-700 hover:to-pink-600">
+                <Link href={`/dashboard/bookings/${bookingId}/ticket`}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Ticket
+                </Link>
+              </Button>
+            ) : (
+              <Button disabled={resolving} className="h-12 rounded-full px-6 font-black">
+                {resolving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading ticket…</> : "Ticket unavailable"}
+              </Button>
+            )}
             <Button asChild className="h-12 rounded-full bg-[#ef5f52] px-6 font-black text-white hover:bg-[#dc4e43]"><Link href="/dashboard/bookings">View my bookings <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
             <Button asChild variant="outline" className="h-12 rounded-full px-6 font-bold"><Link href="/">Return home</Link></Button>
           </div>
