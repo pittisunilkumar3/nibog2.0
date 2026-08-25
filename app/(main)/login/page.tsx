@@ -4,7 +4,6 @@
 import Link from "next/link"
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Image from "next/image"
 import { Eye, EyeOff, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card"
@@ -15,72 +14,6 @@ import { useAuth } from "@/contexts/auth-context"
 import { NibogLogo } from "@/components/nibog-logo"
 import { GoogleLogin } from '@react-oauth/google'
 import { Separator } from "@/components/ui/separator"
-
-
-// Image slideshow component
-function ImageSlideshow() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const images = [
-    '/images/about/children/children-2.jpg',
-    '/images/cycle-race.jpg',
-    '/images/running-race.jpg',
-    '/images/hurdle-toddle.jpg',
-  ];
-  
-  // Auto advance slides
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 4000); // Change slide every 4 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="relative w-full h-full overflow-hidden rounded-lg">
-      {images.map((image, index) => (
-        <div 
-          key={image}
-          className={`absolute inset-0 transition-opacity duration-1000 ${index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-        >
-          <Image 
-            src={image} 
-            alt={`NIBOG Games Activity ${index + 1}`}
-            fill
-            loading="lazy"
-            className="object-cover object-center"
-            sizes="(max-width: 768px) 0vw, 50vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent">
-            <div className="absolute bottom-8 left-8 right-8 text-white">
-              <h3 className="text-2xl font-bold mb-2 drop-shadow-md">
-                {index === 0 && "A joyful NIBOG event moment"}
-                {index === 1 && "Exciting Cycle Race"}
-                {index === 2 && "Fun Running Race"}
-                {index === 3 && "Hurdle Toddle Challenge"}
-              </h3>
-              <p className="text-sm md:text-base drop-shadow-md">
-                Join us for exciting kids' events at NIBOG Games!
-              </p>
-            </div>
-          </div>
-        </div>
-      ))}
-      
-      {/* Slide indicators */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
-        {images.map((_, index) => (
-          <button
-            key={index}
-            className={`w-2 h-2 rounded-full transition-all ${index === currentIndex ? 'bg-white w-6' : 'bg-white/50'}`}
-            onClick={() => setCurrentIndex(index)}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function LoginContent() {
   const router = useRouter()
@@ -368,19 +301,9 @@ function LoginContent() {
         <div className="animate-spin-slow absolute top-1/2 right-1/3 w-16 h-16 bg-green-200 dark:bg-green-400 rotate-45"></div>
       </div>
       
-      <div className="container relative z-10 mx-auto flex min-h-[calc(100svh-9rem)] max-w-6xl flex-col items-center justify-center md:flex-row">
-        {/* Left side with slideshow - visible only on md and up */}
-        <div className="hidden md:block md:w-1/2 relative h-full">
-          <div className="absolute inset-0 rounded-2xl overflow-hidden m-4 bg-gradient-to-br from-blue-300 via-purple-300 to-pink-300 dark:from-blue-700 dark:via-purple-700 dark:to-pink-700">
-            <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,190,255,0.6),rgba(255,182,193,0.6))] rounded-2xl"></div>
-            <div className="absolute inset-0 z-10">
-              <ImageSlideshow />
-            </div>
-          </div>
-        </div>
-        
-        {/* Right side with login card */}
-        <div className="w-full md:w-1/2 flex justify-center items-center py-8 md:py-0 md:px-8 md:h-full">
+      <div className="container relative z-10 mx-auto flex min-h-[calc(100svh-9rem)] max-w-6xl flex-col items-center justify-center">
+        {/* Login card - centered on the page */}
+        <div className="w-full max-w-md flex justify-center items-center py-8 md:py-0">
           <div className="w-full max-w-md rounded-3xl">
             <Card className="w-full overflow-hidden rounded-3xl border border-orange-100 bg-white/95 shadow-[0_24px_60px_-38px_rgba(55,34,20,.6)] dark:border-white/10 dark:bg-slate-900/95">
               <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500"></div>
