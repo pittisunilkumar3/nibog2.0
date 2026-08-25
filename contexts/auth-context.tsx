@@ -248,9 +248,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUser(null);
             }
           } else {
-            // Session exists but no user data, clear session
-            clearSession();
-            setUser(null);
+            // Session token exists but no user data — SELF-HEAL instead of logging out.
+            // Decode the JWT payload to restore a minimal user object (user_id, email).
+            // This fixes users ending up with a valid cookie but empty localStorage
+            // (e.g. after returning from PhonePe payment) who would otherwise see a
+            // blank dashboard / ticket page or get stuck in a login redirect loop.
+            try {
+              const parts = token.split('.');
+              if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                if (payload && (payload.user_id || payload.id)) {
+                  const restoredUser = {
+                    user_id: payload.user_id || payload.id,
+                    email: payload.email || '',
+                    full_name: payload.full_name || payload.name || (payload.email ? payload.email.split('@')[0] : 'User'),
+                    email_verified: true,
+                    ...(payload.role ? { role: payload.role } : {})
+                  };
+                  localStorage.setItem('nibog-user', JSON.stringify(restoredUser));
+                  setUser(restoredUser);
+                } else {
+                  clearSession();
+                  setUser(null);
+                }
+              } else {
+                clearSession();
+                setUser(null);
+              }
+            } catch (e) {
+              console.error('[AuthContext] Failed to restore user from token:', e);
+              clearSession();
+              setUser(null);
+            }
           }
         } else {
           setUser(null);

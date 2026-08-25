@@ -54,7 +54,30 @@ export async function getSession(): Promise<string | null> {
 export const isClientAuthenticated = (): boolean => {
   if (typeof window === 'undefined') return false;
   try {
-    return !!localStorage.getItem(SESSION_COOKIE_NAME);
+    // 1. Primary: session token in localStorage
+    if (localStorage.getItem(SESSION_COOKIE_NAME)) return true;
+
+    // 2. Fallback: valid (non-expired) nibog-session cookie.
+    //    Prevents a redirect loop where ProtectedRoute bounces the user to
+    //    /login while the middleware (which reads the cookie) bounces them
+    //    straight back — leaving a blank page (e.g. after payment).
+    try {
+      const cookies = document.cookie.split('; ');
+      const sessionCookie = cookies.find(row => row.startsWith(`${SESSION_COOKIE_NAME}=`));
+      if (sessionCookie) {
+        const token = sessionCookie.split('=').slice(1).join('=');
+        if (token && !isTokenExpired(token)) {
+          // Self-heal: restore localStorage from the cookie so the rest of
+          // the app (which reads localStorage) works normally again.
+          localStorage.setItem(SESSION_COOKIE_NAME, token);
+          return true;
+        }
+      }
+    } catch (cookieError) {
+      // Ignore cookie parsing issues
+    }
+
+    return false;
   } catch (error) {
     console.error('Error accessing localStorage:', error);
     return false;
