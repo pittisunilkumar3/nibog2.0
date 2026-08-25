@@ -34,7 +34,7 @@ const fallbackGames: GameCard[] = [
     description: 'A cheerful first race for babies finding their rhythm.',
     age: 'For early movers',
     image: '/images/baby-crawling.jpg',
-    href: '/baby-olympics',
+    href: '/baby-one',
     isExample: true,
   },
   {
@@ -43,7 +43,7 @@ const fallbackGames: GameCard[] = [
     description: 'Supported movement, happy cheering and lots of little wins.',
     age: 'For growing walkers',
     image: '/images/baby-walker.jpg',
-    href: '/baby-olympics',
+    href: '/baby-one',
     isExample: true,
   },
   {
@@ -52,7 +52,7 @@ const fallbackGames: GameCard[] = [
     description: 'Short, exciting tracks for confident little runners.',
     age: 'For active explorers',
     image: '/images/running-race.jpg',
-    href: '/baby-olympics',
+    href: '/baby-one',
     isExample: true,
   },
 ]
@@ -191,7 +191,7 @@ export default function HomepageGamesSection() {
 
         <div className="mt-6 text-center">
           <Button asChild variant="outline" size="lg" className="h-12 rounded-full border-emerald-200 bg-white px-7 font-black text-emerald-800 hover:bg-emerald-50 dark:border-emerald-400/20 dark:bg-white/5 dark:text-emerald-200 dark:hover:bg-white/10">
-            <Link href="/baby-olympics">See all NIBOG games <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></Link>
+            <Link href="/baby-one">See all NIBOG games <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></Link>
           </Button>
         </div>
       </div>

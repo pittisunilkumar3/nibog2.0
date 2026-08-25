@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet"
 const routes = [
   { href: "/", label: "Home" },
   { href: "/events", label: "Events" },
-  { href: "/baby-olympics", label: "NIBOG Games" },
+  { href: "/baby-one", label: "NIBOG Games" },
   { href: "/register-event", label: "Register Event" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },

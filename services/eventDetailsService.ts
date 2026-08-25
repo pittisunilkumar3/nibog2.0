@@ -192,7 +192,7 @@ export function transformEventDetailsToListItems(eventDetails: EventDetailsWithI
       image: imageUrl || '/images/baby-crawling.jpg', // Fallback image
       spotsLeft: totalSpots, // We don't have actual spots left, so use total
       totalSpots: totalSpots,
-      isOlympics: true, // Assume all events are Olympics events
+      isOlympics: true, // All events are NIBOG games events
     };
   });
 }

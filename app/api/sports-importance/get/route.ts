@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       // Return default data if API fails
       const defaultData = {
         title: "WHY SPORTS ARE IMPORTANT TO CHILDREN",
-        description: "The Child Olympic Games are a wonderful opportunity to get kids excited about sport, national pride and counting medals",
+        description: "The NIBOG games are a wonderful opportunity to get kids excited about sport, national pride and counting medals",
         items: [
           {
             id: "1",
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     // Return default data on error
     const defaultData = {
       title: "WHY SPORTS ARE IMPORTANT TO CHILDREN",
-      description: "The Child Olympic Games are a wonderful opportunity to get kids excited about sport, national pride and counting medals",
+      description: "The NIBOG games are a wonderful opportunity to get kids excited about sport, national pride and counting medals",
       items: [
         {
           id: "1",

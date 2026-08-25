@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             '/about',
             '/contact',
             '/events',
-            '/baby-olympics',
+            '/baby-one',
             '/faq',
             '/privacy',
             '/terms',

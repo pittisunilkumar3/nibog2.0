@@ -70,7 +70,7 @@ interface FooterContent {
 // Default footer content based on current footer
 const defaultFooterContent: FooterContent = {
   companyName: "NIBOG",
-  companyDescription: "India's biggest baby Olympic games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
+  companyDescription: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
   socialMediaLinks: [
     { id: "1", platform: "Facebook", url: "https://www.facebook.com/share/1K8H6SPtR5/", enabled: true },
     { id: "2", platform: "Instagram", url: "https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr", enabled: true },
@@ -79,9 +79,9 @@ const defaultFooterContent: FooterContent = {
   ],
   quickLinks: [
     { id: "1", label: "All Events", url: "/events", enabled: true },
-    { id: "2", label: "NIBOG Games", url: "/baby-olympics", enabled: true },
-    { id: "3", label: "Baby Crawling", url: "/baby-olympics", enabled: true },
-    { id: "4", label: "Running Race", url: "/baby-olympics", enabled: true },
+    { id: "2", label: "NIBOG Games", url: "/baby-one", enabled: true },
+    { id: "3", label: "Baby Crawling", url: "/baby-one", enabled: true },
+    { id: "4", label: "Running Race", url: "/baby-one", enabled: true },
     { id: "5", label: "About Us", url: "/about", enabled: true },
     { id: "6", label: "Contact", url: "/contact", enabled: true },
   ],
@@ -96,7 +96,7 @@ const defaultFooterContent: FooterContent = {
     email: "Nibog100@gmail.com"
   },
   newsletterEnabled: true,
-  copyrightText: "© {year} NIBOG. All rights reserved. India's Biggest Baby Olympic Games Platform."
+  copyrightText: "© {year} NIBOG. All rights reserved. India's Biggest Baby Games Platform."
 }
 
 export default function FooterManagement() {

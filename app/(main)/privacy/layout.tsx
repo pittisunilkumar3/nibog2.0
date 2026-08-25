@@ -1,7 +1,7 @@
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | NIBOG - New India Baby Olympic Games",
+  title: "Privacy Policy | NIBOG",
   description: "Learn how NIBOG collects, uses, and protects your personal information.",
 }
 

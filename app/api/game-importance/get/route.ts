@@ -36,31 +36,31 @@ export async function GET(request: Request) {
             id: "1",
             name: "Cognitive Development",
             description: "Games enhance problem-solving skills, memory, and critical thinking abilities through engaging challenges and puzzles that stimulate brain development.",
-            icon: "/images/baby-olympics/baby-crawling.jpg"
+            icon: "/images/baby-one/baby-crawling.jpg"
           },
           {
             id: "2",
             name: "Social Skills",
             description: "Playing games with others teaches cooperation, communication, sharing, and how to handle winning and losing gracefully in group settings.",
-            icon: "/images/baby-olympics/ring-holding.jpg"
+            icon: "/images/baby-one/ring-holding.jpg"
           },
           {
             id: "3",
             name: "Physical Development",
             description: "Active games improve hand-eye coordination, fine motor skills, balance, and overall physical fitness in growing children.",
-            icon: "/images/baby-olympics/running-race.jpg"
+            icon: "/images/baby-one/running-race.jpg"
           },
           {
             id: "4",
             name: "Creativity & Imagination",
             description: "Games encourage creative thinking, storytelling, and imaginative play that helps children express themselves and explore new ideas.",
-            icon: "/images/baby-olympics/hurdle-toddle.jpg"
+            icon: "/images/baby-one/hurdle-toddle.jpg"
           },
           {
             id: "5",
             name: "Emotional Intelligence",
             description: "Games help children understand and manage emotions, develop empathy, build confidence, and learn emotional resilience.",
-            icon: "/images/baby-olympics/cycle-race.jpg"
+            icon: "/images/baby-one/cycle-race.jpg"
           },
           {
             id: "6",
@@ -89,31 +89,31 @@ export async function GET(request: Request) {
           id: "1",
           name: "Cognitive Development",
           description: "Games enhance problem-solving skills, memory, and critical thinking abilities through engaging challenges and puzzles that stimulate brain development.",
-          icon: "/images/baby-olympics/baby-crawling.jpg"
+          icon: "/images/baby-one/baby-crawling.jpg"
         },
         {
           id: "2",
           name: "Social Skills",
           description: "Playing games with others teaches cooperation, communication, sharing, and how to handle winning and losing gracefully in group settings.",
-          icon: "/images/baby-olympics/ring-holding.jpg"
+          icon: "/images/baby-one/ring-holding.jpg"
         },
         {
           id: "3",
           name: "Physical Development",
           description: "Active games improve hand-eye coordination, fine motor skills, balance, and overall physical fitness in growing children.",
-          icon: "/images/baby-olympics/running-race.jpg"
+          icon: "/images/baby-one/running-race.jpg"
         },
         {
           id: "4",
           name: "Creativity & Imagination",
           description: "Games encourage creative thinking, storytelling, and imaginative play that helps children express themselves and explore new ideas.",
-          icon: "/images/baby-olympics/hurdle-toddle.jpg"
+          icon: "/images/baby-one/hurdle-toddle.jpg"
         },
         {
           id: "5",
           name: "Emotional Intelligence",
           description: "Games help children understand and manage emotions, develop empathy, build confidence, and learn emotional resilience.",
-          icon: "/images/baby-olympics/cycle-race.jpg"
+          icon: "/images/baby-one/cycle-race.jpg"
         },
         {
           id: "6",

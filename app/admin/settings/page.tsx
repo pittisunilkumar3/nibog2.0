@@ -20,7 +20,7 @@ export default function SettingsPage() {
   const { toast } = useToast()
 
   // General settings
-  const [siteName, setSiteName] = useState("NIBOG - New India Baby Olympics Games")
+  const [siteName, setSiteName] = useState("NIBOG")
   const [siteTagline, setSiteTagline] = useState("India's Biggest Baby Games")
   const [contactEmail, setContactEmail] = useState("Nibog100@gmail.com")
   const [contactPhone, setContactPhone] = useState("+91-8977939614/15")
@@ -145,7 +145,7 @@ export default function SettingsPage() {
       }
     } else {
       // Reset to default values if no settings exist
-      setSiteName("NIBOG - New India Baby Olympics Games")
+      setSiteName("NIBOG")
       setSiteTagline("India's Biggest Baby Games")
       setContactEmail("Nibog100@gmail.com")
       setContactPhone("+91-8977939614/15")

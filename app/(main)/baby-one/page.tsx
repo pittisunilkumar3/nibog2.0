@@ -59,7 +59,7 @@ const getImageUrl = (imageUrl: string): string => {
   return imageUrl || '';
 };
 
-export default function BabyOlympicsPage() {
+export default function BabyOnePage() {
   const [games, setGames] = useState<GameWithImage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -71,7 +71,7 @@ export default function BabyOlympicsPage() {
         setIsLoading(true)
         setError(null)
 
-        // Get all active games with images for Baby Olympics page
+        // Get all active games with images for Baby Games page
         const gamesData = await getAllActiveGamesWithImages()
         setGames(gamesData)
 
@@ -87,13 +87,13 @@ export default function BabyOlympicsPage() {
   }, [])
 
   return (
-    <AnimatedBackground variant="olympics">
+    <AnimatedBackground variant="games">
       <div className="flex flex-col gap-12 pb-8">
         {/* Hero Section */}
         <section className="relative">
           <div className="absolute inset-0 z-0">
             <Image
-              src="/images/baby-olympics/hero-bg.jpg"
+              src="/images/baby-one/hero-bg.jpg"
               alt="NIBOG background"
               fill
               sizes="100vw"
@@ -183,7 +183,7 @@ export default function BabyOlympicsPage() {
                     </span>
                   </h2>
                   <p className="text-lg text-neutral-charcoal/70 dark:text-white/70 leading-relaxed">
-                    NIBOG (New India Baby Olympics Games) creates age-appropriate activities that encourage movement, confidence and social interaction in a cheerful environment for babies and young children.
+                    NIBOG creates age-appropriate activities that encourage movement, confidence and social interaction in a cheerful environment for babies and young children.
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -231,8 +231,8 @@ export default function BabyOlympicsPage() {
               <div className="flex items-center justify-center">
                 <div className="relative h-96 w-full overflow-hidden rounded-3xl shadow-2xl border-4 border-white/50 group">
                   <Image
-                    src="/images/baby-olympics/about-image.jpg"
-                    alt="NIBOG Baby Olympics"
+                    src="/images/baby-one/about-image.jpg"
+                    alt="NIBOG Baby Games"
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover object-[10%_30%] transition-transform group-hover:scale-110 duration-500"

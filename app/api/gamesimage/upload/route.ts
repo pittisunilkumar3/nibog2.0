@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     try {
       revalidatePath('/admin/events', 'layout');
       revalidatePath('/events', 'layout');
-      revalidatePath('/baby-olympics', 'layout');
+      revalidatePath('/baby-one', 'layout');
     } catch (revalidateError) {
       console.warn('Cache revalidation warning:', revalidateError);
     }

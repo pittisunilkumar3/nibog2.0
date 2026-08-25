@@ -1,7 +1,7 @@
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions | NIBOG - New India Baby Olympic Games",
+  title: "Terms & Conditions | NIBOG",
   description: "Read the terms and conditions for participating in NIBOG events and using our platform.",
 }
 

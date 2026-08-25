@@ -33,7 +33,7 @@ const fallbackSettings: Required<Pick<FooterSettings, "company_name" | "company_
 
 const exploreLinks = [
   ["Upcoming events", "/events"],
-  ["NIBOG games", "/baby-olympics"],
+  ["NIBOG games", "/baby-one"],
   ["Register your child", "/register-event"],
   ["About NIBOG", "/about"],
   ["Contact us", "/contact"],

@@ -84,7 +84,7 @@ export const pageBackgrounds = {
       { icon: '📫', size: 'text-2xl', position: 'bottom-1/6 left-1/4' },
     ],
   },
-  olympics: {
+  games: {
     gradient: 'bg-gradient-to-br from-yellow-100 via-amber-100 to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900',
     elements: [
       // Top corners

@@ -33,7 +33,7 @@ interface PrivacyPolicyContent {
 const mockPrivacyPolicyContent: PrivacyPolicyContent = {
   websiteContent: `
     <h2>1. Introduction</h2>
-    <p>NIBOG (New India Baby Olympic Games) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or participate in our events.</p>
+    <p>NIBOG is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or participate in our events.</p>
     <p>Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site or register for our events.</p>
     
     <h2>2. Information We Collect</h2>

@@ -21,7 +21,7 @@ const testimonials = [
     city: "Bangalore",
     rating: 5,
     comment:
-      "New India Baby Olympic games has been a great experience for my kids. They love competing with other kids and showing off their skills, and it's been great for their hand-eye coordination and fine motor skills. I love that they're learning important life skills like teamwork and sportsmanship while they're having fun.",
+      "NIBOG games has been a great experience for my kids. They love competing with other kids and showing off their skills, and it's been great for their hand-eye coordination and fine motor skills. I love that they're learning important life skills like teamwork and sportsmanship while they're having fun.",
     eventName: "Baby Walker",
   },
   {

@@ -150,7 +150,7 @@ const fetcher = async (url: string) => {
           '/about',
           '/contact',
           '/events',
-          '/baby-olympics',
+          '/baby-one',
           '/faq',
           '/privacy',
           '/terms',
@@ -261,7 +261,7 @@ function transformEventsData(apiEvents: any[]): EventListItem[] {
       image,
       spotsLeft: 0, // Not displayed but kept for compatibility
       totalSpots: 0, // Not displayed but kept for compatibility
-      isOlympics: true, // Default to Olympics event
+      isOlympics: true, // Default to NIBOG games event
     };
   });
 }
@@ -390,7 +390,7 @@ export function useUserBookings(userId: number | null) {
               '/about',
               '/contact',
               '/events',
-              '/baby-olympics',
+              '/baby-one',
               '/faq',
               '/privacy',
               '/terms',

@@ -59,7 +59,7 @@ export default function FooterSettingsPage() {
         // Set default values if no settings exist
         setFormData({
           company_name: "Nibog Pvt Ltd",
-          company_description: "Nibog is a premium organizer of children's events like baby olympics, games, and fun educational activities.",
+          company_description: "Nibog is a premium organizer of children's events like baby games, games, and fun educational activities.",
           address: "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony, R.K Puram, Hyderabad - 500056.",
           phone: "+91-9876543210",
           email: "support@nibog.com",

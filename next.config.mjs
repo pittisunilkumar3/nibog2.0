@@ -40,6 +40,14 @@ const nextConfig = {
       ],
     },
   },
+  // Redirect old /baby-olympics URLs to /baby-one (branding update)
+  async redirects() {
+    return [
+      { source: '/baby-olympics', destination: '/baby-one', permanent: true },
+      { source: '/baby-olympics/:path*', destination: '/baby-one/:path*', permanent: true },
+      { source: '/images/baby-olympics/:path*', destination: '/images/baby-one/:path*', permanent: true },
+    ];
+  },
   // Add static file serving for upload directory
   async rewrites() {
     return [

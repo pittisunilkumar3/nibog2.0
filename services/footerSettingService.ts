@@ -265,12 +265,12 @@ export async function getFooterSettingWithFallback(): Promise<FooterSetting> {
     // Return fallback values if no settings found
     return {
       company_name: "NIBOG",
-      company_description: "India's biggest baby Olympic games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
+      company_description: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
       address: "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony,\nR.K Puram, Hyderabad - 500056.",
       phone: "+91-8977939614/15",
       email: "Nibog100@gmail.com",
       newsletter_enabled: true,
-      copyright_text: "© {year} NIBOG. All rights reserved. India's Biggest Baby Olympic Games Platform.",
+      copyright_text: "© {year} NIBOG. All rights reserved. India's Biggest Baby Games Platform.",
       facebook_url: "https://www.facebook.com/share/1K8H6SPtR5/",
       instagram_url: "https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr",
       linkedin_url: "https://www.linkedin.com/in/new-india-baby-olympicgames?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app",
@@ -284,12 +284,12 @@ export async function getFooterSettingWithFallback(): Promise<FooterSetting> {
     // Return fallback values on error
     return {
       company_name: "NIBOG",
-      company_description: "India's biggest baby Olympic games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
+      company_description: "India's biggest baby games platform, executing in 21 cities across India. NIBOG is focused exclusively on conducting baby games for children aged 5-84 months.",
       address: "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony,\nR.K Puram, Hyderabad - 500056.",
       phone: "+91-8977939614/15",
       email: "Nibog100@gmail.com",
       newsletter_enabled: true,
-      copyright_text: "© {year} NIBOG. All rights reserved. India's Biggest Baby Olympic Games Platform.",
+      copyright_text: "© {year} NIBOG. All rights reserved. India's Biggest Baby Games Platform.",
       facebook_url: "https://www.facebook.com/share/1K8H6SPtR5/",
       instagram_url: "https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr",
       linkedin_url: "https://www.linkedin.com/in/new-india-baby-olympicgames?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app",

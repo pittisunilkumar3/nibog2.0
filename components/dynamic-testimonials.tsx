@@ -15,7 +15,7 @@ export function DynamicTestimonialsSection() {
       src: testimonial.image || '/images/baby-crawling.jpg',
       event: testimonial.eventId
         ? `NIBOG Event #${testimonial.eventId}`
-        : 'NIBOG Baby Olympics',
+        : 'NIBOG Baby Games',
     }));
   }, [testimonials]);
 

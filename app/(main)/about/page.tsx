@@ -32,7 +32,7 @@ const AboutTestimonialsSection = dynamic(
 )
 
 export const metadata: Metadata = {
-  title: "About NIBOG | New India Baby Olympic Games",
+  title: "About NIBOG",
   description: "Learn how NIBOG creates joyful, age-matched baby games and proud family moments.",
 }
 

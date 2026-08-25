@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         <div class="container">
           <div class="header">
             <h1>🎯 New Contact Form Submission</h1>
-            <p style="color: white; margin: 10px 0 0 0;">NIBOG - New India Baby Olympic Games</p>
+            <p style="color: white; margin: 10px 0 0 0;">NIBOG</p>
           </div>
           <div class="content">
             <div class="field">

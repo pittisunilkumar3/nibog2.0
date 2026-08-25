@@ -477,7 +477,7 @@ export default function ContactPage() {
               Ready to Join the NIBOG Family?
             </h2>
             <p className="mt-4 text-base sm:text-lg md:text-xl text-purple-100">
-              Register your child for our upcoming events and be part of India's biggest baby Olympic games
+              Register your child for our upcoming events and be part of India's biggest baby games
             </p>
             <div className="mt-6 sm:mt-8 flex flex-col justify-center gap-3 sm:gap-4 sm:flex-row">
               <Button

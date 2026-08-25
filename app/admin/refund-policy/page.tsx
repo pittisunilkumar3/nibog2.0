@@ -32,7 +32,7 @@ interface RefundPolicyContent {
 const mockRefundPolicyContent: RefundPolicyContent = {
   websiteContent: `
     <h2>1. Refund Policy Overview</h2>
-    <p>At NIBOG (New India Baby Olympic Games), we strive to provide the best experience for all participants.</p>
+    <p>At NIBOG, we strive to provide the best experience for all participants.</p>
   `,
   mobileAppContent: `
     <h2>Mobile App Refund Policy</h2>

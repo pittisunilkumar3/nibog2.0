@@ -78,7 +78,7 @@ export default function EventFilters() {
     { id: "ball", label: "Ball Throw" },
     { id: "balance", label: "Balancing Beam" },
     { id: "jump", label: "Frog Jump" },
-    { id: "olympics", label: "NIBOG Olympics" },
+    { id: "games", label: "NIBOG Games" },
   ]
 
   const venueOptions = [

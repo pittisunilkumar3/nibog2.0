@@ -51,13 +51,13 @@ const fallbackGameTemplates = [
   },
   {
     id: "3",
-    name: "Baby Olympics",
+    name: "Baby Games",
     description: "Exciting mini-games and activities designed for babies to have fun and develop motor skills.",
     minAgeMonths: 8,
     maxAgeMonths: 24,
     durationMinutes: 120,
     suggestedPrice: 1799,
-    categories: ["olympics", "motor-skills"]
+    categories: ["games", "motor-skills"]
   },
 ]
 

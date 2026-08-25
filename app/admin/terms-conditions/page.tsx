@@ -30,7 +30,7 @@ interface TermsConditionsContent {
 const mockTermsContent: TermsConditionsContent = {
   websiteContent: `
     <h2>1. Acceptance of Terms</h2>
-    <p>By accessing and using the NIBOG (New India Baby Olympic Games) website and services, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, please do not use our services.</p>
+    <p>By accessing and using the NIBOG website and services, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, please do not use our services.</p>
 
     <h2>2. Registration and Participation</h2>
     <p>2.1. All participants must be registered by their parent or legal guardian.</p>
