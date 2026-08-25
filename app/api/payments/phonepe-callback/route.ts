@@ -94,7 +94,7 @@ function generateBookingConfirmationHTML(emailData: any): string {
 
     <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
       <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
-        If you have any questions, please contact us at newindiababyolympics@gmail.com
+        If you have any questions, please contact us at Nibog100@gmail.com
       </p>
       <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">
         Thank you for choosing NIBOG! 🎮

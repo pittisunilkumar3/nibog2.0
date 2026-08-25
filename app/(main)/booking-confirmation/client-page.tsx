@@ -56,7 +56,7 @@ function BookingConfirmationContent() {
             <Button asChild className="h-12 rounded-full bg-[#ef5f52] px-6 font-black text-white hover:bg-[#dc4e43]"><Link href="/dashboard/bookings">View my bookings <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
             <Button asChild variant="outline" className="h-12 rounded-full px-6 font-bold"><Link href="/">Return home</Link></Button>
           </div>
-          <p className="mt-6 text-sm text-slate-500">Need help? <a href="mailto:newindiababyolympics@gmail.com" className="font-bold text-emerald-700 underline">Email NIBOG support</a>.</p>
+          <p className="mt-6 text-sm text-slate-500">Need help? <a href="mailto:Nibog100@gmail.com" className="font-bold text-emerald-700 underline">Email NIBOG support</a>.</p>
         </CardContent>
       </Card>
     </div>

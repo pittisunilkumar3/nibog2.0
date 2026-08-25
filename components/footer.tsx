@@ -27,7 +27,7 @@ const fallbackSettings: Required<Pick<FooterSettings, "company_name" | "company_
   company_description: "Joyful, age-matched baby games that give children a proud first finish and families a memory to keep.",
   address: "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony, R.K Puram, Hyderabad - 500056.",
   phone: "+91-8977939614/15",
-  email: "newindiababyolympics@gmail.com",
+  email: "Nibog100@gmail.com",
   copyright_text: "© {year} NIBOG. All rights reserved.",
 }
 

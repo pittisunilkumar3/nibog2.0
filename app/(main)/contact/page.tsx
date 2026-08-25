@@ -209,7 +209,7 @@ export default function ContactPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg sm:text-xl font-bold text-neutral-charcoal dark:text-white">📧 Email</h3>
-                      <a href="mailto:newindiababyolympics@gmail.com" className="flex min-h-11 items-center break-all text-base font-semibold text-coral-700 underline-offset-4 hover:underline sm:text-lg">newindiababyolympics@gmail.com</a>
+                      <a href="mailto:Nibog100@gmail.com" className="flex min-h-11 items-center break-all text-base font-semibold text-coral-700 underline-offset-4 hover:underline sm:text-lg">Nibog100@gmail.com</a>
                       <p className="text-neutral-charcoal/70 dark:text-white/70 text-xs sm:text-sm mt-1">Send us your queries anytime</p>
                     </div>
                   </div>

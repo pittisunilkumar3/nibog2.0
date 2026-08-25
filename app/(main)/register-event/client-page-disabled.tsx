@@ -79,8 +79,8 @@ export default function RegisterEventClientPage() {
             </div>
             <div className="text-neutral-charcoal/70 dark:text-white/70 font-semibold">
               🏆 Need help? Contact us at{" "}
-              <Link href="mailto:newindiababyolympics@gmail.com" className="text-skyblue-600 font-bold underline-offset-4 hover:underline transition-colors hover:text-coral-600">
-                newindiababyolympics@gmail.com
+              <Link href="mailto:Nibog100@gmail.com" className="text-skyblue-600 font-bold underline-offset-4 hover:underline transition-colors hover:text-coral-600">
+                Nibog100@gmail.com
               </Link>
               {" "}🏆
             </div>

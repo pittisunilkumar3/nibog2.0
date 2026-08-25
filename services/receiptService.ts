@@ -231,7 +231,7 @@ export function generateReceiptHTML(payment: Payment): string {
 
       <div class="footer">
         <p>Thank you for choosing NIBOG!</p>
-        <p>For any queries, please contact us at newindiababyolympics@gmail.com</p>
+        <p>For any queries, please contact us at Nibog100@gmail.com</p>
         <p>This is a computer-generated receipt and does not require a signature.</p>
       </div>
     </body>

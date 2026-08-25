@@ -104,7 +104,7 @@ function generatePaymentLinkHTML(data: PaymentLinkEmailData): string {
           <p><strong>Need Help?</strong></p>
           <ul>
             <li>If you face any payment issues, please try again after a few minutes</li>
-            <li>For support, contact us at newindiababyolympics@gmail.com</li>
+            <li>For support, contact us at Nibog100@gmail.com</li>
             <li>Keep this email for your records</li>
           </ul>
 

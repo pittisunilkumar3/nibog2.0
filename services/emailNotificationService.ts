@@ -277,7 +277,7 @@ function generateBookingConfirmationHTML(confirmationData: BookingConfirmationDa
 
           <div class="footer">
             <p>Thank you for choosing NIBOG!</p>
-            <p>For any queries, please contact us at newindiababyolympics@gmail.com</p>
+            <p>For any queries, please contact us at Nibog100@gmail.com</p>
             <p><small>This is an automated email. Please do not reply to this email.</small></p>
           </div>
         </div>
@@ -321,7 +321,7 @@ export async function sendBookingConfirmationFromServer(
         subject: `🎉 Booking Confirmed - ${confirmationData.eventTitle} | NIBOG`,
         html: htmlContent,
         settings: emailSettings,
-        cc: 'newindiababyolympics@gmail.com'
+        cc: 'Nibog100@gmail.com'
       }),
     });
 
@@ -383,7 +383,7 @@ export async function sendBookingConfirmationFromClient(
         subject: `🎉 Booking Confirmed - ${confirmationData.eventTitle} | NIBOG`,
         html: htmlContent,
         settings: emailSettings,
-        cc: 'newindiababyolympics@gmail.com'
+        cc: 'Nibog100@gmail.com'
       }),
     });
 
@@ -439,7 +439,7 @@ export async function sendAdminNotificationEmail(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        to: 'newindiababyolympics@gmail.com',
+        to: 'Nibog100@gmail.com',
         subject: `🚨 New Booking Alert - ${confirmationData.eventTitle} | Booking #${confirmationData.bookingId}`,
         html: htmlContent,
         settings: emailSettings
@@ -515,7 +515,7 @@ function generatePaymentFailureHTML(parentName: string, transactionId: string, r
           <p>If the amount was deducted from your account, please contact our support team immediately with the transaction ID above.</p>
 
           <div class="footer">
-            <p>Need help? Contact us at newindiababyolympics@gmail.com</p>
+            <p>Need help? Contact us at Nibog100@gmail.com</p>
             <p><small>This is an automated email. Please do not reply to this email.</small></p>
           </div>
         </div>
@@ -630,7 +630,7 @@ export async function sendBookingReminder(
         subject: subject,
         html: htmlContent,
         settings: emailSettings,
-        cc: 'newindiababyolympics@gmail.com'
+        cc: 'Nibog100@gmail.com'
       }),
     });
 
@@ -704,7 +704,7 @@ function generateEventReminderHTML(confirmationData: BookingConfirmationData): s
           <div class="footer">
             <p>See you soon!</p>
             <p>NIBOG Team</p>
-            <p>For any queries, contact us at newindiababyolympics@gmail.com</p>
+            <p>For any queries, contact us at Nibog100@gmail.com</p>
           </div>
         </div>
       </div>
@@ -755,7 +755,7 @@ function generatePaymentPendingHTML(confirmationData: BookingConfirmationData): 
           <p>If you've already made the payment, please ignore this email. If you're facing any issues, please contact our support team.</p>
 
           <div class="footer">
-            <p>Need help? Contact us at newindiababyolympics@gmail.com</p>
+            <p>Need help? Contact us at Nibog100@gmail.com</p>
             <p>NIBOG Team</p>
           </div>
         </div>

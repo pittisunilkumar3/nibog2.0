@@ -93,7 +93,7 @@ const defaultFooterContent: FooterContent = {
     contactInfo: {
     address: "NIBOG, P.No:18, H.NO 33-30/4, Officers Colony, R.K Puram, Hyderabad - 500056.",
     phone: "+91-8977939614/15",
-    email: "newindiababyolympics@gmail.com"
+    email: "Nibog100@gmail.com"
   },
   newsletterEnabled: true,
   copyrightText: "© {year} NIBOG. All rights reserved. India's Biggest Baby Olympic Games Platform."

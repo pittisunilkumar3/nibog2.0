@@ -571,17 +571,13 @@ export default function RegisterEventClientPage() {
       }
 
       // Find city in booking data
-      // FIX: use citiesToUse (which may contain freshly refetched data) instead of the
-      // potentially-stale bookingCities state from the closure. Previously, when the
-      // refetch above succeeded, this lookup still used the EMPTY stale state, causing
-      // "Events in this city are coming soon!" for cities that DO have events.
-      const cityData = citiesToUse.find((c: any) => c.city_name === city);
+      const cityData = bookingCities.find(c => c.city_name === city);
       console.log('[handleCityChange] Found cityData:', cityData);
       
       if (!cityData) {
         console.error('[handleCityChange] No city data found for:', city);
-        console.log('[handleCityChange] Available city names:', citiesToUse.map((c: any) => c.city_name));
-        setEventError(`Events in "${city}" are coming soon! Please try a different city from the list above.`);
+        console.log('[handleCityChange] Available city names:', bookingCities.map(c => c.city_name));
+        setEventError("Events in this city are coming soon! Please try a different city below.");
         setApiEvents([]);
         return;
       }
@@ -1790,11 +1786,6 @@ export default function RegisterEventClientPage() {
     } else if (stepParam === 'payment' || stepParam === 'addons') {
       // If no saved data but step parameter exists, redirect to start
       router.push('/register-event' + (cityParam ? `?city=${cityParam}` : ''))
-    } else if (cityParam) {
-      // FIX: user arriving directly with ?city= (e.g. from an event page / login callback)
-      // with no saved session — auto-select that city once cities load
-      console.log('[Session Restore] No saved data, using cityParam:', cityParam)
-      sessionStorage.setItem('nibog_restored_city', cityParam)
     }
   }, [isAuthenticated, router])
 
@@ -2171,18 +2162,6 @@ export default function RegisterEventClientPage() {
                                   Available cities: {cities.filter(c => c.name !== selectedCity).map(c => c.name).join(', ')}
                                 </p>
                               )}
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="mt-2"
-                                onClick={async () => {
-                                  await fetchCitiesData()
-                                  if (selectedCity) handleCityChange(selectedCity)
-                                }}
-                              >
-                                Refresh Events
-                              </Button>
                             </div>
                           </div>
                         </div>
@@ -3247,8 +3226,8 @@ export default function RegisterEventClientPage() {
             </div>
             <div className="text-neutral-charcoal/70 dark:text-white/70 font-semibold">
               🏆 Need help? Contact us at{" "}
-              <Link href="mailto:Nibog100@gmail.com" className="text-skyblue-600 font-bold underline-offset-4 hover:underline transition-colors hover:text-coral-600">
-                Nibog100@gmail.com
+              <Link href="mailto:newindiababyolympics@gmail.com" className="text-skyblue-600 font-bold underline-offset-4 hover:underline transition-colors hover:text-coral-600">
+                newindiababyolympics@gmail.com
               </Link>
               {" "}🏆
             </div>
