@@ -158,8 +158,8 @@ export default function SettingsPage() {
   // Social media settings
   const [facebook, setFacebook] = useState("https://www.facebook.com/share/1K8H6SPtR5/")
   const [instagram, setInstagram] = useState("https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr")
-  const [linkedin, setLinkedin] = useState("https://www.linkedin.com/in/new-india-baby-olympicgames?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app")
-  const [youtube, setYoutube] = useState("https://youtube.com/@newindiababyolympics?si=gdXw5mGsXA93brxB")
+  const [linkedin, setLinkedin] = useState("")
+  const [youtube, setYoutube] = useState("")
   const [socialMediaId, setSocialMediaId] = useState<number | undefined>(undefined)
   const [isSavingSocialMedia, setIsSavingSocialMedia] = useState(false)
   const [isLoadingSocialMedia, setIsLoadingSocialMedia] = useState(true)
@@ -226,8 +226,8 @@ export default function SettingsPage() {
       // Reset to default values if no settings exist
       setFacebook("https://www.facebook.com/share/1K8H6SPtR5/")
       setInstagram("https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr")
-      setLinkedin("https://www.linkedin.com/in/new-india-baby-olympicgames?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app")
-      setYoutube("https://youtube.com/@newindiababyolympics?si=gdXw5mGsXA93brxB")
+      setLinkedin("")
+      setYoutube("")
     }
   }
 

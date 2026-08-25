@@ -74,8 +74,6 @@ const defaultFooterContent: FooterContent = {
   socialMediaLinks: [
     { id: "1", platform: "Facebook", url: "https://www.facebook.com/share/1K8H6SPtR5/", enabled: true },
     { id: "2", platform: "Instagram", url: "https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr", enabled: true },
-    { id: "3", platform: "LinkedIn", url: "https://www.linkedin.com/in/new-india-baby-olympicgames?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app", enabled: true },
-    { id: "4", platform: "YouTube", url: "https://youtube.com/@newindiababyolympics?si=gdXw5mGsXA93brxB", enabled: true },
   ],
   quickLinks: [
     { id: "1", label: "All Events", url: "/events", enabled: true },

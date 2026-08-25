@@ -273,8 +273,6 @@ export async function getFooterSettingWithFallback(): Promise<FooterSetting> {
       copyright_text: "© {year} NIBOG. All rights reserved. India's Biggest Baby Games Platform.",
       facebook_url: "https://www.facebook.com/share/1K8H6SPtR5/",
       instagram_url: "https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr",
-      linkedin_url: "https://www.linkedin.com/in/new-india-baby-olympicgames?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app",
-      youtube_url: "https://youtube.com/@newindiababyolympics?si=gdXw5mGsXA93brxB"
     };
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
@@ -292,8 +290,6 @@ export async function getFooterSettingWithFallback(): Promise<FooterSetting> {
       copyright_text: "© {year} NIBOG. All rights reserved. India's Biggest Baby Games Platform.",
       facebook_url: "https://www.facebook.com/share/1K8H6SPtR5/",
       instagram_url: "https://www.instagram.com/nibog_100?igsh=MWlnYXBiNDFydGQxYg%3D%3D&utm_source=qr",
-      linkedin_url: "https://www.linkedin.com/in/new-india-baby-olympicgames?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app",
-      youtube_url: "https://youtube.com/@newindiababyolympics?si=gdXw5mGsXA93brxB"
     };
   }
 }

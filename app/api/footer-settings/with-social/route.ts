@@ -30,8 +30,6 @@ export async function GET() {
             copyright_text: "© {year} NIBOG. All rights reserved. India's Biggest Baby Games Platform.",
             facebook_url: "https://www.facebook.com/share/1K8H6SPtR5/",
             instagram_url: "https://www.instagram.com/nibog_100",
-            linkedin_url: "https://www.linkedin.com/in/new-india-baby-olympicgames",
-            youtube_url: "https://youtube.com/@newindiababyolympics"
           },
           { status: 200 }
         );
@@ -63,8 +61,6 @@ export async function GET() {
         copyright_text: "© {year} NIBOG. All rights reserved. India's Biggest Baby Games Platform.",
         facebook_url: "https://www.facebook.com/share/1K8H6SPtR5/",
         instagram_url: "https://www.instagram.com/nibog_100",
-        linkedin_url: "https://www.linkedin.com/in/new-india-baby-olympicgames",
-        youtube_url: "https://youtube.com/@newindiababyolympics"
       },
       { status: 200 }
     );

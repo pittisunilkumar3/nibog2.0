@@ -248,7 +248,7 @@ export default function FooterSettingsPage() {
                     type="url"
                     value={formData.linkedin_url}
                     onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
-                    placeholder="https://www.linkedin.com/in/new-india-baby-olympicgames"
+                    placeholder="https://www.linkedin.com/company/nibog"
                   />
                 </div>
                 <div className="space-y-2">
@@ -258,7 +258,7 @@ export default function FooterSettingsPage() {
                     type="url"
                     value={formData.youtube_url}
                     onChange={(e) => handleInputChange('youtube_url', e.target.value)}
-                    placeholder="https://youtube.com/@newindiababyolympics"
+                    placeholder="https://youtube.com/@nibog"
                   />
                 </div>
               </div>
