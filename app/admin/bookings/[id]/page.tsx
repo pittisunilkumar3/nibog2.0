@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Edit, X, Check, AlertTriangle, User, Mail, Phone, Calendar, Clock, MapPin, Users, CreditCard, Loader2, RefreshCw } from "lucide-react"
+import { ArrowLeft, Edit, X, Check, AlertTriangle, User, Mail, Phone, Calendar, Clock, MapPin, Users, CreditCard, Loader2, RefreshCw, Download, Printer } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getBookingById, updateBookingStatus, getAllBookings, getBookingPaymentDetails, getEventGameSlotDetails, getEventGameSlotDetailsBySlotId, findMostLikelySlotForBooking, getBookingAddons, type Booking } from "@/services/bookingService"
 import { formatDateShort } from "@/lib/utils"
@@ -976,6 +976,17 @@ export default function BookingDetailPage({ params }: Props) {
             </div>
 
             <div className="mt-4 space-y-2 sm:space-y-3">
+              {/* Download Ticket — admin-accessible ticket view with the same
+                  Download PDF button the customer uses */}
+              {booking.booking_status.toLowerCase() === "confirmed" && (
+                <Button className="w-full touch-manipulation h-10 sm:h-11 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600" asChild>
+                  <Link href={`/admin/bookings/${booking.booking_id}/ticket`}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Ticket
+                  </Link>
+                </Button>
+              )}
+
               <Button className="w-full touch-manipulation h-10 sm:h-11" asChild>
                 <Link href={`/admin/bookings/${booking.booking_id}/receipt`}>
                   View Receipt
