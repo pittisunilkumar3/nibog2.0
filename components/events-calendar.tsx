@@ -46,9 +46,6 @@ function EventRow({ event }: { event: EventListItem }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="truncate text-base font-black leading-tight text-slate-950 dark:text-white sm:text-lg">{event.title}</h3>
-          <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
-            {event.minAgeMonths}–{event.maxAgeMonths} months
-          </span>
         </div>
 
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-600 dark:text-slate-300 sm:text-sm">

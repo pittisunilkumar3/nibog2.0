@@ -28,9 +28,6 @@ function EventCard({ event }: { event: EventListItem }) {
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-        <span className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-slate-950/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-sm">
-          {event.minAgeMonths}–{event.maxAgeMonths} months
-        </span>
         {isComplete && (
           <span className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-xs font-black text-slate-700">Completed</span>
         )}
@@ -44,7 +41,6 @@ function EventCard({ event }: { event: EventListItem }) {
           <EventFact icon={Calendar} label="Date" value={formatDateShort(event.date)} />
           <EventFact icon={Clock} label="Time" value={event.time || "To be announced"} />
           <EventFact icon={MapPin} label="Venue" value={[event.venue, event.city].filter(Boolean).join(", ")} />
-          <EventFact icon={Baby} label="Age" value={`${event.minAgeMonths}–${event.maxAgeMonths} months`} />
         </dl>
 
         {isComplete ? (
