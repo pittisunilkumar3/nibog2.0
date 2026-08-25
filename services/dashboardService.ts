@@ -30,6 +30,7 @@ export interface DashboardMetrics {
   activeUsers: number
   totalEvents: number
   upcomingEvents: number
+  upcomingEventsCount?: number
   completedEvents: number
   totalCities?: number
   totalVenues?: number

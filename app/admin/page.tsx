@@ -110,7 +110,7 @@ export default function AdminDashboard() {
     {
       title: "Total Events", value: metrics.totalEvents.toString(),
       icon: <MapPin className="h-5 w-5" />, description: "All events created", color: "warning", href: "/admin/events",
-      subtitle: `${metrics.upcomingEvents} upcoming`
+      subtitle: `${metrics.upcomingEventsCount ?? (Array.isArray(metrics.upcomingEvents) ? metrics.upcomingEvents.length : metrics.upcomingEvents)} upcoming`
     },
     {
       title: "Avg Ticket Price", value: formatCurrency(metrics.averageTicketPrice),
