@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useState, useEffect } from "react"
+import useSWR from "swr"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -60,32 +60,25 @@ const getImageUrl = (imageUrl: string): string => {
 };
 
 export default function BabyOnePage() {
-  const [games, setGames] = useState<GameWithImage[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // Fetch games from API
-  useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-
-        // Get all active games with images for Baby Games page
-        const gamesData = await getAllActiveGamesWithImages()
-        // Show only the games marked "Show on Frontend" from the admin dashboard
-        setGames(gamesData.filter((g) => g.showOnFrontend === true))
-
-      } catch (err: any) {
-        console.error("Failed to fetch games:", err)
-        setError("Games are temporarily unavailable")
-      } finally {
-        setIsLoading(false)
-      }
+  // Live-fetch games with SWR: auto-refreshes every 10s and whenever the tab
+  // regains focus, so admin "Show on Frontend" toggles appear instantly.
+  const { data, isLoading, error: swrError } = useSWR<GameWithImage[]>(
+    "baby-games-frontend",
+    async () => {
+      // Get all active games with images for Baby Games page
+      const gamesData = await getAllActiveGamesWithImages()
+      // Show only the games marked "Show on Frontend" from the admin dashboard
+      return gamesData.filter((g) => g.showOnFrontend === true)
+    },
+    {
+      refreshInterval: 10000, // re-fetch every 10 seconds
+      revalidateOnFocus: true, // re-fetch when the visitor returns to the tab
+      revalidateIfStale: true,
+      keepPreviousData: true, // don't flash the loading state while re-fetching
     }
-
-    fetchGames()
-  }, [])
+  )
+  const error = swrError ? "Games are temporarily unavailable" : null
+  const games = data ?? []
 
   return (
     <AnimatedBackground variant="games">
