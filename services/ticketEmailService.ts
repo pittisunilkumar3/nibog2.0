@@ -204,9 +204,9 @@ async function generateTicketHTML(ticketData: TicketEmailData): Promise<string> 
             <img src="${qrCodePlaceholder}" width="200" height="200" alt="QR Code for ${ticketData.bookingRef}" style="display: block; max-width: 200px; max-height: 200px; border: none;" />
           </div>
           <p style="margin: 8px 0 0 0; font-size: 12px; color: #666; font-weight: bold;">📱 Scan this QR code at the venue</p>
-          <p style="margin: 4px 0 0 0; font-size: 10px; color: #999;">Booking: ${ticketData.bookingRef}</p>
+          <p style="margin: 4px 0 0 0; font-size: 10px; color: #999;">Booking ID:</p>
           <p style="margin: 2px 0 0 0; font-size: 11px; font-weight: bold; color: #007bff; font-family: monospace;">
-            ${ticketData.bookingRef}
+            #${ticketData.bookingId}
           </p>
         </div>
       </div>

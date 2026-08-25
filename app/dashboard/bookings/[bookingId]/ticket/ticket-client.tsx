@@ -84,8 +84,8 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight)
 
-      // Generate filename
-      const bookingRef = bookingData.booking_ref || bookingData.booking_id || bookingId
+      // Generate filename — use the numeric booking id for consistency with admin
+      const bookingRef = bookingData.booking_id || bookingId
       const childName = bookingData.child_full_name || bookingData.child_name || 'ticket'
       const filename = `NIBOG_Ticket_${bookingRef}_${childName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
 
@@ -148,7 +148,9 @@ export default function TicketClient({ bookingData, bookingId }: TicketClientPro
   const eventDate = bookingData.event_date || bookingData.event_event_date
   const venueName = bookingData.venue_name || 'NIBOG Venue'
   const childName = bookingData.child_full_name || bookingData.child_name || 'Child'
-  const bookingRef = bookingData.booking_ref || bookingData.booking_id || bookingId
+  // Show the numeric booking id (same as the admin dashboard) so parents and
+  // staff reference the SAME id everywhere: admin table, ticket page, PDF.
+  const bookingRef = bookingData.booking_id || bookingId
   const status = bookingData.booking_status || bookingData.status || 'Confirmed'
   const bookingGames = bookingData.booking_games || []
   const startTime = bookingData.earliest_start_time || bookingData.start_time

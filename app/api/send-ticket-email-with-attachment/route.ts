@@ -19,6 +19,7 @@ interface ValidatedTicketData {
   startTime: string;
   endTime: string;
   securityCode: string;
+  bookingId?: number;
   hasCompleteData: boolean;
   missingFields: string[];
 }
@@ -294,8 +295,9 @@ async function generateTicketPDF(htmlContent: string, bookingRef?: string, qrCod
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(50, 50, 50);
     pdf.setFontSize(11);
-    // Use bookingRef for ticket number (already has PPT prefix)
-    const formattedTicketNumber = bookingRef || `PPT${ticketData.securityCode}`;
+    // Ticket number = numeric booking id (matches admin bookings table +
+    // dashboard ticket page). Falls back to bookingRef if id unavailable.
+    const formattedTicketNumber = ticketData.bookingId ? String(ticketData.bookingId) : (bookingRef || ticketData.securityCode);
     pdf.text(formattedTicketNumber, rightSectionX, labelY + 18);
     
     // GAMES (top right)
@@ -540,13 +542,13 @@ function validateAndExtractTicketData(ticketDetails?: any[], bookingRef?: string
     result.slotTiming = `${result.startTime} - ${result.endTime}`;
   }
 
-  // SECURITY CODE must match the TICKET NO / Booking ID so parents see ONE
-  // consistent reference everywhere (PDF, email, dashboard, ticket page).
-  if (bookingRef) {
+  // SECURITY CODE = numeric booking id — SAME as the ticket number and the
+  // admin dashboard bookings table so everyone references ONE id.
+  if (ticket.booking_id) {
+    result.securityCode = ticket.booking_id.toString();
+    result.bookingId = ticket.booking_id;
+  } else if (bookingRef) {
     result.securityCode = bookingRef;
-  } else if (ticket.booking_id) {
-    // Use the numeric booking_id (prefixed for consistency)
-    result.securityCode = `PPT${ticket.booking_id}`;
   } else if (ticket.security_code) {
     // Fall back to security code from ticket if no booking_id
     result.securityCode = ticket.security_code.toString().trim();
