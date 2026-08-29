@@ -581,7 +581,20 @@ export default function RegisterEventClientPage() {
       if (!cityData) {
         console.error('[handleCityChange] No city data found for:', city);
         console.log('[handleCityChange] Available city names:', citiesToUse.map((c: any) => c.city_name));
-        setEventError(`Events in "${city}" are coming soon! Please try a different city from the list above.`);
+        // FIX: case-insensitive / whitespace-tolerant city matching so links like
+        // ?city=hyderabad or "Banglore " still resolve the correct city.
+        const tolerant = citiesToUse.find((c: any) =>
+          String(c.city_name || "").trim().toLowerCase() === String(city || "").trim().toLowerCase()
+        );
+        if (tolerant) {
+          setSelectedCityId(tolerant.id);
+          handleCityChange(tolerant.city_name);
+          return;
+        }
+        const bookable = citiesToUse.filter((c: any) => (c.events?.length || 0) > 0).map((c: any) => c.city_name);
+        setEventError(bookable.length
+          ? `Registrations in "${city}" aren't open yet. Currently bookable cities: ${bookable.join(", ")}.`
+          : `Events in "${city}" are coming soon! Please try a different city from the list above.`);
         setApiEvents([]);
         return;
       }

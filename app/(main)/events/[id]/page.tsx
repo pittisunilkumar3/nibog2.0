@@ -70,6 +70,26 @@ export default async function EventPage({ params }: Props) {
   const time = startTime && endTime ? `${startTime} – ${endTime}` : null
   const image = event.image_url || "/images/baby-crawling.jpg"
 
+  // Past events must not offer registration — old links (Google, shared) still land here.
+  const isPast = date ? new Date(date).getTime() < new Date(new Date().toDateString()).getTime() : false
+  // Events in cities not open for booking (city deactivated) must not offer registration either.
+  // Server component: fetch the backend directly (relative fetch() does not work server-side).
+  let cityBookable = true
+  try {
+    const backendBase = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3004"
+    const res = await fetch(`${backendBase}/api/city/booking-info/list`, { cache: "no-store" })
+    if (res.ok) {
+      const data = await res.json()
+      const bookingCities = Array.isArray(data) ? data : (data?.data || [])
+      if (city && Array.isArray(bookingCities) && bookingCities.length > 0) {
+        cityBookable = bookingCities.some(
+          (c: any) => String(c.city_name || "").trim().toLowerCase() === String(city).trim().toLowerCase() && (c.events?.length || 0) > 0
+        )
+      }
+    }
+  } catch { /* keep cityBookable = true on lookup failure */ }
+  const registrationClosed = isPast || !cityBookable
+
   return (
     <div className="bg-[#fffaf3] text-slate-950 dark:bg-slate-950 dark:text-white">
       <div className="container px-4 py-8 sm:px-6 sm:py-12">
@@ -130,9 +150,13 @@ export default async function EventPage({ params }: Props) {
               <h2 className="mt-2 text-2xl font-black">Register your child</h2>
               <p className="mt-3 text-sm leading-6 text-slate-300">Choose eligible games and see the confirmed price inside the secure registration flow.</p>
               {startingPrice && <p className="mt-4 text-lg font-black">Games from {formatPrice(startingPrice)}</p>}
-              <Button asChild className="mt-5 h-14 w-full rounded-full bg-[#ef5f52] font-black text-white hover:bg-[#dc4e43]">
-                <Link href={`/register-event${city ? `?city=${encodeURIComponent(city)}` : ""}`}>Continue to registration</Link>
-              </Button>
+              {registrationClosed ? (
+                <div className="mt-5 flex h-14 w-full items-center justify-center rounded-full bg-white/10 px-6 text-center text-xs font-black uppercase tracking-wide text-slate-300">{isPast ? "This event has concluded" : "Registrations opening soon"}</div>
+              ) : (
+                <Button asChild className="mt-5 h-14 w-full rounded-full bg-[#ef5f52] font-black text-white hover:bg-[#dc4e43]">
+                  <Link href={`/register-event${city ? `?city=${encodeURIComponent(city)}` : ""}`}>Continue to registration</Link>
+                </Button>
+              )}
               <div className="mt-4 flex items-start gap-2 rounded-2xl bg-white/5 p-3 text-xs leading-5 text-slate-300"><Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />Dates, games and charges are confirmed before payment.</div>
             </div>
           </aside>
