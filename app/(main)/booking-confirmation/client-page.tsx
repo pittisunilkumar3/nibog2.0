@@ -76,10 +76,10 @@ function BookingConfirmationContent() {
         <CardContent className="p-6 text-center sm:p-10">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"><CheckCircle className="h-8 w-8" /></span>
           <h1 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl">Registration confirmed</h1>
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600 dark:text-slate-300">Your child’s NIBOG registration has been recorded. Keep the reference below for support and event-day questions.</p>
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600 dark:text-slate-300">Your child’s NIBOG registration has been recorded. Keep the booking ID below for support and event-day questions.</p>
           <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5 dark:border-emerald-400/20 dark:bg-emerald-400/10">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">Booking reference</p>
-            <p className="mt-2 break-all font-mono text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{bookingRef}</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">Booking ID</p>
+            <p className="mt-2 break-all font-mono text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{bookingId ? `#${bookingId}` : bookingRef}</p>
           </div>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
             {bookingId ? (
