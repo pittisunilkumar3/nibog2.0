@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Upload, Plus, Trash2, Move, Loader2, Eye, ChevronLeft, ChevronRight, Zap, Palette, Image } from "lucide-react"
+import { ArrowLeft, Upload, Plus, Trash2, Move, Loader2, Eye, ChevronLeft, ChevronRight, Zap, Palette, Image, Sparkles, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,7 @@ import { ColorPicker } from "@/components/ui/color-picker"
 import { useToast } from "@/hooks/use-toast"
 import { CertificateField, CreateCertificateTemplateRequest, BackgroundStyle, AppreciationTextStyle, CertificateTitleStyle, SignatureStyle } from "@/types/certificate"
 import { uploadCertificateBackground, createCertificateTemplate } from "@/services/certificateTemplateService"
+import { CERTIFICATE_PRESETS, CertificatePreset } from "@/lib/certificate-presets"
 
 export default function NewCertificateTemplatePage() {
   const router = useRouter()
@@ -164,6 +165,27 @@ export default function NewCertificateTemplatePage() {
   const [paperSize, setPaperSize] = useState<"a4" | "letter" | "a3">("a4")
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape")
   const [fields, setFields] = useState<CertificateField[]>([])
+  const [appliedPresetId, setAppliedPresetId] = useState<string | null>(null)
+
+  /** Apply a professional preset design to the whole form (all steps pre-configured). */
+  const applyPreset = (preset: CertificatePreset) => {
+    setTemplateName(preset.templateName)
+    setTemplateDescription(preset.templateDescription)
+    setTemplateType(preset.type)
+    setCertificateTitle(preset.certificateTitle)
+    setCertificateTitleStyle({ ...preset.certificateTitleStyle })
+    setAppreciationText(preset.appreciationText)
+    setAppreciationTextStyle({ ...preset.appreciationTextStyle })
+    setBackgroundStyle({ ...preset.backgroundStyle } as BackgroundStyle)
+    setSignatureStyle({ ...preset.signatureStyle })
+    setSignatureImage(null)
+    setSignatureImageUrl("")
+    setPaperSize(preset.paperSize)
+    setOrientation(preset.orientation)
+    setFields(preset.fields.map(f => ({ ...f })))
+    setAppliedPresetId(preset.id)
+    toast({ title: "✨ Preset applied!", description: `${preset.label} loaded — tweak anything in the steps below, then create the template.` })
+  }
   const [defaultFontFamily, setDefaultFontFamily] = useState<string>("Arial")
   const [defaultFontColor, setDefaultFontColor] = useState<string>("#000000")
 
@@ -2691,6 +2713,48 @@ export default function NewCertificateTemplatePage() {
           <p className="text-muted-foreground text-sm sm:text-base">Design a new certificate template for NIBOG events</p>
         </div>
       </div>
+
+      {/* Preset design gallery — step 1 only */}
+      {currentStep === 1 && (
+        <Card>
+          <CardHeader className="mobile-card-header">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl"><Sparkles className="h-5 w-5 text-amber-500" /> Start from a professional design</CardTitle>
+            <CardDescription className="text-sm">Pick a ready-made NIBOG design — it pre-fills every step. You can fine-tune anything afterwards.</CardDescription>
+          </CardHeader>
+          <CardContent className="mobile-card-content">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {CERTIFICATE_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  className={`group relative overflow-hidden rounded-xl border-2 text-left transition-all hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-amber-400 ${appliedPresetId === preset.id ? "border-amber-500 ring-2 ring-amber-300" : "border-border"}`}
+                >
+                  {/* Mini certificate preview */}
+                  <div
+                    className="relative mx-auto mt-3 h-28 w-full max-w-[220px] rounded-sm"
+                    style={{ background: preset.preview.bg, border: `4px solid ${preset.preview.border}` }}
+                  >
+                    <div style={{ position: "absolute", left: 0, right: 0, top: "12%", textAlign: "center", color: preset.preview.title, fontSize: 9, fontWeight: 700, letterSpacing: 1 }}>CERTIFICATE</div>
+                    <div style={{ position: "absolute", left: 0, right: 0, top: "32%", textAlign: "center", color: preset.preview.accent, fontSize: 7 }}>presented to</div>
+                    <div style={{ position: "absolute", left: "12%", right: "12%", top: "44%", textAlign: "center", color: preset.preview.title, fontSize: 12, fontWeight: 700, borderBottom: `1px solid ${preset.preview.border}`, paddingBottom: 2 }}>Child Name</div>
+                    <div style={{ position: "absolute", left: 0, right: 0, top: "66%", textAlign: "center", color: preset.preview.accent, fontSize: 6 }}>NIBOG EVENT 2026</div>
+                    <div style={{ position: "absolute", right: "10%", bottom: "8%", width: 14, height: 14, borderRadius: "50%", border: `2px solid ${preset.preview.border}`, color: preset.preview.border, fontSize: 7, display: "flex", alignItems: "center", justifyContent: "center", background: preset.preview.bg }}>★</div>
+                  </div>
+                  <div className="p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold">{preset.label}</p>
+                      {appliedPresetId === preset.id && <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white"><Check className="h-3 w-3" /></span>}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{preset.tagline}</p>
+                    <span className="mt-2 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300">{preset.type}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Progress indicator */}
       <Card>
