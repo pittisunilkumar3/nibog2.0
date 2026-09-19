@@ -92,10 +92,8 @@ export default function CompletedEventDetailPage() {
 
   // ---------- Certificate bulk actions ----------
   const loadParticipants = async () => {
-    const r = await fetch(`/api/events/participants?event_id=${eventId}`)
-    if (!r.ok) throw new Error("Failed to fetch participants")
-    const data = await r.json()
-    return data.participants || []
+    const data = await getEventParticipants(Number(eventId))
+    return (data as any).participants || []
   }
 
   const handleBulkGenerate = async (): Promise<any[]> => {
@@ -143,8 +141,16 @@ export default function CompletedEventDetailPage() {
       let certs = generatedCerts
       if (!certs.length) certs = await handleBulkGenerate()
       if (!certs.length) throw new Error("No certificates to download")
+      setCertProgress("Loading participants…")
+      const participants = await loadParticipants()
+      const nameByChild: Record<number, string> = {}
+      participants.forEach((pt: any) => { if (pt.child_id) nameByChild[pt.child_id] = pt.child_name || "" })
+      const enriched = certs.map((c: any) => ({
+        ...c,
+        child_name: nameByChild[c.child_id] || c.participant_name || "Participant",
+      }))
       setCertProgress("Building ZIP with all PDFs…")
-      await generateBulkPDFsFrontend(certs, `${event?.title || "event"}_certificates.zip`,
+      await generateBulkPDFsFrontend(enriched, `${event?.title || "event"}_certificates.zip`,
         (cur, tot) => setCertProgress(`Preparing PDFs ${cur}/${tot}…`))
       setCertStatus(`⬇️ ZIP with ${certs.length} certificates downloaded ✓`)
     } catch (e: any) {
