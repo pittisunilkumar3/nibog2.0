@@ -19,6 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { getEventParticipants, generateBulkCertificates, BulkGenerationProgress } from "@/services/certificateGenerationService"
+import { sendCertificatesViaEmail } from "@/services/certificateEmailService"
+import { generateBulkPDFsFrontend } from "@/services/certificatePdfService"
 
 // Keep the mock data for additional details not in API
 const mockEventData = {
@@ -50,6 +53,28 @@ export default function CompletedEventDetailPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("participants")
 
+  // Certificate bulk actions state
+  const [certTemplates, setCertTemplates] = useState<any[]>([])
+  const [certTemplateId, setCertTemplateId] = useState<number | "">("")
+  const [generatedCerts, setGeneratedCerts] = useState<any[]>([])
+  const [certBusy, setCertBusy] = useState<"" | "generate" | "email" | "zip">("")
+  const [certProgress, setCertProgress] = useState("")
+  const [certStatus, setCertStatus] = useState("")
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const r = await fetch("/api/certificate-templates/get-all")
+        if (r.ok) {
+          const list = await r.json()
+          setCertTemplates(list)
+          if (list.length) setCertTemplateId(list[0].id)
+        }
+      } catch {}
+    }
+    loadTemplates()
+  }, [])
+
   useEffect(() => {
     const loadEvent = async () => {
       try {
@@ -64,6 +89,71 @@ export default function CompletedEventDetailPage() {
 
     loadEvent()
   }, [eventId])
+
+  // ---------- Certificate bulk actions ----------
+  const loadParticipants = async () => {
+    const r = await fetch(`/api/events/participants?event_id=${eventId}`)
+    if (!r.ok) throw new Error("Failed to fetch participants")
+    const data = await r.json()
+    return data.participants || []
+  }
+
+  const handleBulkGenerate = async (): Promise<any[]> => {
+    setCertStatus("Generating certificates…")
+    const participants = await loadParticipants()
+    if (!participants.length) throw new Error("No participants found for this event")
+    if (!certTemplateId) throw new Error("Select a certificate template first")
+    let done = 0
+    const progress = await generateBulkCertificates(
+      Number(eventId),
+      Number(certTemplateId),
+      participants,
+      (p) => { done = p.completed; setCertProgress(`${p.completed}/${p.total} generated…`) }
+    )
+    const ok = (progress.results || []).filter((r: any) => r.success).map((r: any) => r.certificate)
+    setGeneratedCerts(ok)
+    setCertStatus(`Generated ${ok.length}/${participants.length} certificates ✓`)
+    return ok
+  }
+
+  const handleBulkEmail = async () => {
+    setCertBusy("email")
+    try {
+      let certs = generatedCerts
+      if (!certs.length) certs = await handleBulkGenerate()
+      if (!certs.length) throw new Error("No certificates to send")
+      setCertProgress(`Emailing ${certs.length} parents…`)
+      const res = await sendCertificatesViaEmail({
+        certificateIds: certs.map((c: any) => c.id),
+        includePdf: true,
+        customMessage: `Congratulations! Please find attached the certificate for your child's participation in ${event?.title || "the event"}.`,
+      })
+      setCertStatus(`📧 Emailed ${res.sent}/${certs.length} parents${res.failed ? ` (${res.failed} failed)` : ""} ✓`)
+    } catch (e: any) {
+      setCertStatus("Email failed: " + (e.message || "unknown error"))
+    }
+    setCertBusy("")
+    setCertProgress("")
+    setTimeout(() => setCertStatus(""), 6000)
+  }
+
+  const handleBulkZip = async () => {
+    setCertBusy("zip")
+    try {
+      let certs = generatedCerts
+      if (!certs.length) certs = await handleBulkGenerate()
+      if (!certs.length) throw new Error("No certificates to download")
+      setCertProgress("Building ZIP with all PDFs…")
+      await generateBulkPDFsFrontend(certs, `${event?.title || "event"}_certificates.zip`,
+        (cur, tot) => setCertProgress(`Preparing PDFs ${cur}/${tot}…`))
+      setCertStatus(`⬇️ ZIP with ${certs.length} certificates downloaded ✓`)
+    } catch (e: any) {
+      setCertStatus("Download failed: " + (e.message || "unknown error"))
+    }
+    setCertBusy("")
+    setCertProgress("")
+    setTimeout(() => setCertStatus(""), 6000)
+  }
 
   if (loading) {
     return (
@@ -470,10 +560,46 @@ export default function CompletedEventDetailPage() {
                 <Download className="mr-2 h-4 w-4" />
                 Download Attendance Report
               </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Mail className="mr-2 h-4 w-4" />
-                Send Certificates
+              <select
+                value={certTemplateId}
+                onChange={(e) => setCertTemplateId(Number(e.target.value))}
+                className="w-full border rounded-md px-2 py-2 text-sm mb-1"
+              >
+                <option value="">Select certificate template…</option>
+                {certTemplates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                disabled={!!certBusy}
+                onClick={async () => { setCertBusy("generate"); try { await handleBulkGenerate(); } catch (e: any) { setCertStatus("Failed: " + e.message); } setCertBusy(""); setTimeout(() => setCertStatus(""), 6000); }}
+              >
+                <Award className="mr-2 h-4 w-4" />
+                {certBusy === "generate" ? "Generating…" : "Generate Certificates"}
               </Button>
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                disabled={!!certBusy}
+                onClick={handleBulkEmail}
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                {certBusy === "email" ? "Sending…" : "📧 Send to Parents"}
+              </Button>
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                disabled={!!certBusy}
+                onClick={handleBulkZip}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {certBusy === "zip" ? "Preparing…" : "⬇️ Download Bulk ZIP"}
+              </Button>
+              {(certProgress || certStatus) && (
+                <div className="text-xs text-pink-600 font-medium">{certProgress || certStatus}</div>
+              )}
               <Button className="w-full justify-start" variant="outline">
                 <Printer className="mr-2 h-4 w-4" />
                 Print Event Summary
@@ -521,17 +647,11 @@ export default function CompletedEventDetailPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="text-sm">Certificates Generated</div>
-                  <div className="font-medium">{event.attendance_count}</div>
+                  <div className="font-medium">{generatedCerts.length || event.attendance_count}</div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm">Certificates Sent</div>
-                  <div className="font-medium">{mockEventData.certificatesSent}</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm">Pending</div>
-                  <div className="font-medium">
-                    {parseInt(event.attendance_count) - mockEventData.certificatesSent}
-                  </div>
+                  <div className="text-sm">Ready to email / download</div>
+                  <div className="font-medium">{generatedCerts.length}</div>
                 </div>
               </div>
             </CardContent>

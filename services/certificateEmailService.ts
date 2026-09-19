@@ -38,8 +38,9 @@ export async function sendCertificatesViaEmail(options: SendCertificateEmailOpti
       throw new Error('Email settings not configured')
     }
 
-    const emailSettings = await emailSettingsResponse.json()
-    if (!emailSettings || emailSettings.length === 0) {
+    const settingsJson = await emailSettingsResponse.json()
+    const emailSettings: any = Array.isArray(settingsJson) ? settingsJson : [settingsJson.data || settingsJson]
+    if (!emailSettings[0] || !emailSettings[0].smtp_host) {
       throw new Error('No email settings found')
     }
 
@@ -124,8 +125,9 @@ export async function sendCertificateEmail(certificate: CertificateListItem): Pr
       throw new Error('Email settings not configured')
     }
 
-    const emailSettings = await emailSettingsResponse.json()
-    if (!emailSettings || emailSettings.length === 0) {
+    const settingsJson = await emailSettingsResponse.json()
+    const emailSettings: any = Array.isArray(settingsJson) ? settingsJson : [settingsJson.data || settingsJson]
+    if (!emailSettings[0] || !emailSettings[0].smtp_host) {
       throw new Error('No email settings found')
     }
 
