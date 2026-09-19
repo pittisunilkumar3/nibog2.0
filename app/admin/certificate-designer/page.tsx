@@ -276,10 +276,6 @@ export default function CertificateDesignerPage() {
                   {/* description */}
                   <div style={elStyle(descStyle, "desc")} onMouseDown={(e) => onDragStart(e, "desc")}
                     dangerouslySetInnerHTML={{ __html: renderRich(descText) }} />
-                  {/* fixed small footer signature */}
-                  <div style={{ position: "absolute", left: "82%", top: "90%", transform: "translate(-50%,-50%)", fontSize: 12, color: "#999", fontFamily: "Arial" }}>
-                    NIBOG
-                  </div>
                 </div>
               </div>
             </div>
