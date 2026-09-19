@@ -72,6 +72,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email server configuration error: ' + e.message }, { status: 500 })
     }
 
+    // test mode: send only the first 2 certificates to the test address
+    const sendItems = test_email ? items.slice(0, 2) : items
+
     // 3) PDF + email loop (server-side)
     browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] })
     const page = await browser.newPage()
@@ -80,8 +83,8 @@ export async function POST(request: NextRequest) {
     let sent = 0, failed = 0
     const failedEmails: string[] = []
 
-    for (let i = 0; i < items.length; i++) {
-      const it = items[i]
+    for (let i = 0; i < sendItems.length; i++) {
+      const it = sendItems[i]
       try {
         let html: string = it.html || ''
         if (i === 0) {
@@ -124,7 +127,7 @@ export async function POST(request: NextRequest) {
     await browser.close()
     browser = null
 
-    return NextResponse.json({ success: true, sent, failed, failedEmails, total: items.length })
+    return NextResponse.json({ success: true, sent, failed, failedEmails, total: sendItems.length })
   } catch (e: any) {
     if (browser) { try { await browser.close() } catch (_) {} }
     return NextResponse.json({ error: e.message || 'bulk email failed' }, { status: 500 })

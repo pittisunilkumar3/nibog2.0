@@ -55,6 +55,7 @@ export default function CompletedEventDetailPage() {
   const [certTemplates, setCertTemplates] = useState<any[]>([])
   const [certTemplateId, setCertTemplateId] = useState<number | "">("")
   const [certBusy, setCertBusy] = useState<"" | "email" | "zip">("")
+  const [testEmail, setTestEmail] = useState("pittisunilkumar3@gmail.com")
   const [certProgress, setCertProgress] = useState("")
   const [certStatus, setCertStatus] = useState("")
 
@@ -88,7 +89,10 @@ export default function CompletedEventDetailPage() {
   }, [eventId])
 
   // ---------- Certificate bulk actions (ephemeral — nothing stored) ----------
-  const certAction = async (kind: "email" | "zip") => {
+  const certAction = async (kind: "email" | "zip", testEmail?: string) => {
+    if (kind === "email" && !testEmail) {
+      if (!confirm(`This will email certificates to ALL parents of this event. Continue?`)) return
+    }
     setCertBusy(kind)
     try {
       if (!certTemplateId) throw new Error("Select a certificate template first")
@@ -97,12 +101,16 @@ export default function CompletedEventDetailPage() {
         : "Rendering PDFs on server (one per child)… this can take a few minutes for large events")
       const r = await fetch(`/api/certificates/bulk-${kind}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event_id: Number(eventId), template_id: Number(certTemplateId) }),
+        body: JSON.stringify(testEmail
+          ? { event_id: Number(eventId), template_id: Number(certTemplateId), test_email: testEmail }
+          : { event_id: Number(eventId), template_id: Number(certTemplateId) }),
       })
       if (kind === "email") {
         const j = await r.json()
         if (!r.ok) throw new Error(j.error || "Email failed")
-        setCertStatus(`📧 Emailed ${j.sent}/${j.total} parents${j.failed ? ` (${j.failed} failed)` : ""} ✓`)
+        setCertStatus(testEmail
+          ? `🧪 Test: ${j.sent}/${j.total} certificate(s) sent to ${testEmail} ✓`
+          : `📧 Emailed ${j.sent}/${j.total} parents${j.failed ? ` (${j.failed} failed)` : ""} ✓`)
       } else {
         if (!r.ok) {
           const j = await r.json().catch(() => ({}))
@@ -552,6 +560,24 @@ export default function CompletedEventDetailPage() {
                 <Mail className="mr-2 h-4 w-4" />
                 {certBusy === "email" ? "Sending…" : "📧 Send to Parents"}
               </Button>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder="test@email.com"
+                  className="flex-1 min-w-0 border rounded-lg px-2 py-1.5 text-sm"
+                />
+                <Button
+                  variant="outline"
+                  className="shrink-0"
+                  disabled={!!certBusy || !testEmail}
+                  onClick={() => certAction("email", testEmail)}
+                  title="Sends 2 sample certificates to the test email"
+                >
+                  🧪 Test
+                </Button>
+              </div>
               <Button
                 className="w-full justify-start"
                 variant="outline"
