@@ -97,21 +97,20 @@ export default function CompletedEventDetailPage() {
   }
 
   const handleBulkGenerate = async (): Promise<any[]> => {
-    setCertStatus("Generating certificates…")
-    const participants = await loadParticipants()
-    if (!participants.length) throw new Error("No participants found for this event")
+    setCertStatus("Generating certificates on server…")
     if (!certTemplateId) throw new Error("Select a certificate template first")
-    let done = 0
-    const progress = await generateBulkCertificates(
-      Number(eventId),
-      Number(certTemplateId),
-      participants,
-      (p) => { done = p.completed; setCertProgress(`${p.completed}/${p.total} generated…`) }
-    )
-    const ok = (progress.results || []).filter((r: any) => r.success).map((r: any) => r.certificate)
-    setGeneratedCerts(ok)
-    setCertStatus(`Generated ${ok.length}/${participants.length} certificates ✓`)
-    return ok
+    const r = await fetch("/api/certificates/bulk-generate", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_id: Number(eventId), template_id: Number(certTemplateId) }),
+    })
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}))
+      throw new Error(j.error || "Generation failed")
+    }
+    const d = await r.json()
+    setGeneratedCerts(d.certificates || [])
+    setCertStatus(`✓ ${d.total} certificates ready (${d.created} new, ${d.skipped} already existed)`)
+    return d.certificates || []
   }
 
   const handleBulkEmail = async () => {
@@ -138,21 +137,27 @@ export default function CompletedEventDetailPage() {
   const handleBulkZip = async () => {
     setCertBusy("zip")
     try {
-      let certs = generatedCerts
-      if (!certs.length) certs = await handleBulkGenerate()
-      if (!certs.length) throw new Error("No certificates to download")
-      setCertProgress("Loading participants…")
-      const participants = await loadParticipants()
-      const nameByChild: Record<number, string> = {}
-      participants.forEach((pt: any) => { if (pt.child_id) nameByChild[pt.child_id] = pt.child_name || "" })
-      const enriched = certs.map((c: any) => ({
-        ...c,
-        child_name: nameByChild[c.child_id] || c.participant_name || "Participant",
-      }))
-      setCertProgress("Building ZIP with all PDFs…")
-      await generateBulkPDFsFrontend(enriched, `${event?.title || "event"}_certificates.zip`,
-        (cur, tot) => setCertProgress(`Preparing PDFs ${cur}/${tot}…`))
-      setCertStatus(`⬇️ ZIP with ${certs.length} certificates downloaded ✓`)
+      if (!certTemplateId) throw new Error("Select a certificate template first")
+      setCertProgress("Preparing PDFs on server (one per child)… this can take a few minutes for large events")
+      const r = await fetch("/api/certificates/bulk-zip", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_id: Number(eventId), template_id: Number(certTemplateId) }),
+      })
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}))
+        throw new Error(j.error || "ZIP failed")
+      }
+      setCertProgress("Downloading ZIP…")
+      const blob = await r.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${event?.title || "event"}_certificates.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      setCertStatus("⬇️ ZIP downloaded ✓")
     } catch (e: any) {
       setCertStatus("Download failed: " + (e.message || "unknown error"))
     }
