@@ -23,6 +23,10 @@ const VARIABLES = [
   { token: "{age}", label: "Age", sample: "20 months" },
   { token: "{game_name}", label: "Game", sample: "RUNNING RACE" },
   { token: "{event_name}", label: "Event", sample: "BENGALURU SEASON 5" },
+  { token: "{place}", label: "Place", sample: "Kalyana Lakshmi Hall, Bengaluru" },
+  { token: "{venue_name}", label: "Venue", sample: "Kalyana Lakshmi Hall" },
+  { token: "{city_name}", label: "City", sample: "Bengaluru" },
+  { token: "{event_date}", label: "Date", sample: "15 Nov 2026" },
   { token: "{year}", label: "Year", sample: "2026" },
 ];
 const renderVars = (raw: string) =>
