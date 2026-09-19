@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 interface Style {
-  x: number; y: number; font_size: number; font_family: string; color: string;
+  x: number; y: number; font_size: number; font_family: string; color: string; max_width?: number;
 }
 interface Template {
   id?: number; name: string; description: string; type: string;
@@ -195,7 +195,7 @@ export default function CertificateDesignerPage() {
 
   const elStyle = (st: Style, key: "name" | "desc"): React.CSSProperties => ({
     position: "absolute", left: `${st.x}%`, top: `${st.y}%`, transform: "translate(-50%,-50%)",
-    width: "80%", textAlign: "center", fontFamily: st.font_family, fontSize: `${st.font_size}px`,
+    width: `${st.max_width || 80}%`, textAlign: "center", fontFamily: st.font_family, fontSize: `${st.font_size}px`,
     fontWeight: key === "name" ? "bold" : "normal",
     color: st.color, cursor: "grab", userSelect: "none", lineHeight: 1.3,
     outline: selected === key ? "2px dashed #ec4899" : "2px dashed transparent",
@@ -327,6 +327,9 @@ export default function CertificateDesignerPage() {
               </label>
               <label className="text-xs text-slate-500">Position Y %
                 <input type="number" value={sel.y} onChange={(e) => setStyleOf({ y: Number(e.target.value) })} className="w-full border rounded px-2 py-1 text-sm" />
+              </label>
+              <label className="text-xs text-slate-500">Width %
+                <input type="number" min={10} max={100} value={sel.max_width ?? 80} onChange={(e) => setStyleOf({ max_width: Number(e.target.value) })} className="w-full border rounded px-2 py-1 text-sm" />
               </label>
               <label className="text-xs text-slate-500">Text size
                 <input type="number" value={sel.font_size} onChange={(e) => setStyleOf({ font_size: Number(e.target.value) })} className="w-full border rounded px-2 py-1 text-sm" />
