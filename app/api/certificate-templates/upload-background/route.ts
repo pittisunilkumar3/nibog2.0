@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const filename = `template_${timestamp}_${randomSuffix}.${fileExtension}`;
 
     // Create directory if it doesn't exist
-    const uploadDir = join(process.cwd(), 'public', 'images', 'certificatetemplates');
+    const uploadDir = join(process.cwd(), 'upload', 'certificatetemplates');
 
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     // Return the same format as n8n API for compatibility
     const result = {
       success: true,
-      file_path: `/images/certificatetemplates/${filename}`,
+      file_path: `/uploads/certificatetemplates/${filename}`,
       filename: filename
     };
 

@@ -102,8 +102,9 @@ export default function CertificateDesignerPage() {
       const fd = new FormData(); fd.append("file", file);
       const r = await fetch("/api/certificate-templates/upload-background", { method: "POST", body: fd });
       const j = await r.json();
-      if (!r.ok || !(j.url || j.path)) throw new Error(j.error || "Upload failed");
-      setBackground(j.url || j.path); setStatus("Uploaded ✓");
+      const up = j.file_path || j.url || j.path;
+      if (!r.ok || !up) throw new Error(j.error || "Upload failed");
+      setBackground(up); setStatus("Uploaded ✓");
     } catch (e: any) { setStatus("Upload failed: " + e.message); }
     setUploading(false);
     setTimeout(() => setStatus(""), 2500);
