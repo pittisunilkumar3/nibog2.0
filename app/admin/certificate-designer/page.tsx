@@ -34,6 +34,10 @@ const renderVars = (raw: string) =>
     const f = VARIABLES.find((x) => x.token === `{${v}}`);
     return f ? f.sample : `{${v}}`;
   });
+const renderRich = (raw: string) =>
+  renderVars(raw).replace(/\[\[([^\[\]|]+)\|([^\[\]|]+)(?:\|([^\[\]|]*))?\]\]/g,
+    (_m: string, txt: string, color: string, bold?: string) =>
+      `<span style="color:${color};${bold ? "font-weight:bold;" : ""}">${txt}</span>`);
 
 export default function CertificateDesignerPage() {
   const [name, setName] = useState("My Certificate");
@@ -53,6 +57,8 @@ export default function CertificateDesignerPage() {
   const [scale, setScale] = useState(1);
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+  const [hlColor, setHlColor] = useState("#e11d48");
   const wrapRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ key: "name" | "desc"; dx: number; dy: number } | null>(null);
 
@@ -106,6 +112,17 @@ export default function CertificateDesignerPage() {
     else setDescStyle((s) => ({ ...s, ...patch }));
   }, []);
   const onDragEnd = () => { dragRef.current = null; };
+
+  /* wrap selected description text with highlight markup */
+  const applyHighlight = (bold: boolean) => {
+    const ta = descRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart, end = ta.selectionEnd;
+    if (start === end) { setStatus("Select some text first"); setTimeout(() => setStatus(""), 2000); return; }
+    const sel = descText.slice(start, end);
+    const marked = `[[${sel}|${hlColor}${bold ? "|b" : ""}]]`;
+    setDescText(descText.slice(0, start) + marked + descText.slice(end));
+  };
 
   /* upload background */
   const uploadBg = async (file: File) => {
@@ -257,9 +274,8 @@ export default function CertificateDesignerPage() {
                     Agan Prabakaran
                   </div>
                   {/* description */}
-                  <div style={elStyle(descStyle, "desc")} onMouseDown={(e) => onDragStart(e, "desc")}>
-                    {renderVars(descText)}
-                  </div>
+                  <div style={elStyle(descStyle, "desc")} onMouseDown={(e) => onDragStart(e, "desc")}
+                    dangerouslySetInnerHTML={{ __html: renderRich(descText) }} />
                   {/* fixed small footer signature */}
                   <div style={{ position: "absolute", left: "82%", top: "90%", transform: "translate(-50%,-50%)", fontSize: 12, color: "#999", fontFamily: "Arial" }}>
                     NIBOG
@@ -278,7 +294,7 @@ export default function CertificateDesignerPage() {
 
           {selected === "desc" && (
             <div className="space-y-2">
-              <textarea value={descText} onChange={(e) => setDescText(e.target.value)} rows={4}
+              <textarea ref={descRef} value={descText} onChange={(e) => setDescText(e.target.value)} rows={4}
                 className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Description text" />
               <div className="flex flex-wrap gap-1">
                 {VARIABLES.map((v) => (
@@ -288,8 +304,17 @@ export default function CertificateDesignerPage() {
                   </button>
                 ))}
               </div>
+              <div className="flex items-center gap-2 border rounded-lg p-2">
+                <input type="color" value={hlColor} onChange={(e) => setHlColor(e.target.value)} className="w-8 h-8 border rounded cursor-pointer" title="Highlight color" />
+                <button onClick={() => applyHighlight(false)} className="text-xs flex-1 border rounded px-2 py-1.5 hover:bg-pink-50 hover:text-pink-600">
+                  🖍️ Color selected text
+                </button>
+                <button onClick={() => applyHighlight(true)} className="text-xs border rounded px-2 py-1.5 hover:bg-slate-50" title="Color + bold">
+                  <b>B</b>
+                </button>
+              </div>
               <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-2 leading-relaxed">
-                Example: <i>{renderVars("{participant_name}, aged {age} has proudly participated in the {game_name} conducted by NIBOG at {event_name} in the year {year}.")}</i>
+                Example: <i>…participated in the [[RUNNING RACE|#e11d48|b]] conducted by NIBOG…</i> — select text in the box, pick a color, tap 🖍️
               </div>
             </div>
           )}
