@@ -28,10 +28,8 @@ export default function CertificateDesignerPage() {
   // description element
   const [descText, setDescText] = useState("for actively participating in NIBOG games and showing great spirit");
   const [descStyle, setDescStyle] = useState<Style>({ x: 50, y: 62, font_size: 16, font_family: "Arial", color: "#444444" });
-  const [titleText, setTitleText] = useState("CERTIFICATE OF PARTICIPATION");
-  const [titleStyle, setTitleStyle] = useState<Style>({ x: 50, y: 15, font_size: 34, font_family: "Georgia", color: "#1e3a5f" });
 
-  const [selected, setSelected] = useState<"name" | "desc" | "title">("name");
+  const [selected, setSelected] = useState<"name" | "desc">("name");
   const [templates, setTemplates] = useState<Template[]>([]);
   const [currentId, setCurrentId] = useState<number | undefined>();
   const [status, setStatus] = useState("");
@@ -40,7 +38,7 @@ export default function CertificateDesignerPage() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ key: "name" | "desc" | "title"; dx: number; dy: number } | null>(null);
+  const dragRef = useRef<{ key: "name" | "desc"; dx: number; dy: number } | null>(null);
 
   const naturalW = orientation === "portrait" ? 595 : 842;
   const naturalH = orientation === "portrait" ? 842 : 595;
@@ -65,18 +63,17 @@ export default function CertificateDesignerPage() {
     return () => window.removeEventListener("resize", compute);
   }, [naturalW]);
 
-  const styleOf = () => (selected === "name" ? nameStyle : selected === "desc" ? descStyle : titleStyle);
+  const styleOf = () => (selected === "name" ? nameStyle : descStyle);
   const setStyleOf = (patch: Partial<Style>) => {
     if (selected === "name") setNameStyle((s) => ({ ...s, ...patch }));
-    else if (selected === "desc") setDescStyle((s) => ({ ...s, ...patch }));
-    else setTitleStyle((s) => ({ ...s, ...patch }));
+    else setDescStyle((s) => ({ ...s, ...patch }));
   };
 
   /* drag */
-  const onDragStart = (e: React.MouseEvent, key: "name" | "desc" | "title") => {
+  const onDragStart = (e: React.MouseEvent, key: "name" | "desc") => {
     e.stopPropagation(); e.preventDefault();
     const rect = canvasRef.current?.getBoundingClientRect();
-    const st = key === "name" ? nameStyle : key === "desc" ? descStyle : titleStyle;
+    const st = key === "name" ? nameStyle : descStyle;
     if (!rect) return;
     const ex = rect.left + (st.x / 100) * rect.width;
     const ey = rect.top + (st.y / 100) * rect.height;
@@ -90,8 +87,7 @@ export default function CertificateDesignerPage() {
     const y = Math.max(0, Math.min(100, ((e.clientY - d.dy - rect.top) / rect.height) * 100));
     const patch = { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
     if (d.key === "name") setNameStyle((s) => ({ ...s, ...patch }));
-    else if (d.key === "desc") setDescStyle((s) => ({ ...s, ...patch }));
-    else setTitleStyle((s) => ({ ...s, ...patch }));
+    else setDescStyle((s) => ({ ...s, ...patch }));
   }, []);
   const onDragEnd = () => { dragRef.current = null; };
 
@@ -118,8 +114,8 @@ export default function CertificateDesignerPage() {
       name,
       description: "",
       type: "participation",
-      certificate_title: titleText,
-      certificate_title_style: titleStyle,
+      certificate_title: "",
+      certificate_title_style: null,
       appreciation_text: descText,
       appreciation_text_style: descStyle,
       signature_image: null,
@@ -149,8 +145,6 @@ export default function CertificateDesignerPage() {
     setName(t.name);
     setBackground(t.background_image);
     setOrientation(t.orientation || "landscape");
-    setTitleText(t.certificate_title || "CERTIFICATE OF PARTICIPATION");
-    if (t.certificate_title_style) setTitleStyle({ x: t.certificate_title_style.x ?? 50, y: t.certificate_title_style.y ?? 15, font_size: t.certificate_title_style.font_size ?? 34, font_family: t.certificate_title_style.font_family ?? "Georgia", color: t.certificate_title_style.color ?? "#1e3a5f" });
     setDescText(t.appreciation_text || "");
     if (t.appreciation_text_style) setDescStyle({ x: t.appreciation_text_style.x ?? 50, y: t.appreciation_text_style.y ?? 62, font_size: t.appreciation_text_style.font_size ?? 16, font_family: t.appreciation_text_style.font_family ?? "Arial", color: t.appreciation_text_style.color ?? "#444444" });
     const pn = (t.fields || []).find((f) => f.name === "participant_name");
@@ -166,10 +160,10 @@ export default function CertificateDesignerPage() {
     setTimeout(() => setStatus(""), 2000);
   };
 
-  const elStyle = (st: Style, key: "name" | "desc" | "title"): React.CSSProperties => ({
+  const elStyle = (st: Style, key: "name" | "desc"): React.CSSProperties => ({
     position: "absolute", left: `${st.x}%`, top: `${st.y}%`, transform: "translate(-50%,-50%)",
     width: "80%", textAlign: "center", fontFamily: st.font_family, fontSize: `${st.font_size}px`,
-    fontWeight: key === "title" || key === "name" ? "bold" : "normal",
+    fontWeight: key === "name" ? "bold" : "normal",
     color: st.color, cursor: "grab", userSelect: "none", lineHeight: 1.3,
     outline: selected === key ? "2px dashed #ec4899" : "2px dashed transparent",
     outlineOffset: 5, borderRadius: 4, whiteSpace: "pre-wrap",
@@ -242,10 +236,6 @@ export default function CertificateDesignerPage() {
                   {!background && (
                     <div className="absolute inset-0 flex items-center justify-center text-slate-300 text-lg">Upload a background image to begin</div>
                   )}
-                  {/* title */}
-                  <div style={elStyle(titleStyle, "title")} onMouseDown={(e) => onDragStart(e, "title")}>
-                    {titleText}
-                  </div>
                   {/* participant name (sample preview) */}
                   <div style={elStyle(nameStyle, "name")} onMouseDown={(e) => onDragStart(e, "name")}>
                     Agan Prabakaran
@@ -267,13 +257,9 @@ export default function CertificateDesignerPage() {
         {/* right: properties */}
         <div className="xl:w-72 shrink-0 bg-white rounded-xl shadow-sm p-4 space-y-4 max-h-[85vh] overflow-auto">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-            Editing: {selected === "name" ? "Participant Name" : selected === "desc" ? "Description" : "Title"}
+            Editing: {selected === "name" ? "Participant Name" : "Description"}
           </div>
 
-          {selected === "title" && (
-            <textarea value={titleText} onChange={(e) => setTitleText(e.target.value)} rows={2}
-              className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Certificate title" />
-          )}
           {selected === "desc" && (
             <textarea value={descText} onChange={(e) => setDescText(e.target.value)} rows={3}
               className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Description text" />
@@ -307,7 +293,7 @@ export default function CertificateDesignerPage() {
           </div>
 
           <div className="border-t pt-3 text-xs text-slate-400 leading-relaxed">
-            <b className="text-slate-500">How it works:</b> upload your background, drag the Title / Name / Description
+            <b className="text-slate-500">How it works:</b> upload your background, drag the Name & Description
             where you want, set size & font, then <b>Save Template</b>. Use it from the event Certificates page.
           </div>
         </div>
