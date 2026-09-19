@@ -18,6 +18,18 @@ interface Template {
 }
 
 const FONTS = ["Arial", "Georgia", "Times New Roman", "Verdana", "Trebuchet MS", "Courier New"];
+const VARIABLES = [
+  { token: "{participant_name}", label: "Name", sample: "Agan Prabakaran" },
+  { token: "{age}", label: "Age", sample: "20 months" },
+  { token: "{game_name}", label: "Game", sample: "RUNNING RACE" },
+  { token: "{event_name}", label: "Event", sample: "BENGALURU SEASON 5" },
+  { token: "{year}", label: "Year", sample: "2026" },
+];
+const renderVars = (raw: string) =>
+  raw.replace(/\{(\w+)\}/g, (_: string, v: string) => {
+    const f = VARIABLES.find((x) => x.token === `{${v}}`);
+    return f ? f.sample : `{${v}}`;
+  });
 
 export default function CertificateDesignerPage() {
   const [name, setName] = useState("My Certificate");
@@ -242,7 +254,7 @@ export default function CertificateDesignerPage() {
                   </div>
                   {/* description */}
                   <div style={elStyle(descStyle, "desc")} onMouseDown={(e) => onDragStart(e, "desc")}>
-                    {descText}
+                    {renderVars(descText)}
                   </div>
                   {/* fixed small footer signature */}
                   <div style={{ position: "absolute", left: "82%", top: "90%", transform: "translate(-50%,-50%)", fontSize: 12, color: "#999", fontFamily: "Arial" }}>
@@ -261,8 +273,21 @@ export default function CertificateDesignerPage() {
           </div>
 
           {selected === "desc" && (
-            <textarea value={descText} onChange={(e) => setDescText(e.target.value)} rows={3}
-              className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Description text" />
+            <div className="space-y-2">
+              <textarea value={descText} onChange={(e) => setDescText(e.target.value)} rows={4}
+                className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Description text" />
+              <div className="flex flex-wrap gap-1">
+                {VARIABLES.map((v) => (
+                  <button key={v.token} onClick={() => setDescText((t) => t + (t && !t.endsWith(" ") ? " " : "") + v.token)}
+                    className="text-xs border rounded-full px-2 py-0.5 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600">
+                    + {v.label}
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-2 leading-relaxed">
+                Example: <i>{renderVars("{participant_name}, aged {age} has proudly participated in the {game_name} conducted by NIBOG at {event_name} in the year {year}.")}</i>
+              </div>
+            </div>
           )}
           {selected === "name" && (
             <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-2">

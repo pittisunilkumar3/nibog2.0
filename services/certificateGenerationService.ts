@@ -124,7 +124,8 @@ export async function generateBulkCertificates(
         city_name: '', // Will be filled by backend
         certificate_number: `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
         game_name: participant.game_name,
-        attendance_status: participant.attendance_status
+        attendance_status: participant.attendance_status,
+        date_of_birth: (participant as any).date_of_birth || ""
       };
 
 
