@@ -805,8 +805,26 @@ export async function POST(request: Request) {
         });
       }
     } else {
-      // For non-completed payments, we might still want to log them
-      // but we don't create booking records
+      // For non-completed payments: no booking is created, but notify the
+      // parent that the payment failed so they can retry.
+      try {
+        const failedPending: any = await getPendingBookingData(merchantTransactionId);
+        if (failedPending && failedPending.email) {
+          const backendBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:3004';
+          await fetch(`${backendBase}/api/payments/notify-failed`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              transaction_id: merchantTransactionId,
+              email: failedPending.email,
+              parent_name: failedPending.parentName,
+              total_amount: failedPending.totalAmount
+            })
+          });
+        }
+      } catch (notifyErr: any) {
+        console.error('⚠️ Payment-failed notification error:', notifyErr?.message || notifyErr);
+      }
       return NextResponse.json({
         success: true,
         message: `Payment ${paymentState.toLowerCase()} - no booking created`
