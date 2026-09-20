@@ -1,302 +1,200 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
 import { Badge } from "@/components/ui/badge"
-import { Users, UserCheck, X as UserX, Clock } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
+import { Users, UserCheck, X as UserX, Percent, RefreshCw, ScanLine } from "lucide-react"
 
-// Mock data - in a real app, this would come from an API
-const attendanceByEvent = [
-  { id: 1, name: "Baby Sensory Play", venue: "Kids Paradise, Hyderabad", date: "Oct 26, 2025", registered: 45, attended: 42, noShow: 3, attendanceRate: 93 },
-  { id: 2, name: "Baby Crawling Competition", venue: "Little Stars, Mumbai", date: "Oct 18, 2025", registered: 38, attended: 35, noShow: 3, attendanceRate: 92 },
-  { id: 3, name: "Baby Walker Race", venue: "Tiny Tots, Bangalore", date: "Oct 12, 2025", registered: 42, attended: 37, noShow: 5, attendanceRate: 88 },
-  { id: 4, name: "Baby Swimming", venue: "Aqua Babies, Chennai", date: "Oct 5, 2025", registered: 30, attended: 28, noShow: 2, attendanceRate: 93 },
-  { id: 5, name: "Baby Art & Craft", venue: "Creative Kids, Delhi", date: "Sep 28, 2025", registered: 35, attended: 31, noShow: 4, attendanceRate: 89 },
-]
-
-const attendanceByCity = [
-  { name: "Hyderabad", registered: 120, attended: 112, attendanceRate: 93 },
-  { name: "Mumbai", registered: 105, attended: 96, attendanceRate: 91 },
-  { name: "Bangalore", registered: 95, attended: 85, attendanceRate: 89 },
-  { name: "Chennai", registered: 80, attended: 74, attendanceRate: 93 },
-  { name: "Delhi", registered: 110, attended: 98, attendanceRate: 89 },
-  { name: "Pune", registered: 75, attended: 68, attendanceRate: 91 },
-  { name: "Kolkata", registered: 65, attended: 58, attendanceRate: 89 },
-]
-
-const attendanceByTime = [
-  { name: "9:00 AM", registered: 45, attended: 42, attendanceRate: 93 },
-  { name: "11:00 AM", registered: 50, attended: 47, attendanceRate: 94 },
-  { name: "1:00 PM", registered: 40, attended: 35, attendanceRate: 88 },
-  { name: "3:00 PM", registered: 35, attended: 30, attendanceRate: 86 },
-  { name: "5:00 PM", registered: 30, attended: 26, attendanceRate: 87 },
-]
-
-const attendanceByAge = [
-  { name: "6-12 months", registered: 120, attended: 110, attendanceRate: 92 },
-  { name: "13-18 months", registered: 150, attended: 138, attendanceRate: 92 },
-  { name: "19-24 months", registered: 130, attended: 118, attendanceRate: 91 },
-  { name: "25-36 months", registered: 100, attended: 87, attendanceRate: 87 },
-]
-
-const attendanceOverTime = [
-  { month: "Jan", registered: 65, attended: 58, attendanceRate: 89 },
-  { month: "Feb", registered: 72, attended: 65, attendanceRate: 90 },
-  { month: "Mar", registered: 85, attended: 78, attendanceRate: 92 },
-  { month: "Apr", registered: 93, attended: 86, attendanceRate: 92 },
-  { month: "May", registered: 112, attended: 104, attendanceRate: 93 },
-  { month: "Jun", registered: 135, attended: 126, attendanceRate: 93 },
-  { month: "Jul", registered: 148, attended: 139, attendanceRate: 94 },
-  { month: "Aug", registered: 162, attended: 152, attendanceRate: 94 },
-  { month: "Sep", registered: 143, attended: 133, attendanceRate: 93 },
-  { month: "Oct", registered: 128, attended: 118, attendanceRate: 92 },
-  { month: "Nov", registered: 105, attended: 96, attendanceRate: 91 },
-  { month: "Dec", registered: 92, attended: 83, attendanceRate: 90 },
-]
-
-const COLORS = ["#4ade80", "#f97316", "#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088fe"]
+type EventRow = {
+  event_id: number; event_name: string; event_date: string | null;
+  venue_name: string; city_name: string;
+  registered: number; attended: number; no_show: number; attendance_rate: number;
+}
+type Checkin = {
+  booking_id: number; child_name: string; event_name: string;
+  games: string; checked_in_at: string; checked_in_by: string | null;
+}
+type Report = {
+  summary: { registered: number; attended: number; no_show: number; attendance_rate: number };
+  by_event: EventRow[]; recent_checkins: Checkin[]; generated_at: string;
+}
 
 export default function AdminAttendanceAnalytics() {
-  const [timeRange, setTimeRange] = useState("year")
-  
+  const [report, setReport] = useState<Report | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [updatedAt, setUpdatedAt] = useState<string>("")
+  const [query, setQuery] = useState("")
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch("/api/attendance/report", { cache: "no-store" })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || "Failed to load")
+      setReport(j)
+      setError("")
+      setUpdatedAt(new Date().toLocaleTimeString())
+    } catch (e: any) {
+      setError(e.message || "Failed to load attendance")
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 15000) // live refresh every 15s
+    return () => clearInterval(t)
+  }, [load])
+
+  const fmt = (n: number) => new Intl.NumberFormat("en-IN").format(n || 0)
+
+  const filtered = (report?.by_event || []).filter(e =>
+    !query || `${e.event_name} ${e.venue_name} ${e.city_name}`.toLowerCase().includes(query.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <Card className="col-span-full">
+        <CardContent className="py-16 text-center text-slate-500">
+          <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-3" />
+          Loading live attendance…
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="col-span-full">
+        <CardContent className="py-16 text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button onClick={load} className="underline">Retry</button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const s = report!.summary
+
   return (
     <Card className="col-span-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
-          <CardTitle className="text-base font-medium">Attendance Analytics</CardTitle>
-          <CardDescription>Attendance statistics and trends for NIBOG events</CardDescription>
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+            </span>
+            Live Attendance
+          </CardTitle>
+          <CardDescription>
+            Real-time entry data from the NIBOG Ticket Scanner app
+            {updatedAt && <> • updated {updatedAt}</>}
+          </CardDescription>
         </div>
-        <Tabs defaultValue={timeRange} onValueChange={setTimeRange} className="w-full sm:w-[400px]">
-          <TabsList className="grid w-full grid-cols-4 h-auto">
-            <TabsTrigger value="week" className="text-xs sm:text-sm touch-manipulation">Week</TabsTrigger>
-            <TabsTrigger value="month" className="text-xs sm:text-sm touch-manipulation">Month</TabsTrigger>
-            <TabsTrigger value="quarter" className="text-xs sm:text-sm touch-manipulation">
-              <span className="hidden sm:inline">Quarter</span>
-              <span className="sm:hidden">Q</span>
-            </TabsTrigger>
-            <TabsTrigger value="year" className="text-xs sm:text-sm touch-manipulation">Year</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <button onClick={() => { setLoading(true); load() }} className="text-slate-400 hover:text-slate-700" title="Refresh now">
+          <RefreshCw className="h-4 w-4" />
+        </button>
       </CardHeader>
-      <CardContent className="px-2 pt-0">
-        <div className="mt-4 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="touch-manipulation">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium">Total Registrations</CardTitle>
-              <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6">
-              <div className="text-xl sm:text-2xl font-bold">1,340</div>
-              <p className="text-xs text-muted-foreground">
-                +12.5% from last {timeRange}
-              </p>
-              <div className="mt-2 sm:mt-4 h-[40px] sm:h-[60px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={attendanceOverTime.slice(-6)} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <Bar dataKey="registered" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="touch-manipulation">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium">Attendance</CardTitle>
-              <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6">
-              <div className="text-xl sm:text-2xl font-bold">1,238</div>
-              <p className="text-xs text-muted-foreground">
-                +14.2% from last {timeRange}
-              </p>
-              <div className="mt-2 sm:mt-4 h-[40px] sm:h-[60px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={attendanceOverTime.slice(-6)} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <Bar dataKey="attended" fill="#4ade80" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="touch-manipulation">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium">No-Shows</CardTitle>
-              <UserX className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6">
-              <div className="text-xl sm:text-2xl font-bold">102</div>
-              <p className="text-xs text-muted-foreground">
-                -3.8% from last {timeRange}
-              </p>
-              <div className="mt-2 sm:mt-4 h-[40px] sm:h-[60px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={attendanceOverTime.slice(-6)} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <Bar dataKey={(data) => data.registered - data.attended} fill="#f97316" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="touch-manipulation">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium">Attendance Rate</CardTitle>
-              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6">
-              <div className="text-xl sm:text-2xl font-bold">92.4%</div>
-              <p className="text-xs text-muted-foreground">
-                +1.7% from last {timeRange}
-              </p>
-              <div className="mt-2 sm:mt-4 h-[40px] sm:h-[60px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={attendanceOverTime.slice(-6)} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <Bar dataKey="attendanceRate" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
-          <Card className="col-span-1 touch-manipulation">
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="text-sm sm:text-base">Recent Event Attendance</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">Attendance statistics for recent events</CardDescription>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              <div className="space-y-3 sm:space-y-4">
-                {attendanceByEvent.map((event) => (
-                  <div key={event.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border p-3 transition-all hover:bg-muted/50 touch-manipulation gap-2 sm:gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm sm:text-base truncate">{event.name}</p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <span className="truncate">{event.venue}</span>
-                        <span>•</span>
-                        <span>{event.date}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
-                      <div className="text-center">
-                        <p className="text-xs sm:text-sm font-medium">{event.registered}</p>
-                        <p className="text-xs text-muted-foreground">Registered</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs sm:text-sm font-medium">{event.attended}</p>
-                        <p className="text-xs text-muted-foreground">Attended</p>
-                      </div>
-                      <div className="text-center">
-                        <Badge variant={event.attendanceRate >= 90 ? "default" : event.attendanceRate >= 80 ? "secondary" : "outline"}>
-                          {event.attendanceRate}%
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="col-span-1 touch-manipulation">
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="text-sm sm:text-base">Attendance by City</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">Comparison of attendance rates across cities</CardDescription>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              <div className="h-[250px] sm:h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={attendanceByCity}
-                    margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
-                    layout="vertical"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={60} fontSize={12} />
-                    <Tooltip formatter={(value, name) => {
-                      if (name === "registered") return [`${value} registrations`, 'Registered'];
-                      if (name === "attended") return [`${value} attendees`, 'Attended'];
-                      if (name === "attendanceRate") return [`${value}%`, 'Attendance Rate'];
-                      return [value, name];
-                    }} />
-                    <Legend />
-                    <Bar dataKey="registered" name="Registered" fill="#8884d8" radius={[0, 4, 4, 0]} />
-                    <Bar dataKey="attended" name="Attended" fill="#4ade80" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
-          <Card className="col-span-1 touch-manipulation">
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="text-sm sm:text-base">Attendance by Time Slot</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">Attendance patterns across different time slots</CardDescription>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              <div className="h-[250px] sm:h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={attendanceByTime}
-                    margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip formatter={(value, name) => {
-                      if (name === "registered") return [`${value} registrations`, 'Registered'];
-                      if (name === "attended") return [`${value} attendees`, 'Attended'];
-                      if (name === "attendanceRate") return [`${value}%`, 'Attendance Rate'];
-                      return [value, name];
-                    }} />
-                    <Legend />
-                    <Bar dataKey="registered" name="Registered" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="attended" name="Attended" fill="#4ade80" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card className="col-span-1 touch-manipulation">
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="text-sm sm:text-base">Attendance by Age Group</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">Attendance patterns across different age groups</CardDescription>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              <div className="h-[250px] sm:h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={attendanceByAge}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="attended"
-                      nameKey="name"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {attendanceByAge.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value, name, props) => {
-                      const item = attendanceByAge.find(item => item.name === props.payload.name);
-                      return [`${value} attendees (${item?.attendanceRate}% rate)`, props.payload.name];
-                    }} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+      <CardContent className="space-y-6">
+        {/* summary cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-xl border p-4">
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1"><Users className="h-3.5 w-3.5" /> Registered (paid)</div>
+            <div className="text-2xl font-bold">{fmt(s.registered)}</div>
+          </div>
+          <div className="rounded-xl border p-4 bg-green-50/60">
+            <div className="flex items-center gap-2 text-xs text-green-700 mb-1"><UserCheck className="h-3.5 w-3.5" /> Attended (scanned)</div>
+            <div className="text-2xl font-bold text-green-700">{fmt(s.attended)}</div>
+          </div>
+          <div className="rounded-xl border p-4">
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1"><UserX className="h-3.5 w-3.5" /> No-show</div>
+            <div className="text-2xl font-bold">{fmt(s.no_show)}</div>
+          </div>
+          <div className="rounded-xl border p-4">
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1"><Percent className="h-3.5 w-3.5" /> Attendance rate</div>
+            <div className="text-2xl font-bold">{s.attendance_rate}%</div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* per-event table */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">By event ({filtered.length})</h3>
+              <Input placeholder="Search event / city…" value={query} onChange={(e) => setQuery(e.target.value)} className="h-8 w-48 text-xs" />
+            </div>
+            <div className="rounded-xl border max-h-[420px] overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 sticky top-0">
+                  <tr className="text-left text-xs text-slate-500">
+                    <th className="px-3 py-2 font-medium">Event</th>
+                    <th className="px-2 py-2 font-medium text-right">Reg.</th>
+                    <th className="px-2 py-2 font-medium text-right">Att.</th>
+                    <th className="px-3 py-2 font-medium text-right">Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((e) => (
+                    <tr key={e.event_id} className="border-t hover:bg-slate-50/60">
+                      <td className="px-3 py-2">
+                        <div className="font-medium leading-tight">{e.event_name}</div>
+                        <div className="text-xs text-slate-400">{[e.venue_name, e.city_name].filter(Boolean).join(", ")}{e.event_date ? ` • ${e.event_date}` : ""}</div>
+                      </td>
+                      <td className="px-2 py-2 text-right tabular-nums">{fmt(e.registered)}</td>
+                      <td className="px-2 py-2 text-right tabular-nums font-semibold text-green-700">{fmt(e.attended)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="h-1.5 w-14 rounded bg-slate-100 overflow-hidden hidden sm:block">
+                            <div className="h-full bg-green-500 rounded" style={{ width: `${e.attendance_rate}%` }} />
+                          </div>
+                          <span className="tabular-nums text-xs">{e.attendance_rate}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {!filtered.length && (
+                    <tr><td colSpan={4} className="px-3 py-8 text-center text-slate-400 text-sm">No paid registrations found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* recent check-ins */}
+          <div>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <ScanLine className="h-4 w-4 text-green-600" /> Recent check-ins
+              <Badge variant="outline" className="text-[10px]">{report!.recent_checkins.length}</Badge>
+            </h3>
+            <div className="rounded-xl border max-h-[420px] overflow-auto">
+              {report!.recent_checkins.length ? (
+                <ul className="divide-y">
+                  {report!.recent_checkins.map((c) => (
+                    <li key={c.booking_id} className="px-3 py-2.5 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{c.child_name}</div>
+                        <div className="text-xs text-slate-400 truncate">{c.event_name} • {c.games}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-xs text-slate-500">
+                          {new Date(c.checked_in_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                        <div className="text-[10px] text-slate-400">#{c.booking_id}{c.checked_in_by ? ` • ${c.checked_in_by}` : ""}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="px-3 py-10 text-center text-slate-400 text-sm">
+                  <ScanLine className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                  No tickets scanned yet.<br />Check-ins from the NIBOG Ticket Scanner app appear here instantly.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
