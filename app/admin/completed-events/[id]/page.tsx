@@ -8,6 +8,7 @@ import { format } from "date-fns"
 import { ArrowLeft, Calendar, MapPin, Users, CheckCircle, XCircle, Download, Mail, Printer, BarChart, DollarSign, TrendingUp, PieChart, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import EventLiveAttendance from "@/components/admin/event-live-attendance"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -438,6 +439,8 @@ export default function CompletedEventDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          <EventLiveAttendance eventId={eventId} />
 
           <Card>
             <CardHeader>
