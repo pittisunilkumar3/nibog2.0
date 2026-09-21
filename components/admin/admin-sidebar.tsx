@@ -129,6 +129,12 @@ const adminRoutes: AdminRouteSection[] = [
         icon: <MessageCircle className="h-4 w-4" />,
         description: "Meta Cloud API",
       },
+      {
+        href: "/admin/whatsapp-templates",
+        label: "WhatsApp Templates",
+        icon: <FileText className="h-4 w-4" />,
+        description: "Message approvals",
+      },
     ],
   },
   {
