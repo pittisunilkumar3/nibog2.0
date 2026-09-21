@@ -170,7 +170,10 @@ export default function WhatsAppTemplatesPage() {
                 {templates.map((t) => (
                   <tr key={t.id} className="border-t align-top">
                     <td className="px-3 py-2">
-                      <div className="font-medium">{t.template_name}</div>
+                      <div className="font-medium flex items-center gap-2">
+                        {t.template_name}
+                        {!!t.is_default && <Badge className="bg-blue-600 text-[10px]">Default</Badge>}
+                      </div>
                       <div className="text-xs text-slate-400 max-w-md">{t.body_text}</div>
                       {t.rejected_reason && <div className="text-xs text-red-500 mt-0.5">Reason: {t.rejected_reason}</div>}
                     </td>
@@ -179,7 +182,8 @@ export default function WhatsAppTemplatesPage() {
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       <button className="text-xs underline mr-3" onClick={() => setTplForm({ id: t.id, template_name: t.template_name, category: t.category, language: t.language, header_text: t.header_text || "", body_text: t.body_text || "", footer_text: t.footer_text || "" })}>Edit</button>
                       <button className="text-xs underline mr-3" disabled={tplBusy !== ""} onClick={() => syncOne(t.id)}>{tplBusy === "sync" + t.id ? "…" : "Sync"}</button>
-                      <button className="text-xs underline text-red-600" disabled={tplBusy !== ""} onClick={() => removeTpl(t.id, t.template_name)}>{tplBusy === "del" + t.id ? "…" : "Delete"}</button>
+                      {!t.is_default && <button className="text-xs underline text-red-600" disabled={tplBusy !== ""} onClick={() => removeTpl(t.id, t.template_name)}>{tplBusy === "del" + t.id ? "…" : "Delete"}</button>}
+                      {!!t.is_default && <span className="text-xs text-slate-400">no delete</span>}
                     </td>
                   </tr>
                 ))}
