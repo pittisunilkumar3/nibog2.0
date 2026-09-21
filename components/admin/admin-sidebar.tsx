@@ -122,6 +122,12 @@ const adminRoutes: AdminRouteSection[] = [
         icon: <UserCheck className="h-4 w-4" />,
         description: "Event check-ins",
       },
+      {
+        href: "/admin/whatsapp-meta",
+        label: "WhatsApp Meta",
+        icon: <MessageCircle className="h-4 w-4" />,
+        description: "Meta Cloud API",
+      },
     ],
   },
   {
