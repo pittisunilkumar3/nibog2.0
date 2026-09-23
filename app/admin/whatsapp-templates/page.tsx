@@ -29,8 +29,17 @@ export default function WhatsAppTemplatesPage() {
     { name: "parent_name", label: "👤 Parent Name", sample: "Sunil" },
     { name: "event_name", label: "🎪 Event Name", sample: "NIBOG Banglore Season 5" },
     { name: "booking_id", label: "🎫 Booking ID", sample: "2999" },
+    { name: "child_name", label: "👶 Child Name", sample: "Aadhya" },
+    { name: "child_age", label: "🎂 Child Age", sample: "18 months" },
+    { name: "child_dob", label: "📅 Child DOB", sample: "15/03/2025" },
+    { name: "child_gender", label: "🧒 Child Gender", sample: "Female" },
+    { name: "school_name", label: "🏫 School", sample: "Little Angels School" },
     { name: "games_list", label: "🎮 Games", sample: "Running Race, Balance Cycle" },
+    { name: "event_date", label: "📅 Event Date", sample: "20 Sep 2026" },
+    { name: "event_time", label: "⏰ Slot Time", sample: "10:00 AM - 10:30 AM" },
     { name: "venue", label: "📍 Venue", sample: "Decathlon Sports" },
+    { name: "total_amount", label: "💰 Amount", sample: "Rs. 499" },
+    { name: "parent_phone", label: "📞 Parent Phone", sample: "919876543210" },
   ]
   const SAMPLES: Record<string, string> = Object.fromEntries(VARIABLES.map(v => [v.name, v.sample]))
   const bodyRef = useRef<HTMLTextAreaElement>(null)
