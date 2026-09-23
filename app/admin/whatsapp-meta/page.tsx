@@ -20,6 +20,21 @@ export default function WhatsAppMetaPage() {
   const [verifyResult, setVerifyResult] = useState<any>(null)
   const [testTo, setTestTo] = useState("")
   const [testMsg, setTestMsg] = useState("Hello from NIBOG! WhatsApp Meta connection works 🎉")
+  const [testBookingId, setTestBookingId] = useState("")
+  const [testBookTo, setTestBookTo] = useState("")
+  const [testBookBusy, setTestBookBusy] = useState(false)
+  const [testSteps, setTestSteps] = useState<any[] | null>(null)
+  const runBookingTest = async () => {
+    setTestBookBusy(true)
+    setTestSteps(null)
+    try {
+      const r = await fetch("/api/whatsapp-meta/test-booking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ booking_id: Number(testBookingId), to: testBookTo || undefined }) })
+      const j = await r.json()
+      setTestSteps(j.steps || [{ step: "Result", ok: r.ok, detail: j.error || j.message || "" }])
+      flash(r.ok ? "✅ " + (j.message || "sent") : "❌ " + (j.error || "failed"))
+    } catch (e: any) { flash("❌ " + e.message) }
+    setTestBookBusy(false)
+  }
 
 
   useEffect(() => {
@@ -206,6 +221,39 @@ export default function WhatsAppMetaPage() {
               <p className="text-xs text-slate-400">
                 For business-initiated messages (booking confirmations, certificates…) an approved Meta <b>template</b> is required — submit templates in Meta Business Manager, then NIBOG can use them.
               </p>
+            </CardContent>
+          </Card>
+
+          {/* full booking pipeline test */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Test Booking WhatsApp (with ticket PDF)</CardTitle>
+              <CardDescription>Runs the exact pipeline a real booking uses: ticket PDF → Meta upload → template message. Template must be APPROVED.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-500">Booking ID</label>
+                  <Input value={testBookingId} onChange={(e) => setTestBookingId(e.target.value)} placeholder="e.g. 2961" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500">Send to (optional — default parent)</label>
+                  <Input value={testBookTo} onChange={(e) => setTestBookTo(e.target.value)} placeholder="919876543210" />
+                </div>
+              </div>
+              <Button onClick={runBookingTest} disabled={testBookBusy || !testBookingId} className="w-full">
+                {testBookBusy ? "Running pipeline…" : "🧪 Run Booking WhatsApp Test"}
+              </Button>
+              {testSteps && (
+                <div className="rounded-lg border divide-y text-sm">
+                  {testSteps.map((st, i) => (
+                    <div key={i} className="px-3 py-2 flex items-center justify-between gap-3">
+                      <span className="font-medium">{st.step}</span>
+                      <span className={(st.ok ? "text-green-700" : "text-red-600") + " text-xs text-right"}>{st.ok ? "✓ " : "✗ "}{st.detail}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
