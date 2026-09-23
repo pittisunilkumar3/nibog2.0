@@ -10,7 +10,7 @@ import { FileText } from "lucide-react"
 export default function WhatsAppTemplatesPage() {
   const [notice, setNotice] = useState("")
   const [templates, setTemplates] = useState<any[]>([])
-  const [tplForm, setTplForm] = useState({ id: 0, template_name: "", category: "UTILITY", language: "en", header_text: "", body_text: "", footer_text: "" })
+  const [tplForm, setTplForm] = useState({ id: 0, template_name: "", category: "UTILITY", language: "en", header_format: "text", header_text: "", body_text: "", footer_text: "" })
   const [tplBusy, setTplBusy] = useState("")
 
   const flash = (m: string) => { setNotice(m); setTimeout(() => setNotice(""), 6000) }
@@ -31,7 +31,7 @@ export default function WhatsAppTemplatesPage() {
       const j = await r.json()
       if (!r.ok) throw new Error(j.error || "Submit failed")
       flash("✅ " + j.message)
-      setTplForm({ id: 0, template_name: "", category: "UTILITY", language: "en", header_text: "", body_text: "", footer_text: "" })
+      setTplForm({ id: 0, template_name: "", category: "UTILITY", language: "en", header_format: "text", header_text: "", body_text: "", footer_text: "" })
       loadTemplates()
     } catch (e: any) { flash("❌ " + e.message) }
     setTplBusy("")
@@ -130,10 +130,25 @@ export default function WhatsAppTemplatesPage() {
                 </select>
               </div>
             </div>
-            <div>
-              <label className="text-xs text-slate-500">Header (optional, max 60 chars)</label>
-              <Input value={tplForm.header_text} onChange={(e) => setTplForm({ ...tplForm, header_text: e.target.value })} placeholder="e.g. Booking Confirmed" />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs text-slate-500">Header type</label>
+                <select value={tplForm.header_format} onChange={(e) => setTplForm({ ...tplForm, header_format: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+                  <option value="text">Text</option>
+                  <option value="document">📄 Document (PDF — e.g. entry ticket)</option>
+                  <option value="none">None</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-500">Header text {tplForm.header_format === "text" ? "(max 60 chars)" : "(text header not used)"}</label>
+                <Input value={tplForm.header_text} disabled={tplForm.header_format !== "text"} onChange={(e) => setTplForm({ ...tplForm, header_text: e.target.value })} placeholder="e.g. Booking Confirmed" />
+              </div>
             </div>
+            {tplForm.header_format === "document" && (
+              <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+                📄 Meta requires a sample PDF for approval — NIBOG uploads one automatically. When sending, the parent&apos;s <b>entry ticket PDF</b> is attached here.
+              </p>
+            )}
             <div>
               <label className="text-xs text-slate-500">
                 Body * — use variables {"{{1}}"}, {"{{2}}"}… <span className="text-slate-400">({varCount} variable{varCount === 1 ? "" : "s"} detected)</span>
@@ -180,7 +195,7 @@ export default function WhatsAppTemplatesPage() {
                     <td className="px-2 py-2 text-xs">{t.category}<br /><span className="text-slate-400">{t.language}</span></td>
                     <td className="px-2 py-2">{statusBadge(t.status)}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
-                      <button className="text-xs underline mr-3" onClick={() => setTplForm({ id: t.id, template_name: t.template_name, category: t.category, language: t.language, header_text: t.header_text || "", body_text: t.body_text || "", footer_text: t.footer_text || "" })}>Edit</button>
+                      <button className="text-xs underline mr-3" onClick={() => setTplForm({ id: t.id, template_name: t.template_name, category: t.category, language: t.language, header_format: t.header_format || "text", header_text: t.header_text || "", body_text: t.body_text || "", footer_text: t.footer_text || "" })}>Edit</button>
                       <button className="text-xs underline mr-3" disabled={tplBusy !== ""} onClick={() => syncOne(t.id)}>{tplBusy === "sync" + t.id ? "…" : "Sync"}</button>
                       {!t.is_default && <button className="text-xs underline text-red-600" disabled={tplBusy !== ""} onClick={() => removeTpl(t.id, t.template_name)}>{tplBusy === "del" + t.id ? "…" : "Delete"}</button>}
                       {!!t.is_default && <span className="text-xs text-slate-400">no delete</span>}
