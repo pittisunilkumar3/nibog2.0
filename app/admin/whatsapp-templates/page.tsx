@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +23,46 @@ export default function WhatsAppTemplatesPage() {
   useEffect(() => { loadTemplates() }, [])
 
   const varCount = (tplForm.body_text.match(/\{\{\d+\}\}/g) || []).length
+
+  // ---- variables (drag & drop / click to insert) ----
+  const VARIABLES = [
+    { name: "parent_name", label: "👤 Parent Name", sample: "Sunil" },
+    { name: "event_name", label: "🎪 Event Name", sample: "NIBOG Banglore Season 5" },
+    { name: "booking_id", label: "🎫 Booking ID", sample: "2999" },
+    { name: "games_list", label: "🎮 Games", sample: "Running Race, Balance Cycle" },
+    { name: "venue", label: "📍 Venue", sample: "Decathlon Sports" },
+  ]
+  const SAMPLES: Record<string, string> = Object.fromEntries(VARIABLES.map(v => [v.name, v.sample]))
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+
+  const insertVar = (name: string) => {
+    const token = `{{${name}}}`
+    const el = bodyRef.current
+    if (!el) { setTplForm(f => ({ ...f, body_text: f.body_text + token })); return }
+    const start = el.selectionStart ?? el.value.length
+    const end = el.selectionEnd ?? el.value.length
+    const val = el.value
+    setTplForm(f => ({ ...f, body_text: val.slice(0, start) + token + val.slice(end) }))
+    setTimeout(() => { el.focus(); el.selectionStart = el.selectionEnd = start + token.length }, 0)
+  }
+
+  // live preview: replace named + numbered variables with samples
+  const previewBody = (() => {
+    let t = tplForm.body_text || ""
+    const named = [...new Set((t.match(/\{\{[a-zA-Z_][a-zA-Z0-9_]*\}\}/g) || []))]
+    named.forEach((tok, i) => {
+      const name = tok.slice(2, -2)
+      t = t.split(tok).join(`{{${i + 1}|${name}}}`)
+    })
+    // numbered-only vars map in order of appearance
+    let n = 0
+    t = t.replace(/\{\{(\d+)\}\}/g, () => `{{${++n}|num}}`)
+    return t.replace(/\{\{([^}]+)\}\}/g, (_, tag) => {
+      const name = tag.split("|")[1]
+      if (name === "num") return `var${tag.split("|")[0]}`
+      return SAMPLES[name] || tag.split("|")[0]
+    })
+  })()
 
   const submitTemplate = async () => {
     setTplBusy("submit")
@@ -149,17 +189,70 @@ export default function WhatsAppTemplatesPage() {
                 📄 Meta requires a sample PDF for approval — NIBOG uploads one automatically. When sending, the parent&apos;s <b>entry ticket PDF</b> is attached here.
               </p>
             )}
-            <div>
-              <label className="text-xs text-slate-500">
-                Body * — use variables {"{{1}}"}, {"{{2}}"}… <span className="text-slate-400">({varCount} variable{varCount === 1 ? "" : "s"} detected)</span>
-              </label>
-              <textarea
-                value={tplForm.body_text}
-                onChange={(e) => setTplForm({ ...tplForm, body_text: e.target.value })}
-                rows={4}
-                className="w-full border rounded-lg px-3 py-2 text-sm"
-                placeholder={"Hi {{1}}, your booking {{2}} for {{3}} is confirmed! - Team NIBOG"}
-              />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div>
+                <label className="text-xs text-slate-500">
+                  Body * — drag variables into the text (or click to insert) <span className="text-slate-400">({varCount || (tplForm.body_text.match(/\{\{[a-zA-Z_\d]+\}\}/g) || []).length} variable(s))</span>
+                </label>
+                <div className="flex flex-wrap gap-2 my-2">
+                  {VARIABLES.map(v => (
+                    <span
+                      key={v.name}
+                      draggable
+                      onDragStart={(e) => e.dataTransfer.setData("text/plain", `{{${v.name}}}`)}
+                      onClick={() => insertVar(v.name)}
+                      className="cursor-grab active:cursor-grabbing select-none text-xs bg-green-50 text-green-800 border border-green-200 rounded-full px-3 py-1 hover:bg-green-100"
+                      title={`Drag into body or click — inserts {{${v.name}}}`}
+                    >
+                      {v.label}
+                    </span>
+                  ))}
+                </div>
+                <textarea
+                  ref={bodyRef}
+                  value={tplForm.body_text}
+                  onChange={(e) => setTplForm({ ...tplForm, body_text: e.target.value })}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    const token = e.dataTransfer.getData("text/plain")
+                    if (!token) return
+                    const el = bodyRef.current
+                    const start = el?.selectionStart ?? tplForm.body_text.length
+                    const end = el?.selectionEnd ?? tplForm.body_text.length
+                    setTplForm(f => ({ ...f, body_text: f.body_text.slice(0, start) + token + f.body_text.slice(end) }))
+                    setTimeout(() => { if (el) { el.focus(); const p = start + token.length; el.selectionStart = el.selectionEnd = p } }, 0)
+                  }}
+                  rows={7}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  placeholder={"Hi {{parent_name}}, your booking for {{event_name}} is confirmed!"}
+                />
+              </div>
+
+              {/* live WhatsApp preview */}
+              <div>
+                <label className="text-xs text-slate-500">Live preview — how the message looks</label>
+                <div className="rounded-xl border bg-[#efeae2] p-4 min-h-[220px]" style={{ backgroundImage: "url(data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1' fill='%23d6cec2'/%3E%3C/svg%3E)" }}>
+                  <div className="bg-white rounded-lg rounded-tr-sm p-3 max-w-sm ml-auto shadow relative">
+                    {tplForm.header_format === "document" && (
+                      <div className="border rounded-lg p-2 mb-2 flex items-center gap-2 bg-[#f0f2f5]">
+                        <div className="h-8 w-8 rounded bg-red-100 flex items-center justify-center text-red-600 text-xs font-bold">PDF</div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium truncate">NIBOG_Ticket_2999.pdf</div>
+                          <div className="text-[10px] text-slate-400">1 page • PDF</div>
+                        </div>
+                      </div>
+                    )}
+                    {tplForm.header_format === "text" && tplForm.header_text && (
+                      <div className="font-semibold text-sm mb-1">{tplForm.header_text}</div>
+                    )}
+                    <div className="text-sm whitespace-pre-wrap text-slate-800">{previewBody || "Body preview appears here as you type…"}</div>
+                    {tplForm.footer_text && <div className="text-xs text-slate-500 mt-2 pt-1 border-t">{tplForm.footer_text}</div>}
+                    <div className="text-[10px] text-slate-400 text-right mt-1">12:45 <span className="text-blue-500">✓✓</span></div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Variables show sample values; parents see their real details. PDF shown for Document header.</p>
+              </div>
             </div>
             <div>
               <label className="text-xs text-slate-500">Footer (optional, max 60 chars)</label>
