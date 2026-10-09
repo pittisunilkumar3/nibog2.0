@@ -78,19 +78,25 @@ function isTokenExpired(token?: string | null): boolean {
   }
 }
 
-// Verify superadmin from session cookie
-const verifySuperadmin = async (token: string | undefined): Promise<SuperadminUser | null> => {
-  if (!token) return null;
+// Verify superadmin from session cookie.
+// Returns:
+//   { user }            - session is valid (server-verified)
+//   { user: null, invalid: true }  - explicitly rejected (stale epoch / bad token / not superadmin)
+//   { user: null }                 - unknown (backend unreachable) -> caller decides fallback
+const verifySuperadmin = async (token: string | undefined): Promise<{ user: SuperadminUser | null; invalid?: boolean }> => {
+  if (!token) return { user: null, invalid: true };
+
+  let localUser: SuperadminUser | null = null;
 
   try {
     // Check expiry
-    if (isTokenExpired(token)) return null;
+    if (isTokenExpired(token)) return { user: null, invalid: true };
 
     // Try parsing as JSON first (legacy format)
     try {
       const sessionData = JSON.parse(decodeURIComponent(token));
       if (sessionData && typeof sessionData === 'object' && (sessionData.is_superadmin || sessionData.role === 'superadmin')) {
-        return {
+        localUser = {
           id: sessionData.id || sessionData.user_id,
           email: sessionData.email,
           is_superadmin: true,
@@ -105,7 +111,7 @@ const verifySuperadmin = async (token: string | undefined): Promise<SuperadminUs
           try {
             const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
             if (payload && (payload.is_superadmin || payload.role === 'superadmin' || payload.role === 'admin')) {
-              return {
+              localUser = {
                 id: payload.id || payload.user_id || 0,
                 email: payload.email,
                 is_superadmin: true,
@@ -116,9 +122,28 @@ const verifySuperadmin = async (token: string | undefined): Promise<SuperadminUs
         }
       }
     }
-    return null;
+    if (!localUser) return { user: null, invalid: true };
+
+    // Server-side validation: rejects stale superadmin sessions (e.g. after a
+    // password change). Backend compares the token's session_epoch with the DB.
+    try {
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
+      const res = await fetch(`${backendUrl}/api/employee/validate-superadmin`, {
+        method: 'GET',
+        headers: { 'x-superadmin-token': token },
+        signal: AbortSignal.timeout(8000),
+        cache: 'no-store',
+      });
+      if (!res.ok) return { user: null, invalid: true }; // explicitly rejected -> force logout
+    } catch (fetchError) {
+      // Backend unreachable: 'unknown' state. Fail-closed for admin pages
+      // (redirect to login) but never wipe cookies in that case.
+      return { user: null };
+    }
+
+    return { user: localUser };
   } catch (error) {
-    return null;
+    return { user: null, invalid: true };
   }
 };
 
@@ -220,22 +245,28 @@ export async function middleware(request: NextRequest) {
   if (isAdminPath) {
     // For login pages
     if (pathname === '/superadmin/login' || pathname === '/admin/login') {
-      // If already logged in AND NOT EXPIRED, redirect to admin or the specified redirect URL
-      if (superadminToken && !isTokenExpired(superadminToken)) {
+      // Only redirect if the session is server-verified as valid
+      // (prevents redirect loops with stale cookies, e.g. after password change)
+      const existing = await verifySuperadmin(superadminToken);
+      if (existing.user) {
         const redirectPath = searchParams.get('redirect') || '/admin';
         const redirect = NextResponse.redirect(new URL(redirectPath, request.url));
         redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
         return redirect;
       }
-      // Clear expired token cookie if present
-      if (superadminToken && isTokenExpired(superadminToken)) {
+      // Explicitly invalid session: clear cookies so a fresh login can proceed.
+      // ('unknown' = backend unreachable: show login but keep cookies intact)
+      if (superadminToken && existing.invalid) {
         response.cookies.set('superadmin-token', '', { maxAge: 0, path: '/' });
+        response.cookies.set('auth-token', '', { maxAge: 0, path: '/' });
       }
       return response;
     }
 
-    // For all other admin routes, verify superadmin
-    const user = await verifySuperadmin(superadminToken);
+    // For all other admin routes, verify superadmin (fail-closed: any non-valid
+    // state -> redirect to login; cookies are preserved so retrying after a
+    // backend hiccup restores the session automatically)
+    const { user } = await verifySuperadmin(superadminToken);
     
     // Check if token exists but is expired
     const isExpired = superadminToken && isTokenExpired(superadminToken);

@@ -89,10 +89,10 @@ export default function SuperAdminLoginPage() {
         localStorage.setItem('adminToken', authToken)
         sessionStorage.setItem('adminToken', authToken)
       }
-      // Cookie is already set by the API route (HttpOnly or not), but we can set a client-side readable one if needed
-      // The API route sets 'superadmin-token'.
-      // We'll set a simple flag or the data as well for client-side logic consistency if implied by previous code.
-      document.cookie = `superadmin-token=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60 * 60 * 24 * 7}`
+      // Cookie is already set by the API route, but we set it client-side too
+      // (overwrites the API cookie). IMPORTANT: include the JWT token so the
+      // middleware's server-side session validation can verify it.
+      document.cookie = `superadmin-token=${encodeURIComponent(JSON.stringify({ ...userData, token: authToken }))}; path=/; max-age=${60 * 60 * 24 * 7}`
 
 
       // Force a full page reload to ensure cookies are properly set
