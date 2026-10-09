@@ -348,7 +348,7 @@ export default function AdminSidebar() {
                 </Button>
               </div>
             </div>
-            <nav className="flex-1 overflow-auto p-3">
+            <nav className="flex-1 min-h-0 overflow-y-auto p-3">
               <div className="space-y-6">
                 {adminRoutes.map((section, sectionIndex) => (
                   <div key={section.section}>
@@ -485,14 +485,14 @@ export default function AdminSidebar() {
         </SheetContent>
       </Sheet>
 
-      <aside className="hidden w-64 border-r bg-background md:block">
-        <div className="flex h-full flex-col">
+      <aside className="hidden w-64 shrink-0 border-r bg-background md:block h-screen sticky top-0">
+        <div className="flex h-full min-h-0 flex-col">
           <div className="border-b p-4">
             <Link href="/admin" className="flex items-center gap-2 font-semibold">
               NIBOG Admin
             </Link>
           </div>
-          <nav className="flex-1 overflow-auto p-3">
+          <nav className="flex-1 min-h-0 overflow-y-auto p-3">
             <div className="space-y-6">
               {adminRoutes.map((section, sectionIndex) => (
                 <div key={section.section}>
