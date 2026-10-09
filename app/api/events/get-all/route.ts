@@ -3,10 +3,13 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3004";
-    const apiUrl = BACKEND_URL + "/api/events/list";
+    // Forward the admin flag: ?all=true returns inactive events too (for admin filters)
+    const { searchParams } = new URL(request.url);
+    const all = searchParams.get("all") === "true" ? "?all=true" : "";
+    const apiUrl = BACKEND_URL + "/api/events/list" + all;
     
     const response = await fetch(apiUrl, {
       method: "GET",

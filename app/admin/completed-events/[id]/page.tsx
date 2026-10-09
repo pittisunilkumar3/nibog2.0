@@ -60,6 +60,10 @@ export default function CompletedEventDetailPage() {
   const [certProgress, setCertProgress] = useState("")
   const [certStatus, setCertStatus] = useState("")
 
+  // Booking data download state
+  const [dlBusy, setDlBusy] = useState(false)
+  const [dlStatus, setDlStatus] = useState("")
+
   useEffect(() => {
     const loadTemplates = async () => {
       try {
@@ -135,6 +139,69 @@ export default function CompletedEventDetailPage() {
     setCertBusy("")
     setCertProgress("")
     setTimeout(() => setCertStatus(""), 8000)
+  }
+
+  // ---------- Booking data CSV download ----------
+  const downloadBookingsCsv = async () => {
+    setDlBusy(true)
+    setDlStatus("Fetching booking data…")
+    try {
+      const r = await fetch(`/api/events/participants?event_id=${eventId}`)
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}))
+        throw new Error(j.error || `Failed to fetch booking data (${r.status})`)
+      }
+      const j = await r.json()
+      const rows: any[] = j.participants || []
+      if (!rows.length) throw new Error("No booking data found for this event")
+
+      const ageFromDob = (dob: string) => {
+        if (!dob) return ""
+        const d = new Date(dob)
+        if (isNaN(d.getTime())) return ""
+        const now = new Date()
+        let age = now.getFullYear() - d.getFullYear()
+        const m = now.getMonth() - d.getMonth()
+        if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--
+        return age >= 0 ? String(age) : ""
+      }
+
+      const headers = [
+        "Booking Ref", "Booking Date", "Parent Name", "Email", "Phone",
+        "Child Name", "Date of Birth", "Age (yrs)", "Gender", "Game",
+        "Event", "Event Date", "Venue", "Amount (INR)",
+        "Payment Method", "Payment Status", "Booking Status",
+      ]
+      const esc = (v: any) => {
+        const s = v === null || v === undefined ? "" : String(v)
+        return /["\r\n,]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+      }
+      const lines = [headers.join(",")]
+      for (const p of rows) {
+        lines.push([
+          p.booking_ref, p.booking_date, p.parent_name, p.email, p.additional_phone,
+          p.child_name, p.date_of_birth, ageFromDob(p.date_of_birth), p.gender, p.game_name,
+          j.event_title || p.event_title, p.event_date, p.venue_name, p.amount,
+          p.payment_method, p.payment_status, p.booking_status,
+        ].map(esc).join(","))
+      }
+      // BOM so Excel opens UTF-8 correctly
+      const csv = "\uFEFF" + lines.join("\r\n")
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${((event?.event_name || event?.title) || `event_${eventId}`).replace(/[^a-zA-Z0-9]+/g, "_")}_bookings.csv`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      setDlStatus(`⬇️ Exported ${rows.length} booking rows ✓`)
+    } catch (e: any) {
+      setDlStatus("Download failed: " + (e.message || "unknown error"))
+    }
+    setDlBusy(false)
+    setTimeout(() => setDlStatus(""), 8000)
   }
 
   if (loading) {
@@ -540,10 +607,18 @@ export default function CompletedEventDetailPage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full justify-start" variant="outline">
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                disabled={dlBusy}
+                onClick={downloadBookingsCsv}
+              >
                 <Download className="mr-2 h-4 w-4" />
-                Download Attendance Report
+                {dlBusy ? "Preparing…" : "Download Booking Data (CSV)"}
               </Button>
+              {dlStatus && (
+                <p className="text-xs text-muted-foreground px-1">{dlStatus}</p>
+              )}
               <select
                 value={certTemplateId}
                 onChange={(e) => setCertTemplateId(Number(e.target.value))}

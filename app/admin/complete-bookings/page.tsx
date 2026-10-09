@@ -313,7 +313,7 @@ export default function CompleteBookingsPage() {
       try {
         setIsLoadingFilters(true)
         const [eventsData, gamesData] = await Promise.all([
-          getAllEvents(true),
+          getAllEvents(true, true), // include inactive events so all bookings are filterable
           getAllBabyGames()
         ])
         

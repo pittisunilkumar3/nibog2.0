@@ -660,9 +660,16 @@ export default function RegisterEventClientPage() {
 
   // Handle event type change
   const handleEventTypeChange = async (eventType: string) => {
-    console.log('[handleEventTypeChange] Selected event type:', eventType);
+    console.log('[handleEventTypeChange] Selected event:', eventType);
 
-    setSelectedEventType(eventType)
+    // Value may be an event_id string (new) or a title (legacy restore flow) — resolve both
+    const selectedApiEvent = apiEvents.find(event => String(event.event_id) === eventType)
+      || apiEvents.find(event => event.event_title === eventType);
+    console.log('[handleEventTypeChange] Found selectedApiEvent:', selectedApiEvent);
+
+    // Store the TITLE for display purposes
+    setSelectedEventType(selectedApiEvent ? selectedApiEvent.event_title : eventType)
+
     setSelectedEvent("") // Reset selected event when event type changes
     setEligibleGames([]) // Reset games when event type changes
     setSelectedGames([]) // Reset selected games when event type changes
@@ -672,10 +679,6 @@ export default function RegisterEventClientPage() {
     setAppliedPromoCode(null)
     setDiscountAmount(0)
     setAvailablePromocodes([])
-
-    // Find the selected event from API events - FIX: Use ID lookup instead of title
-    const selectedApiEvent = apiEvents.find(event => event.event_title === eventType);
-    console.log('[handleEventTypeChange] Found selectedApiEvent:', selectedApiEvent);
 
     if (selectedApiEvent) {
       // Store the event ID for reliable lookups later
@@ -1043,6 +1046,32 @@ export default function RegisterEventClientPage() {
     return Array.from(new Set(eventTitles));
   }
 
+  // One dropdown option PER EVENT (keyed by event_id).
+  // FIX: events with the same title (e.g. same-day multi-venue events) previously
+  // collapsed into one option — now each venue gets its own selectable entry,
+  // with the venue appended to the label when titles collide.
+  const getEventTypeOptions = () => {
+    if (apiEvents.length === 0) return []
+    const titleCounts = apiEvents.reduce((acc, e) => {
+      acc[e.event_title] = (acc[e.event_title] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    const seenIds = new Set<string>()
+    const options: Array<{ value: string; label: string }> = []
+    for (const event of apiEvents) {
+      const value = String(event.event_id)
+      if (seenIds.has(value)) continue
+      seenIds.add(value)
+      const dupTitle = (titleCounts[event.event_title] || 0) > 1
+      const venue = (event.venue_name || '').trim()
+      const label = dupTitle && venue
+        ? `${event.event_title} — ${venue}`
+        : event.event_title
+      options.push({ value, label })
+    }
+    return options
+  }
+
   // ── AGE-AWARE EVENT HELPERS ──────────────────────────────────────────────
   // Format a month count as a human label (e.g. 26 -> "2 yr 2 mo")
   const formatAgeRangeLabel = (months: number | null): string => {
@@ -1052,9 +1081,9 @@ export default function RegisterEventClientPage() {
     return y > 0 ? (m > 0 ? `${y} yr ${m} mo` : `${y} yr`) : `${m} mo`
   }
 
-  // Combined age range (months) of all games offered by an event type
-  const getEventAgeRange = (eventTitle: string): { min: number | null, max: number | null } => {
-    const evts = apiEvents.filter(event => event.event_title === eventTitle)
+  // Combined age range (months) of all games offered by an event (by id or title)
+  const getEventAgeRange = (eventIdOrTitle: string): { min: number | null, max: number | null } => {
+    const evts = apiEvents.filter(event => String(event.event_id) === eventIdOrTitle || event.event_title === eventIdOrTitle)
     let min: number | null = null
     let max: number | null = null
     evts.forEach(event => {
@@ -1071,9 +1100,9 @@ export default function RegisterEventClientPage() {
   }
 
   // Does ANY game of this event match the child's age? (same dual interpretation as loadGamesForEvent)
-  const isEventAgeCompatible = (eventTitle: string): boolean => {
+  const isEventAgeCompatible = (eventIdOrTitle: string): boolean => {
     if (!childAgeMonths) return true // DOB not set yet — don't restrict
-    const evts = apiEvents.filter(event => event.event_title === eventTitle)
+    const evts = apiEvents.filter(event => String(event.event_id) === eventIdOrTitle || event.event_title === eventIdOrTitle)
     for (const event of evts) {
       for (const slot of (event.games_with_slots || [])) {
         const rawMin = slot.min_age
@@ -2132,11 +2161,11 @@ export default function RegisterEventClientPage() {
                             </div>
                           </div>
                         </div>
-                      ) : getUniqueEventTypes().length > 0 ? (
+                      ) : getEventTypeOptions().length > 0 ? (
                         <Select
-                          value={selectedEventType}
+                          value={selectedEventId ? String(selectedEventId) : selectedEventType}
                           onValueChange={handleEventTypeChange}
-                          disabled={getUniqueEventTypes().length === 0}
+                          disabled={getEventTypeOptions().length === 0}
                         >
                           <SelectTrigger className={cn(
                             "border-dashed transition-all duration-200 h-11 sm:h-10 text-base sm:text-sm",
@@ -2148,15 +2177,15 @@ export default function RegisterEventClientPage() {
                             <div className="p-2 bg-gradient-to-r from-primary/5 to-purple-500/5 border-b border-primary/10 sticky top-0 z-10">
                               <h3 className="text-sm font-medium text-primary">Select an Event</h3>
                             </div>
-                            {getUniqueEventTypes().map((eventType) => {
-                              const compatible = isEventAgeCompatible(eventType)
-                              const range = getEventAgeRange(eventType)
+                            {getEventTypeOptions().map((opt) => {
+                              const compatible = isEventAgeCompatible(opt.value)
+                              const range = getEventAgeRange(opt.value)
                               const hasRange = range.min !== null || range.max !== null
-                              const label = `${eventType}${hasRange ? ` (ages ${formatAgeRangeLabel(range.min)} – ${formatAgeRangeLabel(range.max)})` : ''}`
+                              const label = `${opt.label}${hasRange ? ` (ages ${formatAgeRangeLabel(range.min)} – ${formatAgeRangeLabel(range.max)})` : ''}`
                               return (
                                 <SelectItem
-                                  key={eventType}
-                                  value={eventType}
+                                  key={opt.value}
+                                  value={opt.value}
                                   disabled={!compatible}
                                   className={cn(
                                     "rounded-md transition-colors duration-200",

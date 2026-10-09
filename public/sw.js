@@ -1,22 +1,20 @@
-// Service Worker for NIBOG
-const CACHE_NAME = 'nibog-cache-v3-20260820';
+// Service Worker for NIBOG (v4 - 20261008)
+// FIX: network-first for page navigations, never cache /admin, bumped cache version
+const CACHE_NAME = 'nibog-cache-v4-20261008';
 
 // Assets to cache immediately on service worker install
 const PRECACHE_ASSETS = [
-  '/',
   '/manifest.json',
   '/favicon.ico',
-  '/logo192.png',
-  '/logo512.png'
+  '/offline.html'
 ];
 
 // Install event - precache key assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(PRECACHE_ASSETS);
-      })
+      .then(cache => cache.addAll(PRECACHE_ASSETS))
+      .catch(() => {})
       .then(() => self.skipWaiting())
   );
 });
@@ -26,11 +24,8 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.filter(cacheName => {
-          return cacheName !== CACHE_NAME;
-        }).map(cacheName => {
-          return caches.delete(cacheName);
-        })
+        cacheNames.filter(cacheName => cacheName !== CACHE_NAME)
+          .map(cacheName => caches.delete(cacheName))
       );
     }).then(() => self.clients.claim())
   );
@@ -48,55 +43,58 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Skip API requests and authentication endpoints
-  if (event.request.url.includes('/api/') || 
+  // Skip API requests, auth, payments
+  if (event.request.url.includes('/api/') ||
       event.request.url.includes('/auth/') ||
       event.request.url.includes('/payments/')) {
     return;
   }
 
+  // NEVER cache admin/superadmin pages - always go to network
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/superadmin')) {
+    return;
+  }
+
+  const isNavigation = event.request.mode === 'navigate' ||
+    (event.request.headers.get('accept') || '').includes('text/html');
+
+  // Network-first for page navigations (fresh HTML, cache as offline fallback)
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.ok) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+        }
+        return response;
+      }).catch(() => {
+        return caches.match(event.request).then(cached => {
+          if (cached) return cached;
+          if ((event.request.headers.get('accept') || '').includes('text/html')) {
+            return caches.match('/offline.html');
+          }
+          throw new Error('Network unavailable');
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache-first only for static assets (hashed filenames are immutable)
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
-        // Return cached response if available
         if (cachedResponse) {
-          // In background, try to update the cache
-          fetch(event.request).then(response => {
-            if (response.ok) {
-              caches.open(CACHE_NAME).then(cache => {
-                cache.put(event.request, response);
-              });
-            }
-          }).catch(() => {});
-          
           return cachedResponse;
         }
-
-        // Otherwise fetch from network and cache
         return fetch(event.request).then(response => {
-          // Clone the response since we need to use it twice
-          const responseToCache = response.clone();
-
-          // Don't cache if response is not successful
           if (!response.ok) {
             return response;
           }
-
-          // Cache successful responses
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
           return response;
-        }).catch(error => {
-          // Show custom offline page for HTML requests
-          if (event.request.headers.get('accept').includes('text/html')) {
-            return caches.match('/offline.html');
-          }
-
-          console.error('Fetch failed:', error);
-          throw error;
         });
       })
   );

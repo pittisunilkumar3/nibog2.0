@@ -246,9 +246,10 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
  * @param forceRefresh Force a cache refresh
  * @returns A list of all events
  */
-export async function getAllEvents(forceRefresh: boolean = false): Promise<EventListItem[]> {
+export async function getAllEvents(forceRefresh: boolean = false, includeInactive: boolean = false): Promise<EventListItem[]> {
   try {
-    const cacheKey = 'all-events';
+    // Admin pages need inactive events too (separate cache key)
+    const cacheKey = includeInactive ? 'all-events-admin' : 'all-events';
     const now = Date.now();
 
     // Return cached data if available and not expired
@@ -258,7 +259,8 @@ export async function getAllEvents(forceRefresh: boolean = false): Promise<Event
     }
     
     // Use our internal API route to avoid CORS issues
-    const response = await fetch('/api/events/get-all', {
+    // includeInactive=true (admin) forwards ?all=true to the backend
+    const response = await fetch(`/api/events/get-all${includeInactive ? '?all=true' : ''}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
