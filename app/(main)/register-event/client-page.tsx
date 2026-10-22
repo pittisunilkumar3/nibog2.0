@@ -2306,7 +2306,7 @@ export default function RegisterEventClientPage() {
                   <div className="space-y-3">
                     <Label htmlFor="email" className="flex items-center gap-2 text-sm font-bold text-neutral-charcoal dark:text-white">
                       <span>Email Address</span>
-                      <span className="text-xs text-coral-700 bg-coral-100 px-2 py-0.5 rounded-full border border-coral-300">Required</span>
+                      <span className="text-xs text-skyblue-700 bg-skyblue-100 px-2 py-0.5 rounded-full border border-skyblue-300">Required</span>
                     </Label>
                     <Input
                       id="email"
@@ -2315,7 +2315,7 @@ export default function RegisterEventClientPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="border-2 border-coral-200 focus:border-coral-400 focus:ring-2 focus:ring-coral-200 bg-white hover:bg-coral-50 dark:bg-gray-800 dark:border-coral-600 dark:hover:bg-gray-700 dark:text-white h-12 text-base rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                      className="border-2 border-skyblue-200 focus:border-skyblue-400 focus:ring-2 focus:ring-skyblue-200 bg-white hover:bg-skyblue-50 dark:bg-gray-800 dark:border-skyblue-600 dark:hover:bg-gray-700 dark:text-white h-12 text-base rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl"
                     />
                     {email.length > 0 && !email.toLowerCase().endsWith('@gmail.com') && (
                       <p className="text-xs text-red-500 mt-1">Please enter a valid Gmail address (e.g. name@gmail.com)</p>
@@ -2379,7 +2379,7 @@ export default function RegisterEventClientPage() {
                   <div className="space-y-3">
                     <Label className="flex items-center gap-2 text-sm font-bold text-neutral-charcoal dark:text-white">
                       <span>Child's Date of Birth</span>
-                      <span className="text-xs text-coral-700 bg-coral-100 px-2 py-0.5 rounded-full border border-coral-300">Required</span>
+                      <span className="text-xs text-skyblue-700 bg-skyblue-100 px-2 py-0.5 rounded-full border border-skyblue-300">Required</span>
                     </Label>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -2388,8 +2388,8 @@ export default function RegisterEventClientPage() {
                           className={cn(
                             "w-full justify-start text-left font-normal transition-all duration-200 h-12 text-base rounded-2xl shadow-lg hover:shadow-xl border-2",
                             !dob
-                              ? "text-neutral-charcoal border-coral-200 hover:border-coral-300 hover:bg-coral-50 dark:border-coral-600 dark:hover:bg-gray-700 dark:text-white"
-                              : "border-coral-400 bg-coral-50 hover:bg-coral-100 text-neutral-charcoal dark:text-white dark:bg-coral-900/20"
+                              ? "text-neutral-charcoal border-skyblue-200 hover:border-skyblue-300 hover:bg-skyblue-50 dark:border-skyblue-600 dark:hover:bg-gray-700 dark:text-white"
+                              : "border-skyblue-400 bg-skyblue-50 hover:bg-skyblue-100 text-neutral-charcoal dark:text-white dark:bg-skyblue-900/20"
                           )}
                           onClick={() => {
                             // DOB button clicked (debug logs removed)
@@ -2618,27 +2618,24 @@ export default function RegisterEventClientPage() {
                                       const isAvailable = slot.is_available !== false && availableSlots > 0;
                                       
                                       return (
-                                        <div
+                                        <label
                                           key={slot.id}
+                                          htmlFor={`slot-checkbox-${slot.id}`}
                                           className={cn(
-                                            "flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all duration-200 touch-manipulation min-h-[60px] sm:min-h-[auto]",
+                                            "flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all duration-200 touch-manipulation focus-within:ring-2 focus-within:ring-primary/40 min-h-[60px] sm:min-h-[auto]",
                                             isSelected
-                                              ? "border-primary bg-primary/10 shadow-md"
+                                              ? "border-primary bg-primary/10 shadow-md cursor-pointer"
                                               : !isAvailable
                                                 ? "border-muted bg-gray-100 dark:bg-gray-800 opacity-70"
                                                 : "border-muted hover:border-primary/30 hover:bg-primary/5 cursor-pointer"
                                           )}
-                                          onClick={() => isAvailable && handleGameSelection(slot.id)}
                                         >
                                           <div className="flex items-center space-x-3">
                                             <div
                                               className="cursor-pointer"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (isAvailable) handleGameSelection(slot.id);
-                                              }}
                                             >
                                               <Checkbox
+                                                id={`slot-checkbox-${slot.id}`}
                                                 checked={isSelected}
                                                 onCheckedChange={() => isAvailable && handleGameSelection(slot.id)}
                                                 disabled={!isAvailable}
@@ -2648,10 +2645,6 @@ export default function RegisterEventClientPage() {
                                             </div>
                                             <div
                                               className="cursor-pointer select-none flex-1"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (isAvailable) handleGameSelection(slot.id);
-                                              }}
                                             >
                                               <div className="font-medium text-sm">
                                                 {formatTimeRange(slot.start_time, slot.end_time)}
@@ -2678,7 +2671,7 @@ export default function RegisterEventClientPage() {
                                               per child
                                             </div>
                                           </div>
-                                        </div>
+                                        </label>
                                       );
                                     })}
                                   </div>
