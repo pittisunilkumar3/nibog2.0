@@ -9,6 +9,7 @@ import { Eye, Edit, Check, X, AlertTriangle, Loader2, RefreshCw, CheckCircle, Ma
 import { useToast } from "@/hooks/use-toast"
 import { getAllBookings, getPaginatedBookings, updateBookingStatus, deleteBooking, Booking, PaginatedBookingsResponse } from "@/services/bookingService"
 import { formatDateShort } from "@/lib/utils"
+import { formatBookingTimestamp } from "@/lib/booking-timestamp"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,17 +55,17 @@ const statuses = [
 const getStatusBadge = (status: string) => {
   switch (status.toLowerCase()) {
     case "confirmed":
-      return <Badge className="bg-green-500 hover:bg-green-600">Confirmed</Badge>
+      return <Badge className="border-green-200 bg-green-100 text-green-900 hover:bg-green-100 dark:border-green-700 dark:bg-green-950 dark:text-green-100 text-sm">Confirmed</Badge>
     case "pending":
-      return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pending</Badge>
+      return <Badge className="border-yellow-200 bg-yellow-100 text-yellow-900 hover:bg-yellow-100 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-100 text-sm">Pending</Badge>
     case "cancelled":
-      return <Badge className="bg-red-500 hover:bg-red-600">Cancelled</Badge>
+      return <Badge className="border-red-200 bg-red-100 text-red-900 hover:bg-red-100 dark:border-red-700 dark:bg-red-950 dark:text-red-100 text-sm">Cancelled</Badge>
     case "completed":
-      return <Badge className="bg-blue-500 hover:bg-blue-600">Completed</Badge>
+      return <Badge className="border-blue-200 bg-blue-100 text-blue-900 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-100 text-sm">Completed</Badge>
     case "no show":
-      return <Badge className="bg-gray-500 hover:bg-gray-600">No Show</Badge>
+      return <Badge className="border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm">No Show</Badge>
     case "refunded":
-      return <Badge className="bg-purple-500 hover:bg-purple-600">Refunded</Badge>
+      return <Badge className="border-purple-200 bg-purple-100 text-purple-900 hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-950 dark:text-purple-100 text-sm">Refunded</Badge>
     default:
       return <Badge variant="outline">{status}</Badge>
   }
@@ -331,25 +332,42 @@ export default function BookingsPage() {
   const columns: Column<Booking>[] = [
     {
       key: 'booking_id',
-      label: 'ID',
+      label: 'Booking ID',
       sortable: true,
-      width: '80px',
+      width: '130px',
       priority: 1, // Highest priority - always shown
-      render: (value) => <span className="font-mono text-sm">#{value}</span>
+      render: (value) => <span className="font-mono text-base font-bold text-foreground whitespace-nowrap tabular-nums">#{value}</span>
+    },
+    {
+      key: 'booking_created_at',
+      label: 'Booked at (IST)',
+      sortable: true,
+      width: '200px',
+      priority: 2,
+      render: (value) => {
+        const timestamp = formatBookingTimestamp(value)
+        return (
+          <div className="space-y-1 tabular-nums whitespace-nowrap">
+            <div className="font-semibold text-foreground">{timestamp.date}</div>
+            <div className="font-medium text-foreground">{timestamp.time}</div>
+          </div>
+        )
+      }
     },
     {
       key: 'parent_name',
+      width: '250px',
       label: 'Parent',
       sortable: true,
       priority: 2, // High priority
       render: (value, row) => (
         <div className="min-w-0">
-          <div className="font-medium truncate">{value}</div>
-          <div className="text-xs text-muted-foreground truncate">{row.parent_email}</div>
+          <div className="font-medium break-words">{value}</div>
+          <div className="text-sm text-foreground/80 break-words">{row.parent_email}</div>
           {row.parent_additional_phone && (
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
+            <div className="text-sm text-foreground/80 flex items-center gap-1">
               <Phone className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{row.parent_additional_phone}</span>
+              <span className="break-words">{row.parent_additional_phone}</span>
             </div>
           )}
         </div>
@@ -357,14 +375,15 @@ export default function BookingsPage() {
     },
     {
       key: 'event_title',
+      width: '280px',
       label: 'Event',
       sortable: true,
       priority: 3, // Medium-high priority
       render: (value, row) => (
         <div className="min-w-0">
-          <div className="font-medium truncate">{value}</div>
-          <div className="text-xs text-muted-foreground truncate">{row.city_name}</div>
-          <div className="text-xs text-muted-foreground truncate">{row.venue_name}</div>
+          <div className="font-medium break-words">{value}</div>
+          <div className="text-sm text-foreground/80 break-words">{row.city_name}</div>
+          <div className="text-sm text-foreground/80 break-words">{row.venue_name}</div>
         </div>
       )
     },
@@ -378,13 +397,14 @@ export default function BookingsPage() {
     },
     {
       key: 'child_full_name',
+      width: '200px',
       label: 'Child',
       sortable: true,
       hideOnMobile: true, // Hide on mobile to save space
       render: (value, row) => (
         <div className="min-w-0">
-          <div className="font-medium truncate">{value}</div>
-          <div className="text-xs text-muted-foreground">{row.child_gender}</div>
+          <div className="font-medium break-words">{value}</div>
+          <div className="text-sm text-foreground/80">{row.child_gender}</div>
         </div>
       )
     },
@@ -408,33 +428,35 @@ export default function BookingsPage() {
       hideOnMobile: true, // Hide on mobile to save space
       render: (value) => (
         <div className="min-w-0">
-          <div className="font-medium text-sm">{value ? `${value} months` : 'N/A'}</div>
+          <div className="font-medium text-sm">{value != null ? `${value} months` : 'N/A'}</div>
         </div>
       )
     },
     {
       key: 'child_school_name',
+      width: '220px',
       label: 'School Name',
       sortable: true,
       hideOnMobile: true, // Hide on mobile to save space
       render: (value) => (
         <div className="min-w-0">
-          <div className="font-medium truncate">{value || 'Not Specified'}</div>
+          <div className="font-medium break-words">{value || 'Not Specified'}</div>
         </div>
       )
     },
     {
       key: 'game_name',
+      width: '260px',
       label: 'Games',
       sortable: false,
       hideOnMobile: true, // Hide on mobile
       render: (value, row) => (
-        <div className="min-w-0 max-w-xs">
-          <div className="font-medium text-xs whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+        <div className="min-w-0">
+          <div className="font-medium text-base whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
             {value || 'No games booked'}
           </div>
           {row.total_games > 0 && (
-            <div className="text-xs text-muted-foreground mt-1">
+            <div className="text-sm text-foreground/80 mt-1">
               {row.total_games} game{row.total_games > 1 ? 's' : ''} • {row.total_children} child{row.total_children > 1 ? 'ren' : ''}
             </div>
           )}
@@ -449,8 +471,8 @@ export default function BookingsPage() {
       width: '120px',
       hideOnMobile: true, // Hide on mobile
       render: (value, row) => (
-        <div className="min-w-0 max-w-xs">
-          <div className="font-medium text-xs whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+        <div className="min-w-0">
+          <div className="font-medium text-base whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
             {value ? value.split('\n│\n').map((p: string) => `₹${p.trim()}`).join('\n│\n') : 'N/A'}
           </div>
         </div>
@@ -463,8 +485,8 @@ export default function BookingsPage() {
       width: '150px',
       hideOnMobile: true, // Hide on mobile
       render: (value) => (
-        <div className="min-w-0 max-w-xs">
-          <div className="font-medium text-xs whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+        <div className="min-w-0">
+          <div className="font-medium text-base whitespace-pre-line leading-relaxed" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
             {value || 'N/A'}
           </div>
         </div>
@@ -481,12 +503,13 @@ export default function BookingsPage() {
     },
     {
       key: 'parent_additional_phone',
+      width: '180px',
       label: 'Phone',
       sortable: false,
       hideOnMobile: true, // Hide on mobile since it's shown in parent column
       render: (value, row) => (
         <div className="min-w-0">
-          <span className="truncate">{row.parent_additional_phone || "-"}</span>
+          <span className="break-words">{row.parent_additional_phone || "-"}</span>
         </div>
       )
     },
@@ -502,18 +525,7 @@ export default function BookingsPage() {
         </div>
       )
     },
-    {
-      key: 'booking_created_at',
-      label: 'Booking Date',
-      sortable: true,
-      width: '110px',
-      hideOnMobile: true, // Hide on mobile
-      render: (value) => (
-        <div className="text-sm">
-          {formatDateShort(value)}
-        </div>
-      )
-    },
+
   ]
 
   // Handle confirm booking
@@ -702,7 +714,7 @@ export default function BookingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Bookings</h1>
-            <p className="text-muted-foreground">Manage NIBOG event bookings</p>
+            <p className="text-foreground/80">Manage NIBOG event bookings</p>
           </div>
         </div>
         <EmptyError onRetry={fetchBookings} error={error} />
@@ -716,7 +728,7 @@ export default function BookingsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Bookings</h1>
-            <p className="text-muted-foreground">Manage NIBOG event bookings</p>
+            <p className="text-foreground/80">Manage NIBOG event bookings</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
@@ -756,7 +768,7 @@ export default function BookingsPage() {
                   setFromDate('');
                   setToDate('');
                 }}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-foreground/80 hover:text-foreground"
               >
                 <XCircle className="mr-2 h-4 w-4" />
                 Clear All
@@ -772,7 +784,7 @@ export default function BookingsPage() {
                 </Label>
                 <div className="space-y-2">
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/80" />
                     <Input
                       type="date"
                       value={fromDate}
@@ -782,7 +794,7 @@ export default function BookingsPage() {
                     />
                   </div>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/80" />
                     <Input
                       type="date"
                       value={toDate}
@@ -811,7 +823,7 @@ export default function BookingsPage() {
                   </SelectContent>
                 </Select>
                 {selectedEventId !== 'all' && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-foreground/80">
                     {events.find(e => String(e.id) === selectedEventId)?.event_title}
                   </p>
                 )}
@@ -834,7 +846,7 @@ export default function BookingsPage() {
                   </SelectContent>
                 </Select>
                 {selectedGameId !== 'all' && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-foreground/80">
                     {games.find(g => String(g.id) === selectedGameId)?.game_name}
                   </p>
                 )}
@@ -857,7 +869,7 @@ export default function BookingsPage() {
                   </SelectContent>
                 </Select>
                 {selectedStatus !== 'all' && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-foreground/80">
                     {statusOptions.find(s => s.value === selectedStatus)?.name}
                   </p>
                 )}
@@ -868,29 +880,29 @@ export default function BookingsPage() {
                 <Label className="text-sm font-medium">Active Filters</Label>
                 <div className="space-y-2">
                   {(fromDate || toDate) && (
-                    <div className="flex items-center gap-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                    <div className="flex items-center gap-2 text-sm bg-primary/10 text-primary px-2 py-1 rounded">
                       <Calendar className="h-3 w-3" />
                       {fromDate && toDate ? `${fromDate} to ${toDate}` :
                        fromDate ? `From ${fromDate}` : `Until ${toDate}`}
                     </div>
                   )}
                   {selectedEventId !== 'all' && (
-                    <div className="flex items-center gap-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                    <div className="flex items-center gap-2 text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
                       Event: {events.find(e => String(e.id) === selectedEventId)?.event_title}
                     </div>
                   )}
                   {selectedGameId !== 'all' && (
-                    <div className="flex items-center gap-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                    <div className="flex items-center gap-2 text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
                       Game: {games.find(g => String(g.id) === selectedGameId)?.game_name}
                     </div>
                   )}
                   {selectedStatus !== 'all' && (
-                    <div className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                    <div className="flex items-center gap-2 text-sm bg-purple-100 text-purple-700 px-2 py-1 rounded">
                       Status: {statusOptions.find(s => s.value === selectedStatus)?.name}
                     </div>
                   )}
                   {fromDate === '' && toDate === '' && selectedEventId === 'all' && selectedGameId === 'all' && selectedStatus === 'all' && (
-                    <p className="text-xs text-muted-foreground">No filters applied</p>
+                    <p className="text-sm text-foreground/80">No filters applied</p>
                   )}
                 </div>
               </div>
@@ -900,24 +912,24 @@ export default function BookingsPage() {
             <div className="lg:hidden">
               <div className="flex flex-wrap gap-2 mt-4">
                 {(fromDate || toDate) && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-sm">
                     <Calendar className="h-3 w-3 mr-1" />
                     {fromDate && toDate ? `${fromDate} to ${toDate}` :
                      fromDate ? `From ${fromDate}` : `Until ${toDate}`}
                   </Badge>
                 )}
                 {selectedEventId !== 'all' && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-sm">
                     Event: {events.find(e => String(e.id) === selectedEventId)?.event_title}
                   </Badge>
                 )}
                 {selectedGameId !== 'all' && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-sm">
                     Game: {games.find(g => String(g.id) === selectedGameId)?.game_name}
                   </Badge>
                 )}
                 {selectedStatus !== 'all' && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-sm">
                     Status: {statusOptions.find(s => s.value === selectedStatus)?.name}
                   </Badge>
                 )}
@@ -927,7 +939,7 @@ export default function BookingsPage() {
             <Separator className="my-4" />
 
             {/* Results Summary */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center justify-between text-sm text-foreground/80">
               <span>
                 Showing {filteredBookings.length} of {bookings.length} bookings
               </span>
@@ -946,38 +958,39 @@ export default function BookingsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{bookings.length}</div>
-            <p className="text-xs text-muted-foreground">Total Bookings</p>
-            <p className="text-xs text-primary">{totalGames} games booked</p>
+            <p className="text-sm text-foreground/80">Total Bookings</p>
+            <p className="text-sm text-primary">{totalGames} games booked</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-green-600">{confirmedBookings}</div>
-            <p className="text-xs text-muted-foreground">Confirmed</p>
+            <p className="text-sm text-foreground/80">Confirmed</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-yellow-600">{pendingBookings}</div>
-            <p className="text-xs text-muted-foreground">Pending</p>
+            <p className="text-sm text-foreground/80">Pending</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-red-600">{cancelledBookings}</div>
-            <p className="text-xs text-muted-foreground">Cancelled</p>
+            <p className="text-sm text-foreground/80">Cancelled</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">₹{totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Total Revenue</p>
+            <p className="text-sm text-foreground/80">Total Revenue</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Enhanced Data Table */}
       <EnhancedDataTable
+        readable
         data={filteredBookings}
         columns={columns}
         actions={actions}
@@ -1025,7 +1038,7 @@ export default function BookingsPage() {
         })()}
         emptyMessage="No bookings found"
         onRefresh={fetchBookings}
-        className="min-h-[400px]"
+        className="min-h-[400px] [&_.text-xs]:text-sm [&_.text-muted-foreground]:text-foreground/80"
       />
 
       {/* Delete Confirmation Dialog */}
@@ -1042,23 +1055,23 @@ export default function BookingsPage() {
                 <div className="mt-4 p-4 bg-muted rounded-lg space-y-2 text-sm">
                   <div className="font-medium">Booking Details:</div>
                   <div className="grid grid-cols-2 gap-2">
-                    <span className="text-muted-foreground">Parent:</span>
+                    <span className="text-foreground/80">Parent:</span>
                     <span className="font-medium">{bookingToDelete.parent_name}</span>
                     
-                    <span className="text-muted-foreground">Event:</span>
+                    <span className="text-foreground/80">Event:</span>
                     <span className="font-medium">{bookingToDelete.event_title}</span>
                     
-                    <span className="text-muted-foreground">Child:</span>
+                    <span className="text-foreground/80">Child:</span>
                     <span className="font-medium">{bookingToDelete.child_full_name}</span>
                     
-                    <span className="text-muted-foreground">Status:</span>
+                    <span className="text-foreground/80">Status:</span>
                     <span>{getStatusBadge(bookingToDelete.booking_status)}</span>
                   </div>
                 </div>
               )}
               <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                 <p className="text-sm font-medium text-destructive">The following will be deleted:</p>
-                <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                <ul className="text-sm text-foreground/80 mt-2 space-y-1 list-disc list-inside">
                   <li>Booking record and all children enrollments</li>
                   <li>All game/slot assignments</li>
                   <li>Payment records</li>

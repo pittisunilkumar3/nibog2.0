@@ -93,6 +93,7 @@ interface EnhancedDataTableProps<T> {
   loading?: boolean
   emptyMessage?: string
   className?: string
+  readable?: boolean // Opt in to full text and all mobile fields.
   onRefresh?: () => void
   exportColumns?: ExportColumn<T>[]
   exportTitle?: string
@@ -114,6 +115,7 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
   loading = false,
   emptyMessage = "No data available",
   className,
+  readable = false,
   onRefresh,
   exportColumns,
   exportTitle = "Data Export",
@@ -138,7 +140,7 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
 
   // Responsive column management
   const responsiveColumns = useMemo(() => {
-    if (!isMobile) return columns
+    if (readable || !isMobile) return columns
 
     // On mobile, prioritize columns and hide less important ones
     const sortedColumns = [...columns].sort((a, b) => {
@@ -152,11 +154,11 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
     return sortedColumns.slice(0, maxMobileColumns).concat(
       sortedColumns.slice(maxMobileColumns).filter(col => !col.hideOnMobile)
     )
-  }, [columns, isMobile])
+  }, [columns, isMobile, readable])
 
   // Update visible columns when screen size changes
   useEffect(() => {
-    if (isMobile) {
+    if (isMobile && !readable) {
       const mobileVisibleColumns = new Set(
         responsiveColumns.filter(col => !col.hidden).map(col => col.key)
       )
@@ -167,7 +169,7 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
       )
       setVisibleColumns(allVisibleColumns)
     }
-  }, [isMobile, responsiveColumns, columns])
+  }, [isMobile, responsiveColumns, columns, readable])
 
   // Create export columns from table columns if not provided
   const finalExportColumns = exportColumns || columns.map(col => ({
@@ -306,7 +308,7 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
         <div key={index} className="border rounded-lg p-4 space-y-3 bg-card shadow-sm hover:shadow-md transition-shadow touch-manipulation">
           {/* Show only priority columns in mobile card view */}
           {responsiveColumns
-            .filter(col => visibleColumns.has(col.key) && col.priority && col.priority <= 4)
+            .filter(col => visibleColumns.has(col.key) && (readable || (col.priority && col.priority <= 4)))
             .map((column) => (
               <div key={String(column.key)} className="flex justify-between items-start gap-3">
                 <span className="text-sm font-medium text-muted-foreground min-w-0 flex-shrink-0">
@@ -488,7 +490,7 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
       ) : (
         <div className="rounded-md border overflow-hidden">
           <div className="overflow-x-auto mobile-scroll">
-            <Table role="table" aria-label="Data table" className="min-w-full">
+            <Table role="table" aria-label="Data table" className={cn("min-w-full", readable && "text-base [&_th]:text-foreground [&_th]:font-semibold [&_td]:align-top")}>
             <TableHeader>
               <TableRow>
                 {selectable && (
@@ -505,6 +507,7 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
                   .map((column, index) => (
                     <TableHead
                       key={String(column.key)}
+                      style={readable ? { minWidth: column.width || "180px", width: column.width || "180px" } : undefined}
                       className={cn(
                         column.width && `w-[${column.width}]`,
                         column.align === 'center' && 'text-center',
@@ -578,17 +581,18 @@ export default function EnhancedDataTable<T extends Record<string, any>>({
                       .map((column, colIndex) => (
                         <TableCell
                           key={String(column.key)}
+                          style={readable ? { minWidth: column.width || "180px", width: column.width || "180px", maxWidth: column.width || "280px" } : undefined}
                           className={cn(
                             column.align === 'center' && 'text-center',
                             column.align === 'right' && 'text-right',
                             // Make first column sticky on mobile for better UX
                             isMobile && colIndex === 0 && !selectable && 'sticky left-0 bg-background z-10',
                             isMobile && colIndex === 0 && selectable && 'sticky left-12 bg-background z-10',
-                            'max-w-0 truncate'
+                            readable ? 'whitespace-normal break-words leading-relaxed' : 'max-w-0 truncate'
                           )}
                           title={typeof row[column.key] === 'string' ? row[column.key] : undefined}
                         >
-                          <div className="truncate">
+                          <div className={readable ? "whitespace-normal break-words" : "truncate"}>
                             {column.render ? column.render(row[column.key], row) : String(row[column.key])}
                           </div>
                         </TableCell>

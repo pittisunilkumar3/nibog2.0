@@ -156,6 +156,7 @@ export default function BookingDetailPage({ params }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [isProcessing, setIsProcessing] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
 
@@ -330,6 +331,21 @@ export default function BookingDetailPage({ params }: Props) {
   }, [bookingId, retryCount]) // Removed toast dependency to prevent loops
   
   // Handle confirm booking
+  const handleResendEmail = async () => {
+    if (isResendingEmail) return
+    setIsResendingEmail(true)
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}/resend-email`, { method: "POST" })
+      const result = await response.json()
+      if (!response.ok || !result.success) throw new Error(result.error || result.message || "Could not send email")
+      toast({ title: "Confirmation email sent", description: `Sent to ${result.email} with the ticket and QR code.` })
+    } catch (error) {
+      toast({ title: "Email not sent", description: error instanceof Error ? error.message : "Please try again later.", variant: "destructive" })
+    } finally {
+      setIsResendingEmail(false)
+    }
+  }
+
   const handleConfirmBooking = async () => {
     try {
       setIsProcessing("confirm")
@@ -464,7 +480,11 @@ export default function BookingDetailPage({ params }: Props) {
             <ExploreModal booking={booking} />
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-2">
+          <Button variant="outline" onClick={handleResendEmail} disabled={isResendingEmail} className="touch-manipulation">
+            {isResendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+            {isResendingEmail ? "Sending email..." : "Resend confirmation email"}
+          </Button>
           <Button variant="outline" asChild className="touch-manipulation">
             <Link href={`/admin/bookings/${booking.booking_id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
