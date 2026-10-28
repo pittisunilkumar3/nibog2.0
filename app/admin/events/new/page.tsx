@@ -564,11 +564,15 @@ export default function NewEventPage() {
                   <Input
                     id="eventImage"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    aria-describedby="event-image-guidance"
                     onChange={handleImageUpload}
                     disabled={isUploadingImage}
                     className="cursor-pointer"
                   />
+                  <p id="event-image-guidance" className="text-sm text-muted-foreground">
+                    Recommended dimensions: 1600 × 900 px (landscape). Other dimensions are supported. JPG, PNG, GIF or WebP, up to 5 MB.
+                  </p>
                   {isUploadingImage && (
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
