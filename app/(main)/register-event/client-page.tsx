@@ -17,10 +17,10 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format, addMonths, differenceInMonths, differenceInDays } from "date-fns"
 import { cn, formatDateForAPI } from "@/lib/utils"
-// Pending booking removed - going directly to payment
+// Create a Pending booking before initiating PhonePe payment
 import { getEventWithVenueDetails } from "@/services/bookingService"
 import { Calendar as CalendarIcon, ArrowLeft, ChevronRight, MapPin, AlertTriangle, AlertCircle, Loader2, Info, CheckCircle } from "lucide-react"
-import { useState, useEffect, useMemo, useCallback, memo } from "react"
+import { useState, useEffect, useMemo, useCallback, memo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -135,6 +135,8 @@ export default function RegisterEventClientPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false)
   const [bookingReference, setBookingReference] = useState<string | null>(null)
+  const [pendingPaymentAmount, setPendingPaymentAmount] = useState<number | null>(null)
+  const paymentInFlightRef = useRef(false)
   
   // Promocode related states
   const [availablePromocodes, setAvailablePromocodes] = useState<any[]>([])
@@ -1343,8 +1345,10 @@ export default function RegisterEventClientPage() {
     setPromocodeError(null);
   };
   
-  // Handle payment initiation - redirect to PhonePe first, booking will be created after successful payment
+  // Create and verify a Pending booking before redirecting to PhonePe
   const handlePayment = async () => {
+    if (paymentInFlightRef.current) return
+    paymentInFlightRef.current = true
     try {
       setIsProcessingPayment(true)
       setPaymentError(null)
@@ -1474,6 +1478,7 @@ export default function RegisterEventClientPage() {
 
 
 
+      const transactionId = bookingReference || `NIBOG_${userId}_${Date.now()}`;
       const bookingData = {
         userId,
         parentName,
@@ -1484,18 +1489,16 @@ export default function RegisterEventClientPage() {
         schoolName,
         gender,
         eventId: selectedApiEvent.event_id,
+        bookingRef: transactionId,
         // Store both slot IDs and game IDs for proper handling
         slotId: slotIds,  // Array of selected slot IDs (for reference)
         gameId: validGameIds,  // Array of actual game IDs (for API)
         gamePrice: validGamePrices,  // Array of game prices
         totalAmount: calculateTotalPrice(),
         paymentMethod: "PhonePe",
+        paymentStatus: "Pending",
         termsAccepted,
-        addOns: selectedAddOns.map(item => ({
-          addOnId: item.addOn.id,
-          quantity: item.quantity,
-          variantId: item.variantId
-        })),
+        selectedAddOns,
         ...(appliedPromoCode && { promoCode: promoCode }),
 
         // Add rich event details for email
@@ -1538,26 +1541,37 @@ export default function RegisterEventClientPage() {
         }))
       }
 
-      // Booking validation removed
+      let paymentAmount = pendingPaymentAmount;
+      if (!bookingReference) {
+        const registrationResponse = await registerBooking(formatBookingDataForAPI(bookingData));
+        const persistedAmount = Number(registrationResponse.total_amount);
+        if (
+          typeof registrationResponse.booking_id !== 'number' ||
+          !Number.isInteger(registrationResponse.booking_id) ||
+          registrationResponse.booking_ref !== transactionId ||
+          registrationResponse.payment_id !== null ||
+          registrationResponse.created !== true ||
+          registrationResponse.confirmationTransition !== false
+        ) {
+          throw new Error('Backend did not create the expected pending booking');
+        }
+        if (!Number.isFinite(persistedAmount) || persistedAmount <= 0) {
+          throw new Error('Backend returned an invalid pending booking amount');
+        }
 
-      // Generate transaction ID locally (removed pending booking)
+        paymentAmount = persistedAmount;
+        setBookingReference(transactionId);
+        setPendingPaymentAmount(persistedAmount);
+      }
 
-      const timestamp = Date.now();
+      if (paymentAmount === null || !Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+        throw new Error('Pending booking amount is unavailable');
+      }
 
-      const transactionId = `NIBOG_${userId}_${timestamp}`;
-      // Transaction ID generated locally - storing booking data in localStorage as backup
-      // Also store in localStorage as backup
-      localStorage.setItem('nibog_booking_data', JSON.stringify({
-        ...bookingData,
-        transactionId,
-        timestamp: new Date().getTime()
-      }))
-
-      // Initiate the payment with the generated transaction ID
       const paymentUrl = await initiatePhonePePayment(
-        transactionId, // Use the generated transaction ID
+        transactionId,
         userId,
-        totalAmount,
+        paymentAmount,
         phone
       )
 
@@ -1598,6 +1612,7 @@ export default function RegisterEventClientPage() {
 
       setPaymentError(errorMessage)
     } finally {
+      paymentInFlightRef.current = false
       setIsProcessingPayment(false)
     }
     // After successful payment and booking, clear all registration/session data

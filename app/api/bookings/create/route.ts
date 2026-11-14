@@ -1,99 +1,73 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { BOOKING_API } from '@/config/api';
 
 export const dynamic = 'force-dynamic';
 
+const createBookingSchema = z.object({
+  user_id: z.number().int().nonnegative().nullable().optional(),
+  parent: z.object({
+    parent_name: z.string(),
+    email: z.string().email(),
+    additional_phone: z.string().optional(),
+    phone: z.string().optional(),
+  }).passthrough(),
+  child: z.object({
+    full_name: z.string(),
+    date_of_birth: z.string(),
+    gender: z.string(),
+    school_name: z.string().optional(),
+  }).passthrough(),
+  booking: z.object({
+    event_id: z.number().int().positive(),
+    booking_ref: z.string().optional(),
+    total_amount: z.number().nonnegative().optional(),
+    payment_method: z.string(),
+    payment_status: z.string(),
+  }).passthrough(),
+  booking_games: z.array(z.object({
+    game_id: z.number().int().positive(),
+    slot_id: z.number().int().positive(),
+    game_price: z.number().nonnegative(),
+  }).passthrough()).min(1),
+}).passthrough();
+
+const jsonObjectSchema = z.record(z.unknown());
+
 export async function POST(request: Request) {
   try {
-    console.log('[BOOKING] Booking creation request received');
-    
-    // Parse the request body
-    const bookingData = await request.json();
-    console.log('[BOOKING] Request data:', JSON.stringify(bookingData, null, 2));
-
-    // Validate required fields
-    if (!bookingData.parent || !bookingData.child || !bookingData.booking || !bookingData.booking_games) {
-      console.error('[BOOKING] Validation failed: Missing required fields');
-      return NextResponse.json(
-        { success: false, error: "Missing required booking data" },
-        { status: 400 }
-      );
+    const parsedRequest = createBookingSchema.safeParse(await request.json().catch(() => null));
+    if (!parsedRequest.success) {
+      return NextResponse.json({ success: false, error: 'Missing or invalid booking data' }, { status: 400 });
     }
 
-    // Forward the request to the external API
-    const apiUrl = BOOKING_API.CREATE;
-    console.log('[BOOKING] Calling backend API:', apiUrl);
-
-    const response = await fetch(apiUrl, {
-      method: "POST",
+    const superadminToken = request.headers.get('x-superadmin-token');
+    const response = await fetch(BOOKING_API.CREATE, {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
+        ...(superadminToken ? { 'x-superadmin-token': superadminToken } : {}),
       },
-      body: JSON.stringify(bookingData),
+      body: JSON.stringify(parsedRequest.data),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     });
 
-    console.log('[BOOKING] Backend response status:', response.status);
-
+    const rawResult: unknown = await response.json().catch(() => null);
+    const parsedResult = jsonObjectSchema.safeParse(rawResult);
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[BOOKING] Error response:", errorText);
-      console.error("[BOOKING] Request payload was:", JSON.stringify(bookingData, null, 2));
-
-      let errorMessage = `Error creating booking: ${response.status} - ${response.statusText}`;
-      let errorDetails = errorText;
-
-      try {
-        const errorData = JSON.parse(errorText);
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-        errorDetails = errorData;
-      } catch (e) {
-        // Could not parse error as JSON, using raw text
-        errorDetails = errorText;
-      }
-
       return NextResponse.json(
-        {
-          success: false,
-          error: errorMessage,
-          details: errorDetails,
-          status: response.status,
-          statusText: response.statusText
-        },
+        parsedResult.success ? parsedResult.data : { success: false, error: 'Booking creation failed' },
         { status: response.status }
       );
     }
-
-    // Get the response data
-    const responseText = await response.text();
-    
-    let data;
-    try {
-      // Try to parse the response as JSON
-      data = JSON.parse(responseText);
-      console.log('[BOOKING] Success response:', data);
-    } catch (parseError) {
-      console.error("[BOOKING] Error parsing response:", parseError);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "Failed to parse API response", 
-          rawResponse: responseText 
-        },
-        { status: 500 }
-      );
+    if (!parsedResult.success) {
+      return NextResponse.json({ success: false, error: 'Backend returned an invalid booking response' }, { status: 502 });
     }
-    
-    // Return the response with success status
-    return NextResponse.json({ success: true, ...data }, { status: 200 });
-  } catch (error: any) {
-    console.error("[BOOKING] Server error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Failed to create booking" },
-      { status: 500 }
-    );
+
+    return NextResponse.json({ success: true, ...parsedResult.data }, { status: response.status });
+  } catch (error) {
+    console.error('[BOOKING] Proxy failed:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json({ success: false, error: 'Booking creation is temporarily unavailable' }, { status: 503 });
   }
 }
