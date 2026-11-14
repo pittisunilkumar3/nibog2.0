@@ -1,4 +1,5 @@
 // @vitest-environment node
+// Fixtures are synthetic; never a real key or customer identifier.
 import { beforeEach, expect, it, test, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { POST } from '../../app/api/payments/phonepe-callback/route';

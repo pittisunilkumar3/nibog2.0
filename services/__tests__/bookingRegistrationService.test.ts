@@ -1,3 +1,4 @@
+// Fixtures are synthetic; never a real key or customer identifier.
 import { expect, test } from 'vitest';
 import { formatBookingDataForAPI } from '../bookingRegistrationService';
 

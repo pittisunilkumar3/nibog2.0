@@ -1,4 +1,5 @@
 // @vitest-environment node
+// Fixtures are synthetic; never a real key or customer identifier.
 import { afterEach, expect, test, vi } from 'vitest';
 import { verifyPhonePeAndFinalize } from '../payments/phonepeVerification';
 
