@@ -6,13 +6,13 @@ import {
   PhonePePaymentRequest,
   PhonePePaymentResponse,
   PaymentStatus,
-  generateTransactionId,
   generateSHA256Hash,
   base64Encode,
   validatePhonePeConfig,
   logPhonePeConfig
 } from '@/config/phonepe';
 import { getSession } from '@/lib/auth/session';
+import { z } from 'zod';
 
 // Helper function to create headers with auth (async)
 const getAuthHeaders = async () => {
@@ -41,7 +41,7 @@ const getAuthHeaders = async () => {
   
   return {
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    ...(token ? { 'Authorization': `Bearer ${token}`, 'x-superadmin-token': token } : {})
   };
 };
 
@@ -195,16 +195,13 @@ export async function initiatePhonePePayment(
 
 
 
-    // Generate a unique merchant transaction ID (required by PhonePe) 
-    // If bookingId is already a transaction ID (starts with NIBOG_), use it directly
-    // Otherwise, generate a new one
-    let merchantTransactionId: string;
-    if (typeof bookingId === 'string' && bookingId.startsWith('NIBOG_')) {
-      // This is already a transaction ID from pending booking, use it directly
-      merchantTransactionId = bookingId;
-    } else {
-      // This is a regular booking ID, generate a new transaction ID
-      merchantTransactionId = generateTransactionId(bookingId);
+    const merchantTransactionId = String(bookingId);
+    const referenceMatch = /^NIBOG_(\d+)_(\d+)$/.exec(merchantTransactionId);
+    if (!referenceMatch) {
+      throw new Error('A valid pending booking reference is required');
+    }
+    if (Number(referenceMatch[1]) !== Number(userId)) {
+      throw new Error('Booking reference does not match the logged-in customer');
     }
 
     // Validate transaction ID length (PhonePe requires max 38 characters)
@@ -220,7 +217,7 @@ export async function initiatePhonePePayment(
       merchantUserId: userId.toString(),
       amount: Math.round(amount * 100), // Convert rupees to paise (PhonePe requirement) and round to ensure integer
       // Use production URLs for callbacks
-      redirectUrl: `${PHONEPE_CONFIG.APP_URL.replace(/\/+$/, '')}/payment-callback?bookingId=${encodeURIComponent(String(bookingId))}&transactionId=${encodeURIComponent(merchantTransactionId)}`,
+      redirectUrl: `${PHONEPE_CONFIG.APP_URL.replace(/\/+$/, '')}/payment-callback?transactionId=${encodeURIComponent(merchantTransactionId)}`,
       redirectMode: 'REDIRECT',
       callbackUrl: `${PHONEPE_CONFIG.APP_URL.replace(/\/+$/, '')}/api/payments/phonepe-callback`,
       mobileNumber: mobileNumber.replace(/\D/g, ''), // Remove non-numeric characters
@@ -286,81 +283,68 @@ export async function initiatePhonePePayment(
   }
 }
 
-/**
- * Check the status of a PhonePe payment
- * @param merchantTransactionId The merchant transaction ID
- * @param bookingData Optional booking data from localStorage to use for creating the booking
- * @returns The payment status
- */
-export async function checkPhonePePaymentStatus(merchantTransactionId: string, bookingData?: any): Promise<PaymentStatus> {
-  try {
+export interface PhonePePaymentResult {
+  status: PaymentStatus;
+  bookingId?: string;
+  bookingRef?: string;
+  paymentId?: number;
+}
 
-    // Use our internal API route to avoid CORS issues
-    const response = await fetch('/api/payments/phonepe-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        transactionId: merchantTransactionId,
-        bookingData: bookingData || null,
-      }),
-    });
+const phonePeStatusResponseSchema = z.object({
+  code: z.string().optional(),
+  error: z.string().optional(),
+  data: z.object({
+    paymentState: z.string().optional(),
+    state: z.string().optional(),
+  }).passthrough().optional(),
+  bookingCreated: z.boolean().optional(),
+  paymentCreated: z.boolean().optional(),
+  bookingId: z.union([z.string(), z.number()]).optional(),
+  booking_id: z.union([z.string(), z.number()]).optional(),
+  paymentId: z.union([z.string(), z.number()]).optional(),
+  payment_id: z.union([z.string(), z.number()]).optional(),
+  booking_ref: z.string().optional(),
+  bookingData: z.object({ booking_ref: z.string().optional() }).optional(),
+}).passthrough();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Error response: ${errorText}`);
-      console.error(`Response status: ${response.status}`);
-      console.error(`Response headers:`, Object.fromEntries(response.headers.entries()));
-      throw new Error(`Failed to check PhonePe payment status. API returned status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.success) {
-      // Map PhonePe status to our payment status
-      // Handle both 'paymentState' and 'state' fields (PhonePe API inconsistency)
-      const paymentState = data.data?.paymentState || data.data?.state;      
-      // For test environment, be more flexible with status handling
-      // Check both the server response status and also what PhonePe directly returned
-      
-      // First, check if the server already determined this was a success
-      if (data.bookingCreated || data.paymentCreated) {
-        return 'SUCCESS';
-      }
-      
-      // Check server response first - server may have mapped status more intelligently
-      if (data.code === 'PAYMENT_SUCCESS' || data.code?.includes('SUCCESS')) {
-        return 'SUCCESS';
-      }
-      
-      // Then check PhonePe status
-      switch (paymentState) {
-        case 'COMPLETED':
-          return 'SUCCESS';
-        case 'PENDING':
-          // In test mode, sometimes pending might actually be success based on UI selection
-          if (PHONEPE_CONFIG.IS_TEST_MODE && data.code?.toLowerCase().includes('success')) {
-            return 'SUCCESS';
-          }
-          return 'PENDING';
-        case 'FAILED':
-          return 'FAILED';
-        default:
-          console.warn('Unknown payment state:', paymentState);
-          // In test mode, use the response code as a fallback
-          if (PHONEPE_CONFIG.IS_TEST_MODE && data.code?.toLowerCase().includes('success')) {
-            return 'SUCCESS';
-          }
-          return 'FAILED';
-      }
-    } else {
-      throw new Error(`PhonePe payment status check failed: ${data.message}`);
-    }
-  } catch (error) {
-    console.error('Error checking PhonePe payment status:', error);
-    throw error;
+/** Resolve gateway state and a numeric booking ID only after backend confirmation. */
+export async function checkPhonePePaymentResult(merchantTransactionId: string): Promise<PhonePePaymentResult> {
+  const response = await fetch('/api/payments/phonepe-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transactionId: merchantTransactionId }),
+  });
+  const parsed = phonePeStatusResponseSchema.safeParse(await response.json().catch(() => null));
+  if (!parsed.success) throw new Error('Invalid payment status response');
+  const data = parsed.data;
+  if (!response.ok) {
+    throw new Error(data.error || `Failed to check PhonePe payment status (${response.status})`);
   }
+
+  const paymentState = data.data?.paymentState || data.data?.state;
+  const gatewayCompleted = data.code === 'PAYMENT_SUCCESS' && paymentState === 'COMPLETED';
+  if (gatewayCompleted) {
+    const bookingId = Number(data.bookingId ?? data.booking_id);
+    const backendConfirmed = data.bookingCreated === true && data.paymentCreated === true;
+    if (!backendConfirmed || !Number.isInteger(bookingId) || bookingId <= 0) {
+      throw new Error('Payment has not been confirmed against a booking yet. Please retry status verification.');
+    }
+    return {
+      status: 'SUCCESS',
+      bookingId: String(bookingId),
+      bookingRef: data.bookingData?.booking_ref || data.booking_ref || merchantTransactionId,
+      paymentId: Number(data.paymentId ?? data.payment_id) || undefined,
+    };
+  }
+
+  if (paymentState === 'PENDING' || data.code === 'PAYMENT_PENDING') return { status: 'PENDING' };
+  if (paymentState === 'CANCELLED' || data.code === 'PAYMENT_CANCELLED') return { status: 'CANCELLED' };
+  return { status: 'FAILED' };
+}
+
+/** Check the status of a PhonePe payment without accepting browser booking data. */
+export async function checkPhonePePaymentStatus(merchantTransactionId: string, _bookingData?: unknown): Promise<PaymentStatus> {
+  return (await checkPhonePePaymentResult(merchantTransactionId)).status;
 }
 
 // ============ ADMIN PAYMENT MANAGEMENT FUNCTIONS ============

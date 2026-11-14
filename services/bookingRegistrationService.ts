@@ -1,7 +1,7 @@
 // Booking registration service for handling booking API calls
-import { BOOKING_API } from '../config/api';
 import { validateGameData, formatGamesForAPI, createFallbackGame } from '../utils/gameIdValidation';
 import { formatDateForAPI } from '../lib/utils';
+import { z } from 'zod';
 
 export interface BookingVariant {
   variant_id: number;
@@ -29,6 +29,7 @@ export interface BookingRegistrationData {
   };
   booking: {
     event_id: number;
+    booking_ref?: string;
     total_amount?: number;
     payment_method: string;
     payment_status: string;
@@ -43,16 +44,23 @@ export interface BookingRegistrationData {
   promo_code?: string;
 }
 
-export interface BookingRegistrationResponse {
-  booking_game_id: number;
-  booking_id: number;
-  child_id: number;
-  game_id: number;
-  game_price: string;
-  attendance_status: string;
-  is_active: boolean;
-  created_at: string;
-}
+const bookingCreationResponseSchema = z.object({
+  booking_id: z.number().int().positive(),
+  booking_ref: z.string(),
+  payment_id: z.number().int().positive().nullable(),
+  total_amount: z.number().nonnegative().optional(),
+  status: z.string().optional(),
+  payment_status: z.string().optional(),
+  created: z.boolean(),
+  confirmationTransition: z.boolean(),
+}).passthrough();
+
+export type BookingCreationResponse = z.infer<typeof bookingCreationResponseSchema>;
+
+const bookingErrorSchema = z.object({
+  error: z.string().optional(),
+  message: z.string().optional(),
+}).passthrough();
 
 /**
  * Register a booking
@@ -63,26 +71,31 @@ export interface BookingRegistrationResponse {
  * `formatBookingDataForAPI` will format multiple `booking_games` entries
  * when provided with arrays of `gameId`, `gamePrice` and optional `slotId`.
  */
-export async function registerBooking(bookingData: BookingRegistrationData): Promise<any> {
+export async function registerBooking(bookingData: BookingRegistrationData): Promise<BookingCreationResponse> {
   try {
 
+    const adminToken = typeof window !== 'undefined'
+      ? localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken')
+      : null;
     const response = await fetch('/api/bookings/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(adminToken ? { 'x-superadmin-token': adminToken } : {}),
       },
       body: JSON.stringify(bookingData),
     });
 
+    const rawResult: unknown = await response.json().catch(() => null);
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Booking registration failed:", errorData);
-      throw new Error(errorData.message || 'Failed to create booking');
+      const errorResult = bookingErrorSchema.safeParse(rawResult);
+      const message = errorResult.success ? errorResult.data.error || errorResult.data.message : undefined;
+      throw new Error(message || 'Failed to create booking');
     }
 
-    const responseData = await response.json();
-
-    return responseData;
+    const parsedResult = bookingCreationResponseSchema.safeParse(rawResult);
+    if (!parsedResult.success) throw new Error('Backend returned an invalid booking creation response');
+    return parsedResult.data;
   } catch (error) {
     console.error("Error registering booking:", error);
     throw error;
@@ -104,6 +117,7 @@ export function formatBookingDataForAPI(formData: {
   schoolName: string;
   gender: string;
   eventId: number;
+  bookingRef?: string;
   gameId: number[] | number; // Updated to accept both array and single number
   gamePrice: number[] | number; // Updated to accept both array and single number
   slotId?: number[] | number; // Add slot IDs for proper game details lookup
@@ -175,6 +189,7 @@ export function formatBookingDataForAPI(formData: {
     },
     booking: {
       event_id: formData.eventId,
+      booking_ref: formData.bookingRef,
       total_amount: formData.totalAmount,
       payment_method: formData.paymentMethod,
       payment_status: formData.paymentStatus,
