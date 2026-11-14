@@ -15,6 +15,7 @@ function PaymentCallbackContent() {
   const [paymentStatus, setPaymentStatus] = useState<'SUCCESS' | 'FAILED' | 'PENDING' | 'CANCELLED' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [bookingId, setBookingId] = useState<string | null>(null)
+  const [bookingRef, setBookingRef] = useState<string | null>(null)
   const [transactionId, setTransactionId] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [isRetrying, setIsRetrying] = useState(false)
@@ -36,14 +37,15 @@ function PaymentCallbackContent() {
         setPaymentStatus(result.status)
 
         if (result.status === 'SUCCESS') {
-          if (!result.bookingId) throw new Error('Backend confirmation did not return a booking ID')
+          if (!result.bookingId || result.bookingRef !== txnId) throw new Error('Backend confirmation did not return the expected booking reference')
           setBookingId(result.bookingId)
+          setBookingRef(result.bookingRef)
           try {
             localStorage.setItem('lastBookingId', result.bookingId)
-            localStorage.removeItem('lastBookingRef')
+            localStorage.setItem('lastBookingRef', result.bookingRef)
             localStorage.removeItem('nibog_booking_data')
           } catch { /* Server confirmation is authoritative when storage is unavailable. */ }
-          router.replace(`/booking-confirmation?bookingId=${encodeURIComponent(result.bookingId)}`)
+          router.replace(`/booking-confirmation?ref=${encodeURIComponent(result.bookingRef)}`)
           return
         }
 
@@ -59,8 +61,9 @@ function PaymentCallbackContent() {
         }
       } catch (caughtError) {
         if (cancelled) return
-        setError(caughtError instanceof Error ? caughtError.message : 'Failed to check payment status')
-        setPaymentStatus('FAILED')
+        const detail = caughtError instanceof Error ? caughtError.message : 'Payment status verification failed'
+        setError(`${detail}. Check this same transaction again or contact support before making another payment.`)
+        setPaymentStatus('PENDING')
       } finally {
         if (!cancelled && !retryScheduled) {
           setIsLoading(false)
@@ -119,9 +122,9 @@ function PaymentCallbackContent() {
               {paymentStatus === 'FAILED' && <XCircle className="h-16 w-16 text-red-500" />}
               {paymentStatus === 'PENDING' && <AlertTriangle className="h-16 w-16 text-amber-500" />}
               {paymentStatus === 'CANCELLED' && <XCircle className="h-16 w-16 text-gray-500" />}
-              {bookingId && (
-                <Link href={`/booking-confirmation?bookingId=${encodeURIComponent(bookingId)}`} className="text-blue-600 underline">
-                  View booking #{bookingId}
+              {bookingRef && (
+                <Link href={`/booking-confirmation?ref=${encodeURIComponent(bookingRef)}`} className="text-blue-600 underline">
+                  View booking {bookingId ? `#${bookingId}` : bookingRef}
                 </Link>
               )}
               {transactionId && <p className="break-all text-center text-sm text-muted-foreground">Transaction: {transactionId}</p>}
@@ -129,8 +132,8 @@ function PaymentCallbackContent() {
           )}
         </CardContent>
         <CardFooter className="flex flex-col justify-center gap-2">
-          {paymentStatus === 'SUCCESS' && bookingId && (
-            <Button className="h-12 w-full rounded-full" onClick={() => router.push(`/booking-confirmation?bookingId=${bookingId}`)}>
+          {paymentStatus === 'SUCCESS' && bookingRef && (
+            <Button className="h-12 w-full rounded-full" onClick={() => router.push(`/booking-confirmation?ref=${encodeURIComponent(bookingRef)}`)}>
               View Booking Details
             </Button>
           )}

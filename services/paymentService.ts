@@ -1,16 +1,7 @@
 // Payment service for handling payment gateway integrations and admin management
 
 import { BOOKING_API, PAYMENT_API } from '@/config/api';
-import {
-  PHONEPE_CONFIG,
-  PhonePePaymentRequest,
-  PhonePePaymentResponse,
-  PaymentStatus,
-  generateSHA256Hash,
-  base64Encode,
-  validatePhonePeConfig,
-  logPhonePeConfig
-} from '@/config/phonepe';
+import type { PaymentStatus } from '@/config/phonepe';
 import { getSession } from '@/lib/auth/session';
 import { z } from 'zod';
 
@@ -149,138 +140,52 @@ export interface PaymentAnalytics {
   }>;
 }
 
-/**
- * Initiate a PhonePe payment
- * @param bookingId The booking ID
- * @param userId The user ID
- * @param amount The payment amount in rupees (e.g., ₹100 = 100, will be converted to paise internally)
- * @param mobileNumber The user's mobile number
- * @returns The PhonePe payment URL
- */
-export async function initiatePhonePePayment(
-  bookingId: string | number,
-  userId: string | number,
-  amount: number,
-  mobileNumber: string
-): Promise<string> {
-  try {
-    // Log and validate PhonePe configuration
+const phonePeInitiationResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    instrumentResponse: z.object({
+      redirectInfo: z.object({ url: z.string().url() }),
+    }),
+  }),
+}).passthrough();
 
-    logPhonePeConfig();
+const phonePeInitiationErrorSchema = z.object({
+  error: z.string().optional(),
+  message: z.string().optional(),
+}).passthrough();
 
-    const validation = validatePhonePeConfig();
-    if (!validation.isValid) {
-      console.error('PhonePe Configuration Validation Failed:', validation.errors);
-      throw new Error(`PhonePe configuration is invalid: ${validation.errors.join(', ')}`);
-    }
-
-    // Validate input parameters
-
-    if (!bookingId) {
-      console.error('❌ Booking ID is missing');
-      throw new Error('Booking ID is required');
-    }
-    if (!userId) {
-      console.error('❌ User ID is missing');
-      throw new Error('User ID is required');
-    }
-    if (!amount || amount <= 0) {
-      console.error('❌ Invalid amount:', amount);
-      throw new Error('Valid amount is required');
-    }
-    if (!mobileNumber) {
-      console.error('❌ Mobile number is missing');
-      throw new Error('Mobile number is required');
-    }
-
-
-
-    const merchantTransactionId = String(bookingId);
-    const referenceMatch = /^NIBOG_(\d+)_(\d+)$/.exec(merchantTransactionId);
-    if (!referenceMatch) {
-      throw new Error('A valid pending booking reference is required');
-    }
-    if (Number(referenceMatch[1]) !== Number(userId)) {
-      throw new Error('Booking reference does not match the logged-in customer');
-    }
-
-    // Validate transaction ID length (PhonePe requires max 38 characters)
-    if (merchantTransactionId.length > 38) {
-      console.error(`Transaction ID too long (${merchantTransactionId.length} chars): ${merchantTransactionId}`);
-      throw new Error(`Transaction ID exceeds 38 character limit: ${merchantTransactionId}`);
-    }
-
-    // Create the payment request payload
-    const paymentRequest: PhonePePaymentRequest = {
-      merchantId: PHONEPE_CONFIG.MERCHANT_ID,
-      merchantTransactionId: merchantTransactionId,
-      merchantUserId: userId.toString(),
-      amount: Math.round(amount * 100), // Convert rupees to paise (PhonePe requirement) and round to ensure integer
-      // Use production URLs for callbacks
-      redirectUrl: `${PHONEPE_CONFIG.APP_URL.replace(/\/+$/, '')}/payment-callback?transactionId=${encodeURIComponent(merchantTransactionId)}`,
-      redirectMode: 'REDIRECT',
-      callbackUrl: `${PHONEPE_CONFIG.APP_URL.replace(/\/+$/, '')}/api/payments/phonepe-callback`,
-      mobileNumber: mobileNumber.replace(/\D/g, ''), // Remove non-numeric characters
-      paymentInstrument: {
-        type: 'PAY_PAGE'
-      }
-    };
-
-    // Convert the payment request to a base64 encoded string
-    const payloadString = JSON.stringify(paymentRequest);
-    const base64Payload = base64Encode(payloadString);
-
-    // Generate the X-VERIFY header with mobile-specific error handling
-    const dataToHash = base64Payload + '/pg/v1/pay' + PHONEPE_CONFIG.SALT_KEY;
-
-    let xVerify: string;
-    try {
-      const hashResult = await generateSHA256Hash(dataToHash);
-      xVerify = hashResult + '###' + PHONEPE_CONFIG.SALT_INDEX;
-    } catch (error) {
-      console.error('❌ Hash generation failed:', error);
-      throw new Error(`Payment hash generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-
-    // Use our internal API route to avoid CORS issues
-    // Only use this service from client-side to avoid server-to-server issues
-    if (typeof window === 'undefined') {
-      throw new Error('Payment service should only be called from client-side');
-    }
-    const response = await fetch('/api/payments/phonepe-initiate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        request: base64Payload,
-        xVerify: xVerify,
-        transactionId: merchantTransactionId,
-        bookingId: bookingId,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ API Error response: ${errorText}`);
-      console.error(`❌ Response status: ${response.status}`);
-      console.error(`❌ Response headers:`, Object.fromEntries(response.headers.entries()));
-      throw new Error(`Failed to initiate PhonePe payment. API returned status: ${response.status}. Error: ${errorText}`);
-    }
-
-    const data = await response.json();
-
-    if (data.success) {
-      // Return the payment URL
-      return data.data.instrumentResponse.redirectInfo.url;
-    } else {
-      console.error('PhonePe payment initiation failed:', data);
-      throw new Error(`PhonePe payment initiation failed: ${data.message || data.error || 'Unknown error'}`);
-    }
-  } catch (error) {
-    console.error('Error initiating PhonePe payment:', error);
-    throw error;
+/** Initiate payment from a persisted booking reference; the server derives and signs the payload. */
+export async function initiatePhonePePayment(bookingRef: string): Promise<string> {
+  if (!/^NIBOG_\d+_\d+$/.test(bookingRef) || bookingRef.length > 38) {
+    throw new Error('A valid pending booking reference is required');
   }
+  if (typeof window === 'undefined') {
+    throw new Error('Payment initiation must be called from the browser');
+  }
+
+  const response = await fetch('/api/payments/phonepe-initiate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bookingRef }),
+  });
+  const rawData: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const errorData = phonePeInitiationErrorSchema.safeParse(rawData);
+    const message = errorData.success
+      ? errorData.data.error || errorData.data.message || `Payment initiation failed (${response.status})`
+      : `Payment initiation failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  const parsed = phonePeInitiationResponseSchema.safeParse(rawData);
+  if (!parsed.success) {
+    const errorData = phonePeInitiationErrorSchema.safeParse(rawData);
+    throw new Error(errorData.success
+      ? errorData.data.error || errorData.data.message || 'PhonePe returned an invalid payment response'
+      : 'PhonePe returned an invalid payment response');
+  }
+  return parsed.data.data.instrumentResponse.redirectInfo.url;
 }
 
 export interface PhonePePaymentResult {

@@ -85,20 +85,19 @@ export const getPhonePeEndpoints = () => {
   return isProduction ? PHONEPE_API.PROD : PHONEPE_API.TEST;
 };
 
-// PhonePe merchant configuration from environment variables
-// Removed hardcoded production credentials to prevent misuse
+// Server-only credentials. Never expose these through NEXT_PUBLIC_* variables.
 export const PHONEPE_CONFIG = {
   MERCHANT_ID: isProduction
-    ? (process.env.PHONEPE_PROD_MERCHANT_ID || process.env.NEXT_PUBLIC_MERCHANT_ID || '')
-    : (process.env.PHONEPE_TEST_MERCHANT_ID || process.env.NEXT_PUBLIC_TEST_MERCHANT_ID || 'PGTESTPAYUAT86'),
+    ? (process.env.PHONEPE_PROD_MERCHANT_ID || '')
+    : (process.env.PHONEPE_TEST_MERCHANT_ID || 'PGTESTPAYUAT86'),
 
   SALT_KEY: isProduction
-    ? (process.env.PHONEPE_PROD_SALT_KEY || process.env.NEXT_PUBLIC_SALT_KEY || '')
-    : (process.env.PHONEPE_TEST_SALT_KEY || process.env.NEXT_PUBLIC_TEST_SALT_KEY || '96434309-7796-489d-8924-ab56988a6076'),
+    ? (process.env.PHONEPE_PROD_SALT_KEY || '')
+    : (process.env.PHONEPE_TEST_SALT_KEY || '96434309-7796-489d-8924-ab56988a6076'),
 
   SALT_INDEX: isProduction
-    ? (process.env.PHONEPE_PROD_SALT_INDEX || process.env.NEXT_PUBLIC_SALT_INDEX || '1')
-    : (process.env.PHONEPE_TEST_SALT_INDEX || process.env.NEXT_PUBLIC_TEST_SALT_INDEX || '1'),
+    ? (process.env.PHONEPE_PROD_SALT_INDEX || '1')
+    : (process.env.PHONEPE_TEST_SALT_INDEX || '1'),
 
   IS_TEST_MODE: !isProduction,
   ENVIRONMENT: isProduction ? 'production' : 'sandbox',

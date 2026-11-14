@@ -8,17 +8,24 @@ import { Suspense, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
+type ConfirmationState = 'loading' | 'confirmed' | 'pending' | 'not-found' | 'error'
+
 function BookingConfirmationContent() {
   const bookingRef = useSearchParams().get("ref")?.trim()
-
-  // Resolve the numeric booking id from the reference so we can deep-link
-  // straight to the ticket page right after payment.
   const [bookingId, setBookingId] = useState<string | null>(null)
-  const [resolving, setResolving] = useState(true)
+  const [confirmationState, setConfirmationState] = useState<ConfirmationState>(bookingRef ? 'loading' : 'not-found')
+  const resolving = confirmationState === 'loading'
 
   useEffect(() => {
-    if (!bookingRef) { setResolving(false); return }
     let cancelled = false
+    if (!bookingRef) {
+      setBookingId(null)
+      setConfirmationState('not-found')
+      return () => { cancelled = true }
+    }
+
+    setBookingId(null)
+    setConfirmationState('loading')
     ;(async () => {
       try {
         const res = await fetch("/api/bookings/get-by-ref", {
@@ -26,22 +33,38 @@ function BookingConfirmationContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ booking_ref_id: bookingRef }),
         })
-        if (res.ok) {
-          const json = await res.json()
-          const id = json?.data?.booking_id ?? json?.data?.id ?? json?.booking_id ?? json?.id
-          if (!cancelled && id) setBookingId(String(id))
+        if (cancelled) return
+        if (res.status === 404) {
+          setConfirmationState('not-found')
+          return
+        }
+        if (!res.ok) {
+          setConfirmationState('error')
+          return
+        }
+
+        const json = await res.json()
+        const booking = json?.data
+        const id = booking?.booking_id ?? booking?.id
+        if (booking?.booking_ref !== bookingRef || !Number.isInteger(Number(id)) || Number(id) <= 0) {
+          if (!cancelled) setConfirmationState('error')
+          return
+        }
+        const confirmed = String(booking.status).toLowerCase() === 'confirmed'
+          && String(booking.payment_status).toLowerCase() === 'paid'
+        if (!cancelled) {
+          if (confirmed) setBookingId(String(id))
+          setConfirmationState(confirmed ? 'confirmed' : 'pending')
         }
       } catch {
-        // Ticket stays reachable from the bookings page if this fails
-      } finally {
-        if (!cancelled) setResolving(false)
+        if (!cancelled) setConfirmationState('error')
       }
     })()
     return () => { cancelled = true }
   }, [bookingRef])
 
   useEffect(() => {
-    if (!bookingRef) return
+    if (!bookingRef || confirmationState !== 'confirmed') return
     sessionStorage.removeItem("registrationData")
     sessionStorage.removeItem("selectedAddOns")
     sessionStorage.removeItem("eligibleGames")
@@ -49,16 +72,38 @@ function BookingConfirmationContent() {
     sessionStorage.removeItem("nibog_restored_eventType")
     sessionStorage.removeItem("nibog_restored_childAgeMonths")
     localStorage.removeItem("nibog_booking_data")
-  }, [bookingRef])
+  }, [bookingRef, confirmationState])
 
-  if (!bookingRef) {
+  if (confirmationState !== 'confirmed') {
+    const content = {
+      loading: {
+        title: 'Verifying your registration',
+        description: 'We are checking the booking and payment status with the server.',
+      },
+      pending: {
+        title: 'Payment is not confirmed yet',
+        description: 'This booking is still pending or unpaid. Check the same payment status again or contact support before making another payment.',
+      },
+      'not-found': {
+        title: 'We couldn’t find this confirmation',
+        description: 'A valid booking reference was not found. Your bookings page is the safest place to confirm whether registration completed.',
+      },
+      error: {
+        title: 'We couldn’t verify this confirmation',
+        description: 'The booking lookup failed or returned unexpected data. No payment confirmation is being assumed.',
+      },
+      confirmed: { title: '', description: '' },
+    }[confirmationState]
+
     return (
       <div className="bg-[#fffaf3] px-4 py-12 dark:bg-slate-950 sm:py-16">
         <Card className="mx-auto max-w-xl rounded-[2rem] border-orange-100 shadow-sm dark:border-white/10">
           <CardContent className="p-6 text-center sm:p-10">
-            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-700 dark:bg-orange-400/10 dark:text-orange-300"><AlertCircle className="h-6 w-6" /></span>
-            <h1 className="mt-5 text-3xl font-black tracking-tight">We couldn’t find this confirmation</h1>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">A valid booking reference was not included. Your bookings page is the safest place to confirm whether registration completed.</p>
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-700 dark:bg-orange-400/10 dark:text-orange-300">
+              {resolving ? <Loader2 className="h-6 w-6 animate-spin" /> : <AlertCircle className="h-6 w-6" />}
+            </span>
+            <h1 className="mt-5 text-3xl font-black tracking-tight">{content.title}</h1>
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{content.description}</p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
               <Button asChild className="h-12 rounded-full px-6 font-black"><Link href="/dashboard/bookings">View my bookings</Link></Button>
               <Button asChild variant="outline" className="h-12 rounded-full px-6 font-bold"><Link href="/contact">Contact NIBOG</Link></Button>

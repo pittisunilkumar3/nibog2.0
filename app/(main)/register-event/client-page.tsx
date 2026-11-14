@@ -1568,12 +1568,7 @@ export default function RegisterEventClientPage() {
         throw new Error('Pending booking amount is unavailable');
       }
 
-      const paymentUrl = await initiatePhonePePayment(
-        transactionId,
-        userId,
-        paymentAmount,
-        phone
-      )
+      const paymentUrl = await initiatePhonePePayment(transactionId)
 
 
 
